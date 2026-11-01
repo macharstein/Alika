@@ -139,7 +139,7 @@ def test_target_is_strictly_future_same_day_and_final_report_is_excluded(simulat
     assert reports[1]["time_to_next_zone_min"] is None
     rows = target_rows(day, reports)
     assert len(rows) == 7
-    assert set(rows[0]) == {"day", "report_index", "report_time_bucket", "current_zone", "last_event", "next_zone_target"}
+    assert set(rows[0]) == {"day", "report_index", "report_time_bucket", "current_zone", "last_event", "next_zone_target", "shade_entry_hour_bucket", "drinks_so_far", "chase_attempts_so_far", "catch_so_far"}
     assert rows[0]["last_event"] == "ENTER_PLAIN"
     assert rows[0]["report_time_bucket"] == "08:00"
     assert rows[-1]["report_time_bucket"] == "02:00"

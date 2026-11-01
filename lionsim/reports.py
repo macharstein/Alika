@@ -97,11 +97,17 @@ def target_rows(day: DayResult, reports: list[dict[str, Any]]) -> list[dict[str,
             continue
         timestamp = datetime.fromisoformat(report["report_time"])
         last = bisect_right(times, timestamp) - 1
+        history = events[:last + 1]
+        shade = next((event for event in history if event["token"] == "ENTER_SHADE"), None)
         rows.append({
             "day": int(day.day_index), "report_index": int(report["report_index"]),
             "report_time_bucket": timestamp.strftime("%H:%M"),
             "current_zone": report["current_zone"],
             "last_event": events[last]["token"] if last >= 0 else None,
             "next_zone_target": report["next_zone_target"],
+            "shade_entry_hour_bucket": datetime.fromisoformat(shade["t"]).hour if shade else "not_yet",
+            "drinks_so_far": sum(event["token"] == "DRINK" for event in history),
+            "chase_attempts_so_far": sum(event["token"] == "CHASE_START" for event in history),
+            "catch_so_far": int(any(event["token"] == "CATCH" for event in history)),
         })
     return rows

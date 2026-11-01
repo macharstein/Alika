@@ -175,7 +175,8 @@ def _write_aggregates(directory: Path, records: dict[int, dict[str, Any]], confi
         validation.update(valid=False, execution_error=execution_error)
     write_json(directory / "summary_stats.json", accumulator.summary(), pretty)
     write_json(directory / "validation_report.json", validation, pretty)
-    columns = ["day", "report_index", "report_time_bucket", "current_zone", "last_event", "next_zone_target"]
+    columns = ["day", "report_index", "report_time_bucket", "current_zone", "last_event", "next_zone_target",
+               "shade_entry_hour_bucket", "drinks_so_far", "chase_attempts_so_far", "catch_so_far"]
     with atomic_output(directory / "targets.csv") as temporary:
         with temporary.open("w", encoding="utf-8", newline="") as handle:
             writer = csv.DictWriter(handle, fieldnames=columns)

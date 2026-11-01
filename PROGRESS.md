@@ -20,3 +20,10 @@ assumptions: bounded first hunt wait makes initially hungry days attempt hunting
 known problems: 200-day check has 19 PASS, 3 WARN, 0 FAIL; Road days 6.5%, resting 15.754h, walking 6.272h remain outside reference ranges. These are reported, not hidden.
 verify: /opt/anaconda3/bin/python3.12 -m pytest -q
 next: phase 6 — implement smoothed counting baselines with day-separated holdout and observable-history cues; no oracle.
+
+in progress: phase 6 — add observable-history features to targets.csv, with no latent or future information. Preserve the original six columns and append four cue columns.
+verify: /opt/anaconda3/bin/python3.12 -m pytest -x -q tests/test_baselines.py tests/test_validation_rules.py
+done: phase 6 observable cue columns; 42 targeted tests passed. Exact report-boundary inclusion and future-event/latent independence are tested.
+assumptions: shade hour is local clock hour of first observed ENTER_SHADE; absent is not_yet. Counts include events at the report timestamp.
+known problems: none in cue export; phase 5 statistical warnings remain.
+next: add Laplace counting baselines, sparse-cell backoff and report integration.
