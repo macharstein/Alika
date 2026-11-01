@@ -427,3 +427,12 @@ Simulator version 3.1.0 prevents resuming older checkpoints that lack these
 history cues. Start a new statistics run for baseline evaluation; existing
 completed datasets and their reports remain untouched. Task 7 (oracle) is not
 implemented here.
+
+Measured phase-6 check (`--stats-only --stats-days 200 --seed 42`): 19 PASS,
+3 WARN, 0 FAIL. Held-out losses were L0=1.810101, L1=0.979962,
+L2=0.821198 and L3=0.842583 nats (entropy 1.800828). L3 was 2.60% worse
+than L2; sparse historical cues do not automatically improve a finite-sample
+counting baseline. The requested interpretation was `learnable`. Outstanding
+warnings: Road-entry days 6.5%, resting 15.754 h, walking 6.272 h. Full report:
+[phase-6 statistics](outputs/run_20261101_210910/stats_report.md). All 143 tests
+passed. These measured deviations were not removed by adjusting target ranges.

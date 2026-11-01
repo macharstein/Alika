@@ -1,13 +1,13 @@
-# Update tasks 1–5
+# Completed tasks 1–6
 
-Scope: `docs/UPDATE_SPEC.md` tasks 1–5, including its cross-cutting resume and atomic-write requirements. Baseline ladder and oracle tasks 6–7 are not implemented in this phase.
+Scope: `docs/UPDATE_SPEC.md` tasks 1–5, including its cross-cutting resume and atomic-write requirements. Task 6 is now completed as requested; task 7 oracle remains unimplemented.
 
-- [ ] 17-token event schema, internal traffic context, restored daily reports/latents
-- [ ] Seven usable next-zone targets and run-level targets.csv
-- [ ] Committed journeys, hunger/heat/traffic traces, bounded night naps
-- [ ] Statistical metrics, target checks and JSON/Markdown reports
-- [ ] Atomic output and per-day checkpoint/resume with 200-day execution chunks
-- [ ] Tests and final 200-day statistics check
+- [x] 17-token event schema, internal traffic context, restored daily reports/latents
+- [x] Seven usable next-zone targets and run-level targets.csv
+- [x] Committed journeys, hunger/heat/traffic traces, bounded night naps
+- [x] Statistical metrics, target checks and JSON/Markdown reports
+- [x] Atomic output and per-day checkpoint/resume with 200-day execution chunks
+- [x] Tests and final 200-day statistics check
 
 Existing text-free PNGs, per-day SeedSequence reproducibility, and image generation for every selected day are preserved. Parameter choices and observed target failures will be recorded in README.md after measurement.
 
@@ -33,3 +33,11 @@ done: phase 6 counting ladder and CSV/report integration; 16 targeted tests pass
 assumptions: deterministic first 70% of sorted days train, last 30% test; alpha=1 across nine classes; unseen L1/L2 back off, L3 requires 10 training rows. Entropy uses test targets, losses use natural logs. No held-out tuning or forced loss ordering.
 known problems: phase 5 road/rest/walking target warnings remain; README.pdf and performance_check.json are pre-existing historical artifacts and intentionally untouched.
 next: run final 200-day report and full pytest, record measured baseline losses, commit phase 6 completion, then stop before task 7.
+
+
+done: phase 6 final verification — full pytest: 143 passed in 29.95s. All source changes are committed in tested increments.
+verify: /opt/anaconda3/bin/python3.12 -m pytest -q
+verify: /opt/anaconda3/bin/python3.12 -m lionsim.run --stats-only --stats-days 200 --seed 42
+results: outputs/run_20261101_210910/stats_report.md and stats_report.json; 19 PASS, 3 WARN, 0 FAIL. L0=1.810101, L1=0.979962, L2=0.821198, L3=0.842583 nats; target entropy=1.800828; requested interpretation=learnable. L3 worsens loss by 2.60% versus L2; not tuned away.
+known problems: road-entry days 6.5% (<10%); resting 15.754h (<16h); walking 6.272h (>5h diagnostic range). These remain honest warnings, not event-invariant failures. Historical README.pdf/performance_check.json remain untouched/untracked.
+next: task 7 — oracle snapshot/resume evaluation (not started; await explicit phase instruction).
