@@ -113,7 +113,8 @@ the manifest but never used by simulation. `Config` is a dataclass whose default
 factory loads this file; each instance owns a separate copy.
 
 Groups are `time`, `map`, `randomness`, `bars`, `goal`, `behaviours`, `movement`,
-`chase`, `tourists`, `road_response`, `output`, `images`, and `validation`. The primary randomness
+`chase`, `tourists`, `road_response`, `behaviour`, `targets`, `statistics`,
+`learnability`, `output`, `images`, and `validation`. The primary randomness
 knobs—including latent ranges, bar noise, softmax temperature, heading noise,
 GPS noise/dropouts, and base catch probability—are grouped under `randomness`.
 Duration distribution parameters sit alongside their respective behaviours.
@@ -308,8 +309,7 @@ here; hidden-state columns are analysis labels, not observed inputs.
     interpolates linearly between 0.6 and 1.3 using normalized equal energy/mood
     weights, then the final probability is clipped to `[0.05,0.6]`.
 11. A catch sends the lion to Feeding spot. Eating ends below hunger 0.1 or
-    after 150 minutes, followed by terminal sleep there. Only tourist events
-    may follow that sleep. The day boundary truncates unfinished behaviours;
+    after 150 minutes, followed by terminal sleep there. Internal traffic may continue after that sleep, without new public events. The day boundary truncates unfinished behaviours;
     no events from the next independent day are invented.
 12. Sleeping energy recovery, stationary awake depletion, and moving depletion
     are alternative rates: walking's `-0.12/h` replaces `-0.04/h`; it is not
@@ -321,7 +321,7 @@ here; hidden-state columns are analysis labels, not observed inputs.
     uses an exponential one-hour time constant, with movement and cooling-zone
     offsets. Temperature is a dimensionless synthetic index, not degrees.
 14. Tourist count is Poisson for the daily window; conditional arrival seconds
-    are uniform and sorted. Cars are emitted wherever the lion is and may
+    are uniform and sorted. Traffic is counted wherever the lion is and may
     share a timestamp. Mood effects use distance to the **nearest road point**,
     not its centre. Minute integration applies that minute's car effects before
     movement. Equal-time events retain deterministic insertion order.
@@ -398,3 +398,32 @@ statistic outside its reference range; FAIL means a missing statistic or broken
 invariant. Undefined correlations are null with an explanation. Tortuosity uses
 true path/chord sums between consecutive zone entries, excluding zero chords.
 The final stats_report.md/json are the authority on remaining deviations.
+
+## Baseline ladder (task 6)
+
+Statistics runs now read the persisted `targets.csv` and report L0–L3 held-out
+multiclass log loss, in nats. The table keeps its original six columns and adds
+`shade_entry_hour_bucket`, `drinks_so_far`, `chase_attempts_so_far`, `catch_so_far`.
+Cues use only events at or before report time, never hidden bars or daily latents;
+`not_yet` represents no observed shade entry. Catch is an observed-event boolean.
+
+The first 70% of sorted unique day IDs train frequency tables; the remaining
+whole days form the holdout (no report from a test day trains any table). L0 is
+frequency only; L1 conditions on report index; L2 adds current zone/last event;
+L3 adds the four history cues. Every class—including END_OF_DAY—gets Laplace
+alpha=1. Unseen L1/L2 cells back off one level. L3 cells with fewer than 10
+training observations back off to L2. These values are configurable under
+`learnability`; no thresholds are chosen using held-out labels.
+
+The report gives test-target entropy, absolute loss gaps and relative gaps
+(previous minus next, divided by previous), and backoff counts. If the spread
+of L0/L1/L2 divided by L0 is at most 3%, interpretation is `mostly noise`; if
+L2/L0 is below 0.2 it is `nearly deterministic`; otherwise `learnable`. These
+are the requested diagnostic heuristics, not proof of biological realism.
+Losses are measured honestly; no sorting or forced ordering is applied. Fewer
+than two days yields an explicit insufficient-data result with null losses.
+
+Simulator version 3.1.0 prevents resuming older checkpoints that lack these
+history cues. Start a new statistics run for baseline evaluation; existing
+completed datasets and their reports remain untouched. Task 7 (oracle) is not
+implemented here.

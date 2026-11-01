@@ -1,6 +1,6 @@
 """Descriptive signal/noise diagnostics from compact, resumable daily records.
 
-This module does not fit prediction models. It measures the generated data and
+This module uses only counting tables for diagnostic prediction baselines. It measures the generated data and
 compares transparent statistics with configured reference ranges. All geometry
 metrics use noise-free positions; an observed-path length is reported separately.
 """
@@ -359,7 +359,7 @@ def build_stats_report(records: Iterable[dict[str, Any]], config: Config) -> dic
             "abandoned_trips": "Count of nonempty abandoned_trip_reason rows; the simulator emits a reason only on the interrupt minute.",
             "correlations": "Pearson coefficients using available paired daily values; null with an explanation for insufficient/constant observations. These describe synthetic association, not causal proof.",
             "target_status": "PASS is inside the configured range; WARN is a finite statistic outside it; FAIL means no finite statistic or a hard validation failure. Requested strict sequence bounds are exclusive.",
-            "scope": "Descriptive statistics only. Baseline ladder and oracle are outside tasks 1–5.",
+            "scope": "Descriptive statistics plus optional held-out counting baselines. The oracle remains outside this phase.",
         },
     }
 
@@ -432,4 +432,100 @@ def render_stats_markdown(report: dict[str, Any]) -> str:
     lines += ["", "Actual tourist volume per day (mean / min / max): " + " / ".join(_display(volume[key]) for key in ("mean", "min", "max")) + ".", "",
               "## Definitions and limitations", ""]
     lines += [f"- **{name}:** {definition}" for name, definition in report["definitions"].items() if name != "time_origin"]
+    if "baseline_ladder" in report:
+        ladder = report["baseline_ladder"]
+        lines += ["", "## Baseline ladder", "", ladder["interpretation"], ""]
+        if ladder["status"] == "complete":
+            lines += ["| Baseline | Held-out log loss (nats) |", "| --- | ---: |"]
+            lines += [f"| {name} | {value:.6f} |" for name, value in ladder["losses"].items()]
+            lines += ["", f"Target entropy: {ladder['target_entropy_nats']:.6f} nats.",
+                      f"Whole-day split: {len(ladder['train_days'])} training / {len(ladder['test_days'])} test days.",
+                      "Absolute gaps: " + str(ladder["absolute_gaps_nats"]),
+                      "Relative gaps: " + str(ladder["relative_gaps"]),
+                      ladder["backoff_rule"], "Backoff row counts: " + str(ladder["backoff_rows"])]
     return "\n".join(lines) + "\n"
+
+
+def baseline_ladder(rows: Iterable[dict[str, Any]], config: Config) -> dict[str, Any]:
+    """Evaluate smoothed frequency tables using a disjoint holdout of whole days.
+
+    No latent values or test outcomes affect fitted counts or backoff decisions.
+    L1/L2 unseen cells back off one level; sparse L3 cells back off to L2.
+    """
+    options = config['learnability']
+    alpha = options['laplace_alpha']
+    rows = sorted(list(rows), key=lambda row: (int(row['day']), int(row['report_index'])))
+    if len({(int(r['day']), int(r['report_index'])) for r in rows}) != len(rows):
+        raise ValueError('Duplicate day/report target row')
+    classes = list(TARGET_CLASSES)
+    if any(r['next_zone_target'] not in classes for r in rows):
+        raise ValueError('Unknown next-zone target class')
+    required = ('shade_entry_hour_bucket', 'drinks_so_far', 'chase_attempts_so_far', 'catch_so_far')
+    if any(any(key not in row or row[key] == '' for key in required) for row in rows):
+        raise ValueError('Baseline evaluation requires observable history cue columns')
+    days = sorted({int(r['day']) for r in rows})
+    if len(days) < 2:
+        return {'status': 'insufficient_data', 'interpretation': 'Need at least two days for a day-separated holdout.',
+                'losses': dict.fromkeys(('L0', 'L1', 'L2', 'L3')), 'classes': classes}
+    cut = max(1, min(len(days)-1, int(len(days)*options['train_fraction'])))
+    train_days, test_days = days[:cut], days[cut:]
+    training = [r for r in rows if int(r['day']) in set(train_days)]
+    testing = [r for r in rows if int(r['day']) in set(test_days)]
+
+    def clean(value: Any) -> str:
+        return '' if value is None else str(value)
+
+    def keys(row: dict[str, Any]) -> list[tuple[str, ...]]:
+        bucket = (str(int(row['report_index'])),)
+        state = bucket + (clean(row['current_zone']), clean(row['last_event']))
+        return [(), bucket, state, state + tuple(clean(row[name]) for name in required)]
+
+    tables: list[dict[tuple[str, ...], Counter[str]]] = [{} for _ in range(4)]
+    for row in training:
+        for level, key in enumerate(keys(row)):
+            tables[level].setdefault(key, Counter())[row['next_zone_target']] += 1
+    losses = np.zeros(4)
+    backoffs = Counter()
+    for row in testing:
+        cell_keys = keys(row)
+        for level in range(4):
+            used = level
+            while used:
+                counts = tables[used].get(cell_keys[used], Counter())
+                minimum = options['l3_min_cell_count'] if used == 3 else 1
+                if sum(counts.values()) >= minimum:
+                    break
+                used -= 1
+            if used != level:
+                backoffs[f'L{level}'] += 1
+            counts = tables[used].get(cell_keys[used], Counter())
+            probability = (counts[row['next_zone_target']] + alpha) / (sum(counts.values()) + alpha * len(classes))
+            losses[level] -= math.log(probability)
+    losses /= len(testing)
+    named = {f'L{i}': float(value) for i, value in enumerate(losses)}
+    absolute = {f'L{i}-L{i+1}': float(losses[i]-losses[i+1]) for i in range(3)}
+    relative = {key: value / losses[i] if losses[i] else None for i, (key, value) in enumerate(absolute.items())}
+    spread = (max(losses[:3])-min(losses[:3])) / losses[0]
+    interpretation = ('mostly noise' if spread <= options['mostly_noise_relative_tolerance'] else
+                      'nearly deterministic' if losses[2] < options['near_deterministic_ratio'] * losses[0] else 'learnable')
+    target_counts = Counter(r['next_zone_target'] for r in testing)
+    entropy = -sum((n/len(testing))*math.log(n/len(testing)) for n in target_counts.values())
+    return {'status': 'complete', 'classes': classes, 'losses': named,
+            'target_entropy_nats': entropy, 'absolute_gaps_nats': absolute,
+            'relative_gaps': relative, 'interpretation': interpretation,
+            'train_days': train_days, 'test_days': test_days,
+            'training_rows': len(training), 'test_rows': len(testing),
+            'backoff_rows': {f'L{i}': backoffs[f'L{i}'] for i in range(1,4)},
+            'laplace_alpha': alpha, 'l3_min_cell_count': options['l3_min_cell_count'],
+            'split_rule': 'First 70% of sorted day IDs for training (fraction configurable); remaining whole days held out.',
+            'backoff_rule': 'Unseen L1 -> L0; unseen L2 -> L1; L3 below minimum training count -> L2, then the same unseen-cell rules.',
+            'units': 'Natural-log multiclass log loss (nats); entropy uses held-out empirical targets.'}
+
+
+def baselines_from_csv(path: Any, config: Config) -> dict[str, Any]:
+    """Read the persisted target table; null zones remain ordinary empty strings."""
+    import csv
+    from pathlib import Path
+
+    with Path(path).open(newline='', encoding='utf-8') as handle:
+        return baseline_ladder(list(csv.DictReader(handle)), config)

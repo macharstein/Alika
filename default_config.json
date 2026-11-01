@@ -738,5 +738,19 @@
     "_comments": {
       "coverage_grid_km": "Square map-coverage grid cell width in kilometres."
     }
+  },
+  "learnability": {
+    "laplace_alpha": 1.0,
+    "train_fraction": 0.7,
+    "l3_min_cell_count": 10,
+    "mostly_noise_relative_tolerance": 0.03,
+    "near_deterministic_ratio": 0.2,
+    "_comments": {
+      "laplace_alpha": "Positive additive count smoothing for all nine classes.",
+      "train_fraction": "First sorted unique days used for training; remaining complete days are held out.",
+      "l3_min_cell_count": "Minimum training rows in an L3 cell; sparser cells back off to L2.",
+      "mostly_noise_relative_tolerance": "L0/L1/L2 loss spread divided by L0 below this threshold means mostly noise.",
+      "near_deterministic_ratio": "L2/L0 below this threshold means nearly deterministic."
+    }
   }
 }

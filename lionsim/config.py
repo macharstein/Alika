@@ -377,6 +377,14 @@ def validate_config(data: dict[str, Any]) -> None:
         if not name.startswith("_"):
             interval(f"targets.hours_per_behaviour.{name}", 0, 24)
     bound("statistics.coverage_grid_km", positive=True)
+    bound("behaviour.afternoon_water_probability", 0, 1)
+    bound("learnability.laplace_alpha", positive=True)
+    bound("learnability.train_fraction", 0, 1)
+    if not 0 < data["learnability"]["train_fraction"] < 1:
+        raise ValueError("learnability.train_fraction must be strictly between zero and one")
+    bound("learnability.l3_min_cell_count", 1)
+    for name in ("mostly_noise_relative_tolerance", "near_deterministic_ratio"):
+        bound(f"learnability.{name}", 0, 1)
     bound("output.json_pretty_max_days", 0)
     for name in ("size_px", "dpi", "path_linewidth", "current_point_size", "contact_sheet_columns", "contact_sheet_rows"):
         bound(f"images.{name}", positive=True)
