@@ -1,0 +1,742 @@
+{
+  "_comment": "All simulator parameters. Keys beginning with an underscore document nearby settings and do not affect simulation. Distances are km unless named otherwise; rates are per hour.",
+  "time": {
+    "day_start": "05:00",
+    "day_minutes": 1440,
+    "step_minutes": 1,
+    "report_times": [
+      "08:00",
+      "11:00",
+      "14:00",
+      "17:00",
+      "20:00",
+      "23:00",
+      "02:00",
+      "05:00"
+    ],
+    "_comments": {
+      "day_start": "Start time of each independent simulated day.",
+      "day_minutes": "One 24-hour day; currently must remain 1440.",
+      "step_minutes": "GPS and hidden-state cadence; currently must remain 1.",
+      "report_times": "Ordered report clock times after the day start, including the final day boundary."
+    }
+  },
+  "map": {
+    "width_km": 10.0,
+    "height_km": 10.0,
+    "entry_hysteresis_minutes": 2,
+    "_comments": {
+      "width_km": "Map extent in x, with zero as minimum.",
+      "height_km": "Map extent in y, with zero as minimum.",
+      "entry_hysteresis_minutes": "Consecutive true-position samples required before a named zone entry."
+    },
+    "zones": {
+      "Den": {
+        "shape": "circle",
+        "center": [
+          2.0,
+          8.0
+        ],
+        "radius": 0.4,
+        "color": "#8B5A2B",
+        "_comment": "Den circle: centre coordinates, radius in km, and plot color."
+      },
+      "Kopje": {
+        "shape": "circle",
+        "center": [
+          3.5,
+          6.0
+        ],
+        "radius": 0.3,
+        "color": "#A0522D",
+        "_comment": "Kopje circle: centre coordinates, radius in km, and plot color."
+      },
+      "Shade": {
+        "shape": "circle",
+        "center": [
+          5.0,
+          7.5
+        ],
+        "radius": 0.4,
+        "color": "#2E8B57",
+        "_comment": "Shade circle: centre coordinates, radius in km, and plot color."
+      },
+      "Waterhole": {
+        "shape": "circle",
+        "center": [
+          7.5,
+          6.5
+        ],
+        "radius": 0.4,
+        "color": "#1E90FF",
+        "_comment": "Waterhole circle: centre coordinates, radius in km, and plot color."
+      },
+      "Plain": {
+        "shape": "rectangle",
+        "x": [
+          1.0,
+          8.0
+        ],
+        "y": [
+          3.0,
+          4.5
+        ],
+        "color": "#DAA520",
+        "_comment": "Open plain rectangle: inclusive x/y limits in km and plot color."
+      },
+      "Hunting ground": {
+        "shape": "circle",
+        "center": [
+          4.0,
+          1.5
+        ],
+        "radius": 1.2,
+        "color": "#B22222",
+        "_comment": "Hunting ground circle: centre coordinates, radius in km, and plot color."
+      },
+      "Feeding spot": {
+        "shape": "circle",
+        "center": [
+          7.0,
+          1.5
+        ],
+        "radius": 0.5,
+        "color": "#FF69B4",
+        "_comment": "Feeding spot circle: centre coordinates, radius in km, and plot color."
+      },
+      "Road": {
+        "shape": "rectangle",
+        "x": [
+          8.8,
+          9.2
+        ],
+        "y": [
+          0.0,
+          10.0
+        ],
+        "color": "#808080",
+        "_comment": "Tourist road rectangle: inclusive x/y limits in km and plot color."
+      }
+    }
+  },
+  "randomness": {
+    "latent_ranges": {
+      "start_hunger": [
+        0.1,
+        1.0
+      ],
+      "hunt_threshold": [
+        0.3,
+        0.5
+      ],
+      "heat": [
+        0.7,
+        1.3
+      ],
+      "prey_density": [
+        0.5,
+        1.5
+      ],
+      "tourist_rate_per_hour": [
+        3.0,
+        12.0
+      ],
+      "_comments": {
+        "start_hunger": "Daily uniform initial hunger range.",
+        "hunt_threshold": "Daily uniform minimum hunger for stalking.",
+        "heat": "Daily uniform ambient-temperature multiplier.",
+        "prey_density": "Daily uniform prey encounter multiplier.",
+        "tourist_rate_per_hour": "Daily uniform Poisson car rate."
+      }
+    },
+    "wake_time_mean": "06:00",
+    "wake_time_sd_minutes": 30.0,
+    "wake_time_clip": [
+      "05:00",
+      "07:00"
+    ],
+    "softmax_temperature": 0.7,
+    "bar_noise_sd": 0.005,
+    "score_noise_sd": 0.25,
+    "walk_heading_sd_degrees": 25.0,
+    "stalk_heading_sd_degrees": 60.0,
+    "gps_noise_sd_m": 15.0,
+    "gps_dropout_probability": 0.01,
+    "chase_base_probability": 0.3,
+    "_comments": {
+      "wake_time_mean": "Mean initial waking clock time.",
+      "wake_time_sd_minutes": "Standard deviation of the daily normal wake time.",
+      "wake_time_clip": "Earliest/latest initial wake clock times.",
+      "softmax_temperature": "Higher values spread goal probabilities more evenly.",
+      "bar_noise_sd": "Independent Gaussian bar perturbation per minute before clipping to [0,1].",
+      "score_noise_sd": "Gaussian goal-logit noise at each goal choice.",
+      "walk_heading_sd_degrees": "Gaussian patrol heading noise.",
+      "stalk_heading_sd_degrees": "Gaussian stalking heading noise.",
+      "gps_noise_sd_m": "Independent x/y Gaussian GPS observation noise in metres.",
+      "gps_dropout_probability": "Independent missing-fix probability; observed coordinates are forward-filled.",
+      "chase_base_probability": "Base catch probability, adjusted by energy and mood."
+    }
+  },
+  "bars": {
+    "initial_energy": 0.5,
+    "initial_boredom": 0.3,
+    "initial_mood": 0.5,
+    "hunger_rest_per_hour": 0.01,
+    "hunger_active_per_hour": 0.02,
+    "hunger_eating_per_hour": -0.5,
+    "energy_asleep_per_hour": 0.15,
+    "energy_awake_per_hour": -0.04,
+    "energy_walking_per_hour": -0.12,
+    "energy_per_chase": -0.1,
+    "temperature_time_constant_hours": 1.0,
+    "temperature_moving_bonus": 0.15,
+    "temperature_cooling_bonus": -0.2,
+    "cooling_zones": [
+      "Shade",
+      "Den",
+      "Waterhole"
+    ],
+    "ambient_min": 0.3,
+    "ambient_max": 0.9,
+    "ambient_min_time": "05:00",
+    "ambient_max_time": "14:00",
+    "boredom_same_zone_per_hour": 0.1,
+    "boredom_per_entry": -0.1,
+    "boredom_per_chase": -0.3,
+    "mood_per_catch": 0.2,
+    "mood_per_fail": -0.2,
+    "mood_per_nearby_car": -0.03,
+    "car_mood_distance_km": 1.0,
+    "mood_equilibrium": 0.5,
+    "mood_relaxation_per_hour": 0.1,
+    "_comments": {
+      "initial_energy": "Energy at 05:00.",
+      "initial_boredom": "Boredom at 05:00.",
+      "initial_mood": "Mood at 05:00.",
+      "hunger_rest_per_hour": "Hunger increase when inactive.",
+      "hunger_active_per_hour": "Hunger increase when active.",
+      "hunger_eating_per_hour": "Hunger decrease during eating.",
+      "energy_asleep_per_hour": "Energy recovery during sleep.",
+      "energy_awake_per_hour": "Energy change while awake and stationary.",
+      "energy_walking_per_hour": "Total energy change while moving, replacing stationary awake rate.",
+      "energy_per_chase": "Additional energy cost per chase.",
+      "temperature_time_constant_hours": "Relaxation time to the ambient target.",
+      "temperature_moving_bonus": "Target temperature increase while moving.",
+      "temperature_cooling_bonus": "Target temperature change in a cooling zone.",
+      "cooling_zones": "Zones that apply temperature cooling.",
+      "ambient_min": "Daily minimum ambient temperature index.",
+      "ambient_max": "Daily maximum ambient temperature index.",
+      "ambient_min_time": "Clock time of ambient minimum.",
+      "ambient_max_time": "Clock time of ambient maximum.",
+      "boredom_same_zone_per_hour": "Boredom increase while awake in the same zone.",
+      "boredom_per_entry": "Boredom change after confirmed zone entry.",
+      "boredom_per_chase": "Boredom change after a chase.",
+      "mood_per_catch": "Mood change after success.",
+      "mood_per_fail": "Mood change after failure.",
+      "mood_per_nearby_car": "Mood change for a car within the road-distance threshold.",
+      "car_mood_distance_km": "Distance to road boundary for car mood effects.",
+      "mood_equilibrium": "Long-run mood target.",
+      "mood_relaxation_per_hour": "Mood drift rate toward equilibrium."
+    }
+  },
+  "goal": {
+    "distance_penalty_per_km": 0.3,
+    "road_penalty_per_car": 0.4,
+    "road_memory_minutes": 30,
+    "hunt_unavailable_prior": -5.0,
+    "hunger_weight": 1.0,
+    "low_energy_weight": 1.0,
+    "temperature_weight": 1.0,
+    "boredom_weight": 1.0,
+    "periods": [
+      {
+        "start": "05:00",
+        "end": "07:00",
+        "priors": {
+          "Den": 2.0,
+          "Shade": -5.0,
+          "Kopje": -5.0,
+          "Waterhole": -5.0,
+          "Plain": 1.0,
+          "Hunting ground": -5.0,
+          "Feeding spot": -5.0,
+          "Road": -5.0
+        },
+        "_comment": "Dawn: prefer Den, then Plain."
+      },
+      {
+        "start": "07:00",
+        "end": "10:00",
+        "priors": {
+          "Den": 0.0,
+          "Shade": 0.0,
+          "Kopje": 2.0,
+          "Waterhole": 0.0,
+          "Plain": 2.0,
+          "Hunting ground": 0.0,
+          "Feeding spot": 0.0,
+          "Road": 0.0
+        },
+        "_comment": "Morning: prefer Plain and Kopje."
+      },
+      {
+        "start": "10:00",
+        "end": "16:00",
+        "priors": {
+          "Den": -5.0,
+          "Shade": 3.0,
+          "Kopje": -5.0,
+          "Waterhole": -5.0,
+          "Plain": -5.0,
+          "Hunting ground": -5.0,
+          "Feeding spot": -5.0,
+          "Road": -5.0
+        },
+        "_comment": "Midday: strong preference for Shade."
+      },
+      {
+        "start": "16:00",
+        "end": "18:30",
+        "priors": {
+          "Den": -5.0,
+          "Shade": 0.0,
+          "Kopje": 0.0,
+          "Waterhole": 2.0,
+          "Plain": 2.0,
+          "Hunting ground": 0.0,
+          "Feeding spot": 0.0,
+          "Road": 0.0
+        },
+        "_comment": "Afternoon: prefer Plain and Waterhole; unspecified zones use low priors."
+      },
+      {
+        "start": "18:30",
+        "end": "22:00",
+        "priors": {
+          "Den": 0.0,
+          "Shade": -5.0,
+          "Kopje": 0.0,
+          "Waterhole": 0.0,
+          "Plain": 1.0,
+          "Hunting ground": 2.0,
+          "Feeding spot": 0.0,
+          "Road": 0.0
+        },
+        "hungry_hunt_only": true,
+        "_comment": "Evening: hunting bonus applies only when hunger exceeds daily threshold."
+      },
+      {
+        "start": "22:00",
+        "end": "05:00",
+        "priors": {
+          "Den": 1.0,
+          "Shade": 0.0,
+          "Kopje": 0.0,
+          "Waterhole": 0.0,
+          "Plain": 1.0,
+          "Hunting ground": -5.0,
+          "Feeding spot": 0.0,
+          "Road": 0.0
+        },
+        "caught_priors": {
+          "Den": 0.0,
+          "Shade": 0.0,
+          "Kopje": 0.0,
+          "Waterhole": 0.0,
+          "Plain": 0.0,
+          "Hunting ground": -5.0,
+          "Feeding spot": 2.0,
+          "Road": 0.0
+        },
+        "_comment": "Night: Plain/Den without catch; Feeding spot after catch."
+      }
+    ],
+    "_comments": {
+      "hunt_unavailable_prior": "Maximum hunting-ground prior when an evening hunting bonus is unavailable.",
+      "distance_penalty_per_km": "Distance cost in goal logits.",
+      "road_penalty_per_car": "Road logit penalty for each recent tourist car.",
+      "road_memory_minutes": "Recent-car lookback window.",
+      "hunger_weight": "Hunger contribution to Hunting ground score, only above threshold.",
+      "low_energy_weight": "Low energy contribution to Den and Shade scores.",
+      "temperature_weight": "Temperature contribution to Shade and Waterhole scores.",
+      "boredom_weight": "Boredom contribution to Plain, Kopje, and Road scores.",
+      "periods": "24-hour exhaustive clock windows and logit priors; high=2, medium=1, low=0, none=-5."
+    }
+  },
+  "behaviours": {
+    "groom_mean_minutes": 12.0,
+    "groom_lognormal_sigma": 0.45,
+    "rest_minutes_range": [
+      30,
+      90
+    ],
+    "visit_minutes_range": [
+      8,
+      25
+    ],
+    "midday_sleep_start": "10:00",
+    "midday_wake_mean": "16:00",
+    "midday_wake_sd_minutes": 30.0,
+    "midday_wake_clip": [
+      "14:00",
+      "18:00"
+    ],
+    "cool_wake_after": "14:00",
+    "cool_wake_temperature": 0.45,
+    "drink_mean_minutes": 8.0,
+    "drink_gamma_shape": 2.0,
+    "hunt_start": "18:30",
+    "hunt_end": "22:00",
+    "prey_encounters_per_hour": 0.8,
+    "fail_rest_minutes_range": [
+      10,
+      20
+    ],
+    "eat_stop_hunger": 0.1,
+    "eat_max_minutes": 150,
+    "catnap_minutes_range": [
+      20,
+      60
+    ],
+    "night_walk_minutes_range": [
+      2,
+      8
+    ],
+    "night_start": "22:00",
+    "_comments": {
+      "groom_mean_minutes": "Arithmetic mean of each lognormal grooming session.",
+      "groom_lognormal_sigma": "Log-space standard deviation of grooming duration.",
+      "rest_minutes_range": "Uniform daytime stationary resting duration at a destination.",
+      "visit_minutes_range": "Uniform patrol/stalk destination dwell duration where applicable.",
+      "midday_sleep_start": "Earliest midday sleep at Shade.",
+      "midday_wake_mean": "Normal scheduled end of midday sleep.",
+      "midday_wake_sd_minutes": "Variation in scheduled midday wake time.",
+      "midday_wake_clip": "Bounds on scheduled midday waking.",
+      "cool_wake_after": "Earliest clock time for temperature-triggered waking.",
+      "cool_wake_temperature": "Temperature below which midday sleep can end after cool_wake_after.",
+      "drink_mean_minutes": "Gamma-distributed drinking-session mean.",
+      "drink_gamma_shape": "Shape of drinking-duration gamma distribution.",
+      "hunt_start": "Earliest stalking clock time.",
+      "hunt_end": "Clock cutoff for stalking and new chases.",
+      "prey_encounters_per_hour": "Base Poisson encounter rate multiplied by daily prey density.",
+      "fail_rest_minutes_range": "Uniform rest duration after a failed chase.",
+      "eat_stop_hunger": "Hunger threshold ending a meal.",
+      "eat_max_minutes": "Maximum eating duration after a catch.",
+      "catnap_minutes_range": "Uniform night catnap duration.",
+      "night_walk_minutes_range": "Uniform night walking duration between naps.",
+      "night_start": "Clock time at which no-catch night behaviour begins."
+    }
+  },
+  "movement": {
+    "patrol_speed_kmh_range": [
+      2.0,
+      4.0
+    ],
+    "stalk_speed_kmh": 1.0,
+    "heading_persistence": 0.6,
+    "rest_jitter_sd_m": 2.0,
+    "arrival_inset_km": 0.02,
+    "_comments": {
+      "patrol_speed_kmh_range": "Uniform patrol walking-speed range.",
+      "stalk_speed_kmh": "Stalking speed.",
+      "heading_persistence": "Fraction of previous heading retained, between zero and one.",
+      "rest_jitter_sd_m": "Per-axis resting true-position jitter in metres, constrained to its zone.",
+      "arrival_inset_km": "Inset into destination after crossing boundary to support entry hysteresis.",
+      "patrol_energy_weight": "Contribution of energy to position within the configured patrol speed range.",
+      "patrol_heat_weight": "Contribution of heat discomfort to reduced patrol speed.",
+      "patrol_boredom_weight": "Contribution of boredom to patrol speed.",
+      "patrol_speed_noise_sd": "Minute speed variation as a fraction of the patrol speed range."
+    },
+    "patrol_energy_weight": 0.55,
+    "patrol_heat_weight": 0.3,
+    "patrol_boredom_weight": 0.15,
+    "patrol_speed_noise_sd": 0.1
+  },
+  "chase": {
+    "speed_kmh": 50.0,
+    "duration_seconds_range": [
+      20,
+      40
+    ],
+    "outcome_delay_seconds_range": [
+      10,
+      60
+    ],
+    "factor_min": 0.6,
+    "factor_max": 1.3,
+    "energy_weight": 0.5,
+    "mood_weight": 0.5,
+    "probability_clip": [
+      0.05,
+      0.6
+    ],
+    "_comments": {
+      "speed_kmh": "Short-burst chase speed.",
+      "duration_seconds_range": "Uniform chase duration, fitting start and outcome inside one minute.",
+      "outcome_delay_seconds_range": "Allowed delay between CHASE_START and CATCH/FAIL; duration must lie inside this range.",
+      "factor_min": "Catch-factor value when energy and mood are zero.",
+      "factor_max": "Catch-factor value when energy and mood are one.",
+      "energy_weight": "Energy weight in catch factor, normalized with mood weight.",
+      "mood_weight": "Mood weight in catch factor, normalized with energy weight.",
+      "probability_clip": "Lower and upper bound on final catch probability."
+    }
+  },
+  "tourists": {
+    "start": "16:00",
+    "end": "19:00",
+    "_comments": {
+      "start": "Start of tourist car Poisson process, inclusive.",
+      "end": "End of tourist car window, exclusive."
+    }
+  },
+  "output": {
+    "prefer_parquet": true,
+    "json_pretty_max_days": 5,
+    "_comments": {
+      "prefer_parquet": "Use parquet when pyarrow is installed; otherwise csv.gz.",
+      "json_pretty_max_days": "Threshold for indented run metadata/statistics. Daily event JSON is always indented for readability.",
+      "embed_cumulative_path_in_reports": "Include cumulative observed GPS arrays in reports when true; false keeps restored daily JSON compact."
+    },
+    "embed_cumulative_path_in_reports": false
+  },
+  "images": {
+    "size_px": 1000,
+    "dpi": 100,
+    "background_color": "#000000",
+    "zone_alpha": 0.6,
+    "path_color": "#FFFFFF",
+    "path_linewidth": 1.0,
+    "current_point_size": 9.0,
+    "contact_sheet_columns": 2,
+    "contact_sheet_rows": 4,
+    "_comments": {
+      "size_px": "Width and height of each square report image in pixels.",
+      "dpi": "Raster DPI used to calculate figure size.",
+      "background_color": "Canvas and axes background.",
+      "zone_alpha": "Filled-zone opacity.",
+      "path_color": "GPS path and current-position color.",
+      "path_linewidth": "Path width in points.",
+      "current_point_size": "Current-position scatter-marker area in points squared.",
+      "contact_sheet_columns": "Contact sheet grid columns.",
+      "contact_sheet_rows": "Contact sheet grid rows."
+    },
+    "_comment": "Text-free images: only zone shapes, accumulated observed GPS path and its endpoint. Every selected day is rendered unless --image-days or --no-images explicitly limits it."
+  },
+  "validation": {
+    "hours_targets": {
+      "resting": 17.0,
+      "walking": 3.0,
+      "hunting": 1.5,
+      "grooming": 1.5,
+      "eating": 0.7,
+      "drinking": 0.3
+    },
+    "hours_ranges": {
+      "resting": [
+        16.0,
+        20.0
+      ],
+      "walking": [
+        1.0,
+        5.0
+      ],
+      "hunting": [
+        0.2,
+        3.0
+      ],
+      "grooming": [
+        0.1,
+        2.5
+      ],
+      "eating": [
+        0.0,
+        1.5
+      ],
+      "drinking": [
+        0.0,
+        1.0
+      ]
+    },
+    "_comments": {
+      "hours_targets": "Approximate behavioural reference values, warnings only; requested targets total 24.0 hours.",
+      "hours_ranges": "Allowed run-mean hours before warning; resting includes sleeping and quiet rest."
+    }
+  },
+  "road_response": {
+    "enabled": true,
+    "detection_distance_km": 4.0,
+    "minimum_boredom": 0.3,
+    "minimum_energy": 0.02,
+    "minimum_mood": 0.3,
+    "approach_probability": 0.65,
+    "avoidance_probability": 0.6,
+    "avoidance_mood_threshold": 0.28,
+    "avoidance_car_count": 4,
+    "memory_minutes": 20,
+    "reaction_delay_minutes_range": [
+      1,
+      3
+    ],
+    "approach_standoff_km": 0.18,
+    "arrival_tolerance_km": 0.045,
+    "approach_max_minutes": 65,
+    "watch_minutes_range": [
+      3,
+      12
+    ],
+    "retreat_distance_km": 0.45,
+    "retreat_max_minutes": 25,
+    "cooldown_minutes": 35,
+    "boredom_relief_per_watch_hour": 0.8,
+    "_comment": "Synthetic causal response to a car already heard nearby. Changes continuous motion without requiring a road-zone entry; no future cars are inspected.",
+    "_comments": {
+      "enabled": "Enable car-triggered road curiosity and avoidance.",
+      "detection_distance_km": "Maximum distance to nearest road point for hearing a car; a synthetic perception radius.",
+      "minimum_boredom": "Minimum boredom for curiosity about a passing car.",
+      "minimum_energy": "Minimum energy for investigating a passing car.",
+      "minimum_mood": "Minimum mood for approaching the road rather than avoiding it.",
+      "approach_probability": "Base probability of beginning a curiosity response when eligible.",
+      "avoidance_probability": "Chance of retreating when a nearby car triggers low-mood or repeated-car avoidance.",
+      "avoidance_mood_threshold": "Mood below this value can produce avoidance.",
+      "avoidance_car_count": "Recent nearby car count triggering avoidance.",
+      "memory_minutes": "Lookback window for repeated-car exposure.",
+      "reaction_delay_minutes_range": "Number of minute ticks after the car's containing minute before response begins; at least one tick ensures the response is strictly after the car.",
+      "approach_standoff_km": "Target distance outside the road boundary, so investigation need not enter the Road zone.",
+      "arrival_tolerance_km": "Distance from response target treated as arrival.",
+      "approach_max_minutes": "Maximum time spent approaching before watching or resuming normal movement.",
+      "watch_minutes_range": "Length of the stationary road-observation pause.",
+      "retreat_distance_km": "Desired bounded displacement away from the road during avoidance.",
+      "retreat_max_minutes": "Maximum duration of an avoidance retreat.",
+      "cooldown_minutes": "Minimum delay after a completed response before another may start.",
+      "boredom_relief_per_watch_hour": "Boredom reduction during a curiosity observation pause."
+    }
+  },
+  "behaviour": {
+    "goal_commitment": true,
+    "fatigue_interrupt_threshold": 0.1,
+    "fatigue_recovery_threshold": 0.35,
+    "heat_interrupt_threshold": 0.94,
+    "heat_recovery_threshold": 0.7,
+    "heat_reference": 1.0,
+    "shade_entry_heat_shift_minutes": 100.0,
+    "shade_entry_jitter_sd_minutes": 12.0,
+    "shade_departure_window": [
+      "09:00",
+      "11:00"
+    ],
+    "shade_wake_heat_shift_minutes": 90.0,
+    "shade_wake_jitter_sd_minutes": 15.0,
+    "drink_heat_multiplier": 1.0,
+    "evening_staging_time": "17:00",
+    "hunt_arrival_deadline": "20:00",
+    "first_chase_wait_max_minutes": 25,
+    "first_chase_wait_min_minutes": 3,
+    "road_goal_boredom_weight": 2.0,
+    "road_goal_traffic_penalty": 0.22,
+    "road_entry_probability": 0.45,
+    "road_entry_traffic_decay": 0.18,
+    "road_entry_inset_km": 0.08,
+    "night_nap_min_minutes": 25,
+    "night_nap_max_cycles": 3,
+    "interrupted_rest_minutes": 30,
+    "_comments": {
+      "goal_commitment": "Keep destinations until arrival unless a recorded safety or schedule interrupt occurs.",
+      "fatigue_interrupt_threshold": "Interrupt travel when energy falls below this threshold.",
+      "fatigue_recovery_threshold": "Rearm fatigue interruption only after this energy recovery threshold.",
+      "heat_interrupt_threshold": "Interrupt travel when temperature exceeds this threshold.",
+      "heat_recovery_threshold": "Rearm heat interruption after temperature falls below this threshold.",
+      "heat_reference": "Reference daily heat latent for timing and drinking effects.",
+      "shade_entry_heat_shift_minutes": "Minutes earlier shade departure per unit above reference heat.",
+      "shade_entry_jitter_sd_minutes": "Gaussian noise on heat-driven shade departure time.",
+      "shade_departure_window": "Allowed clock window for starting the committed shade journey.",
+      "shade_wake_heat_shift_minutes": "Minutes later midday wake per unit above reference heat.",
+      "shade_wake_jitter_sd_minutes": "Gaussian noise on heat-driven midday wake time.",
+      "drink_heat_multiplier": "Fractional change of drink duration per unit heat above reference.",
+      "evening_staging_time": "Start positioning for an evening trip; hunger eligibility is fixed for the day.",
+      "hunt_arrival_deadline": "Desired latest initial hunting-ground arrival for hungry days.",
+      "first_chase_wait_max_minutes": "Maximum initial eligible stalking wait before the first chase attempt.",
+      "first_chase_wait_min_minutes": "Minimum initial stalking wait before a first chase attempt.",
+      "road_goal_boredom_weight": "Additional road attractiveness when bored.",
+      "road_goal_traffic_penalty": "Road-goal penalty associated with traffic volume.",
+      "road_entry_probability": "Base chance an eligible low-traffic curiosity approach enters the road.",
+      "road_entry_traffic_decay": "Decay of road-entry probability as traffic volume increases.",
+      "road_entry_inset_km": "Distance inside the road boundary for an entry destination.",
+      "night_nap_min_minutes": "Minimum complete night catnap duration.",
+      "night_nap_max_cycles": "Maximum catnap cycles begun in one night.",
+      "interrupted_rest_minutes": "Recovery rest following a safety interruption.",
+      "afternoon_water_probability": "Probability of a committed afternoon water visit when no road visit was selected; improves observable heat/drinking and prevents staging turnbacks."
+    },
+    "afternoon_water_probability": 0.65
+  },
+  "targets": {
+    "zone_entries_per_day": [
+      6.0,
+      12.0
+    ],
+    "zone_entry_share": [
+      0.03,
+      0.35
+    ],
+    "hunt_attempt_day_fraction": [
+      0.5,
+      0.7
+    ],
+    "catch_day_fraction": [
+      0.2,
+      0.4
+    ],
+    "road_entry_day_fraction": [
+      0.1,
+      0.25
+    ],
+    "unique_sequence_fraction_min": 0.3,
+    "top_five_sequence_share_max": 0.5,
+    "mean_walking_speed_kmh": [
+      2.0,
+      4.0
+    ],
+    "hours_per_behaviour": {
+      "resting": [
+        16.0,
+        20.0
+      ],
+      "walking": [
+        1.0,
+        5.0
+      ],
+      "hunting": [
+        0.2,
+        3.0
+      ],
+      "grooming": [
+        0.1,
+        2.5
+      ],
+      "eating": [
+        0.0,
+        1.5
+      ],
+      "drinking": [
+        0.0,
+        1.0
+      ]
+    },
+    "_comments": {
+      "zone_entries_per_day": "Run mean target range.",
+      "zone_entry_share": "Each named zone share of all entries; Road is exempt from minimum but zero warns.",
+      "hunt_attempt_day_fraction": "Share of days with at least one chase.",
+      "catch_day_fraction": "Share of days with at least one catch.",
+      "road_entry_day_fraction": "Desired Road-entry day frequency; diagnostic, never forced.",
+      "unique_sequence_fraction_min": "Strict lower bound on unique ordered daily entry sequences.",
+      "top_five_sequence_share_max": "Strict upper bound for coverage of the five most common sequences.",
+      "mean_walking_speed_kmh": "Mean measured patrol speed from true minute displacements.",
+      "hours_per_behaviour": "Mean-hour diagnostic ranges; resting combines sleeping and quiet rest."
+    }
+  },
+  "statistics": {
+    "coverage_grid_km": 0.5,
+    "_comments": {
+      "coverage_grid_km": "Square map-coverage grid cell width in kilometres."
+    }
+  }
+}
