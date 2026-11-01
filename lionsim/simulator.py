@@ -6,6 +6,7 @@ without a learned model. Positions are in kilometres and bars are unitless.
 
 from __future__ import annotations
 
+from copy import deepcopy
 from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta
 import math
@@ -153,6 +154,32 @@ class _DaySimulation:
             + self.rng.normal(0, self.behaviour["shade_wake_jitter_sd_minutes"]),
             *midday_clip,
         ))))
+
+        true_positions = np.zeros((self.day_minutes + 1, 2), dtype=float)
+        bar_values = np.zeros((self.day_minutes, 5), dtype=float)
+        behaviours: list[str] = []
+        goals: list[str] = []
+        zones: list[str | None] = []
+        intents: list[str] = []
+        road_triggers: list[str | None] = []
+        road_distances: list[float] = []
+        abandoned_goals: list[str | None] = []
+        abandoned_reasons: list[str | None] = []
+        patrol_speeds: list[float | None] = []
+        self.history = {
+            "true_positions": true_positions,
+            "bar_values": bar_values,
+            "behaviours": behaviours,
+            "goals": goals,
+            "zones": zones,
+            "intents": intents,
+            "road_triggers": road_triggers,
+            "road_distances": road_distances,
+            "abandoned_goals": abandoned_goals,
+            "abandoned_reasons": abandoned_reasons,
+            "patrol_speeds": patrol_speeds,
+        }
+        self.next_minute = 0
 
     def _record_abandoned_trip(self, reason: str) -> None:
         """Record an interrupted journey once, at the minute of the decision."""
@@ -739,19 +766,31 @@ class _DaySimulation:
         self.bars += self.rng.normal(0, self.randomness["bar_noise_sd"], 5)
         np.clip(self.bars, 0, 1, out=self.bars)
 
-    def run(self) -> DayResult:
-        true_positions = np.empty((self.day_minutes + 1, 2), dtype=float)
-        bar_values = np.empty((self.day_minutes, 5), dtype=float)
-        behaviours: list[str] = []
-        goals: list[str] = []
-        zones: list[str | None] = []
-        intents: list[str] = []
-        road_triggers: list[str | None] = []
-        road_distances: list[float] = []
-        abandoned_goals: list[str | None] = []
-        abandoned_reasons: list[str | None] = []
-        patrol_speeds: list[float | None] = []
-        for minute in range(self.day_minutes):
+    def snapshot(self) -> _DaySimulation:
+        """Independent copy of all mutable state, history, schedules and RNG."""
+        return deepcopy(self)
+
+    @classmethod
+    def resume(cls, snapshot: _DaySimulation) -> _DaySimulation:
+        """Restore without consuming randomness or modifying the snapshot."""
+        return deepcopy(snapshot)
+
+    def advance_to(self, stop_minute: int) -> None:
+        """Complete ticks strictly before this minute boundary (no GPS sampling)."""
+        if not self.next_minute <= stop_minute <= self.day_minutes:
+            raise ValueError("Cannot rewind or advance outside the simulated day")
+        true_positions = self.history["true_positions"]
+        bar_values = self.history["bar_values"]
+        behaviours = self.history["behaviours"]
+        goals = self.history["goals"]
+        zones = self.history["zones"]
+        intents = self.history["intents"]
+        road_triggers = self.history["road_triggers"]
+        road_distances = self.history["road_distances"]
+        abandoned_goals = self.history["abandoned_goals"]
+        abandoned_reasons = self.history["abandoned_reasons"]
+        patrol_speeds = self.history["patrol_speeds"]
+        for minute in range(self.next_minute, stop_minute):
             self.minute = minute
             self.abandoned_goal_this_minute = None
             self.abandoned_reason_this_minute = None
@@ -803,6 +842,22 @@ class _DaySimulation:
             patrol_speeds.append(float(np.linalg.norm(self.position - true_positions[minute])) * 60 if behaviour == "walking" else None)
             self._update_bars(behaviour, entered is not None)
             self.previous_zone = self.raw_zone
+            self.next_minute = minute + 1
+        true_positions[stop_minute] = self.position
+
+    def run(self) -> DayResult:
+        self.advance_to(self.day_minutes)
+        true_positions = self.history["true_positions"]
+        bar_values = self.history["bar_values"]
+        behaviours = self.history["behaviours"]
+        goals = self.history["goals"]
+        zones = self.history["zones"]
+        intents = self.history["intents"]
+        road_triggers = self.history["road_triggers"]
+        road_distances = self.history["road_distances"]
+        abandoned_goals = self.history["abandoned_goals"]
+        abandoned_reasons = self.history["abandoned_reasons"]
+        patrol_speeds = self.history["patrol_speeds"]
         true_positions[-1] = self.position
         observed = true_positions + self.rng.normal(0, self.randomness["gps_noise_sd_m"] / 1000, true_positions.shape)
         missing = self.rng.random(self.day_minutes + 1) < self.randomness["gps_dropout_probability"]
