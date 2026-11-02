@@ -161,3 +161,15 @@ verify: /opt/anaconda3/bin/python3.12 -m pytest -x -q tests/test_stats.py tests/
 assumptions: five-minute smoothing is displacement between consecutive trailing five-fix means; only five fully resting intervals contribute, avoiding activity-transition contamination.
 known problems: no behavior targets adjusted yet; S1 200-day measurement and full suite pending.
 next: verify full S1 and record its 200-day reference before traffic changes.
+in progress: S1 final verification — full pytest and 200-day seed-42 measurement with unchanged behavior.
+verify: /opt/anaconda3/bin/python3.12 -m pytest -q
+verify: /opt/anaconda3/bin/python3.12 -m lionsim.run --stats-only --stats-days 200 --seed 42 --out outputs/phase2_s1
+next: record S1 results, then S2 traffic delays and daytime walking efficiency.
+done: S1 complete — full pytest: 172 passed in 34.19s; 200-day baseline saved to outputs/phase2_s1/run_20261102_111250. Behavior remains unchanged; new CV/GPS metrics are available before S2 changes.
+verify: /opt/anaconda3/bin/python3.12 -m pytest -q
+verify: /opt/anaconda3/bin/python3.12 -m lionsim.run --stats-only --stats-days 200 --seed 42 --out outputs/phase2_s1
+next: S2 — traffic delays that preserve destinations and explicit waterhole/abandonment targets.
+in progress: S2 — default aversion waits 4–10 minutes with saved destination/activity; separate delayed_by_traffic activation counts. Retain optional retreat routing for compatibility, also without an abandonment. Increase afternoon water choice probability from 0.65 to 0.85 to make water visits more common; measure actual arrivals rather than force a quota.
+verify: /opt/anaconda3/bin/python3.12 -m pytest -x -q tests/test_road_dynamics.py tests/test_behaviour_scenarios.py tests/test_stats.py tests/test_oracle.py
+assumptions: waiting counts as quiet rest; only physiological or schedule interruptions abandon the preserved journey. No event tokens are added.
+next: measure 200-day S2 results, then implement evening road choices in S3.
