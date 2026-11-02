@@ -51,3 +51,12 @@ verify: /opt/anaconda3/bin/python3.12 -m pytest -x -q tests/test_oracle.py tests
 assumptions: retaining all recorded history preserves original end-of-day GPS noise draws exactly; oracle branches can advance without generating unused GPS tables.
 known problems: baseline percentage warnings remain; no parameter tuning in this increment.
 next: implement branched rollout probabilities and fair held-out oracle comparison.
+
+in progress: phase 7 oracle — add deterministic snapshot-derived independent rollout streams, resample only future traffic, retain full-day rollout counts, and compare oracle and L0–L3 on identical held-out days. Add finite-sample interpretation thresholds to defaults.
+verify: /opt/anaconda3/bin/python3.12 -m pytest -x -q tests/test_oracle.py
+next: integrate oracle into atomic per-day checkpoints and resume-aware CLI.
+done: phase 7 oracle evaluator — five targeted tests pass, covering exact resumes, distinct repeatable branch seeds, traffic-prefix preservation, normalized Laplace probabilities, original-target matching and held-out comparison. No ML dependencies.
+verify: /opt/anaconda3/bin/python3.12 -m pytest -x -q tests/test_oracle.py
+assumptions: near-zero means <=0.1 nats; close to L0 means relative absolute gap <=0.1; both defaults are configurable. Reports expose the Laplace floor and whether the near-zero threshold is resolvable. Existing minute-tick timing and strictly-future target semantics are retained.
+known problems: small-rollout estimates have sampling uncertainty; scheduled wakes/durations are conditioned hidden state, while future traffic is resampled. Original statistical warnings remain.
+next: phase 8 — integrate oracle CLI, manifests and per-day checkpoint/resume, then group learnability settings.

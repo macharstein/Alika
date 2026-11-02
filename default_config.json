@@ -740,12 +740,16 @@
     }
   },
   "learnability": {
+    "oracle_near_zero_nats": 0.1,
+    "oracle_noise_relative_tolerance": 0.1,
     "laplace_alpha": 1.0,
     "train_fraction": 0.7,
     "l3_min_cell_count": 10,
     "mostly_noise_relative_tolerance": 0.03,
     "near_deterministic_ratio": 0.2,
     "_comments": {
+      "oracle_near_zero_nats": "Oracle loss at or below this absolute threshold is near zero; report the finite-rollout smoothing floor alongside it.",
+      "oracle_noise_relative_tolerance": "Absolute oracle-to-L0 gap divided by L0 at or below this threshold is close to L0; compare identical held-out days.",
       "laplace_alpha": "Positive additive count smoothing for all nine classes.",
       "train_fraction": "First sorted unique days used for training; remaining complete days are held out.",
       "l3_min_cell_count": "Minimum training rows in an L3 cell; sparser cells back off to L2.",

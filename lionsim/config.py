@@ -378,6 +378,8 @@ def validate_config(data: dict[str, Any]) -> None:
             interval(f"targets.hours_per_behaviour.{name}", 0, 24)
     bound("statistics.coverage_grid_km", positive=True)
     bound("behaviour.afternoon_water_probability", 0, 1)
+    bound("learnability.oracle_near_zero_nats", 0)
+    bound("learnability.oracle_noise_relative_tolerance", 0, 1)
     bound("learnability.laplace_alpha", positive=True)
     bound("learnability.train_fraction", 0, 1)
     if not 0 < data["learnability"]["train_fraction"] < 1:

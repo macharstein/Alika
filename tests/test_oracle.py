@@ -57,3 +57,73 @@ def test_snapshots_and_restores_do_not_share_mutable_state():
         running.advance_to(599)
     with pytest.raises(ValueError):
         running.advance_to(1441)
+
+
+def test_rollout_streams_are_repeatable_distinct_and_preserve_observed_traffic():
+    from lionsim.oracle import branch_snapshot, rollout_sequences
+    running = simulation()
+    running.advance_to(12 * 60)
+    snapshot = running.snapshot()
+    state = snapshot.rng.bit_generator.state
+    sequences = rollout_sequences(snapshot, 3)
+    assert len({tuple(child.generate_state(4)) for child in sequences}) == 3
+    repeated = rollout_sequences(snapshot, 3)
+    assert [list(s.generate_state(4)) for s in sequences] == [list(s.generate_state(4)) for s in repeated]
+    branches = [branch_snapshot(snapshot, child) for child in sequences]
+    assert snapshot.rng.bit_generator.state == state
+    for branch in branches:
+        boundary = snapshot.next_minute * 60
+        np.testing.assert_array_equal(branch.car_seconds[branch.car_seconds <= boundary],
+                                      snapshot.car_seconds[snapshot.car_seconds <= boundary])
+        assert branch.events == snapshot.events
+        assert branch.latents == snapshot.latents
+        assert branch.car_pointer == snapshot.car_pointer
+        assert branch.road_pending == snapshot.road_pending
+    assert len({tuple(branch.car_seconds) for branch in branches}) > 1
+
+
+def test_oracle_counts_smoothing_actual_targets_and_reproducibility():
+    from lionsim.oracle import evaluate_day
+    from lionsim.reports import TARGET_CLASSES
+    config = load_config()
+    day, rows = evaluate_day(config, rollouts=3)
+    expected = simulate_day(config)
+    assert day.events == expected.events
+    pd.testing.assert_frame_equal(day.gps, expected.gps)
+    assert len(rows) == 7
+    assert [r['actual_target'] for r in rows] == [r['next_zone_target'] for r in build_reports(expected, config)[:-1]]
+    for row in rows:
+        assert sum(row['counts'].values()) == 3
+        assert set(row['counts']) == set(TARGET_CLASSES)
+        assert sum(row['probabilities'].values()) == pytest.approx(1)
+        assert row['actual_probability'] == pytest.approx((row['counts'][row['actual_target']] + 1) / 12)
+        assert np.isfinite(row['log_loss_nats'])
+        assert row['log_loss_nats'] >= row['smoothing_floor_nats']
+    assert evaluate_day(config, rollouts=3)[1] == rows
+    with pytest.raises(ValueError, match='at least 1'):
+        evaluate_day(config, rollouts=0)
+
+
+def test_oracle_comparison_uses_same_holdout_and_reports_sampling_floor():
+    from lionsim.oracle import oracle_report, render_oracle_markdown
+    config = load_config()
+    ladder = {'status': 'complete', 'losses': dict(L0=2., L1=1.5, L2=1., L3=.9),
+              'test_days': [2], 'test_rows': 1}
+    rows = [{'day': 1, 'log_loss_nats': 10., 'smoothing_floor_nats': .01},
+            {'day': 2, 'log_loss_nats': .05, 'smoothing_floor_nats': .01}]
+    result = oracle_report(rows, ladder, config)
+    assert result['losses']['oracle'] == .05
+    assert result['all_days_loss_nats'] == pytest.approx(5.025)
+    assert result['interpretation'] == 'oracle near zero: too deterministic'
+    rows[1]['log_loss_nats'] = 2.1
+    assert oracle_report(rows, ladder, config)['interpretation'] == 'oracle close to L0: too noisy'
+    rows[1]['log_loss_nats'] = .5
+    rows[1]['smoothing_floor_nats'] = .4
+    result = oracle_report(rows, ladder, config)
+    assert result['interpretation'] == 'balanced'
+    assert result['near_zero_resolvable'] is False
+    with pytest.raises(ValueError, match='same report rows'):
+        oracle_report(rows[:1], ladder, config)
+    empty = oracle_report([], {'status': 'insufficient_data', 'losses': dict.fromkeys(('L0','L1','L2','L3'))}, config)
+    assert empty['status'] == 'insufficient_data'
+    assert 'Need at least two' in render_oracle_markdown(empty)
