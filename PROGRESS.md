@@ -1,6 +1,6 @@
-# Completed tasks 1–10
+# Phase 1 complete; phase 2 S1–S5 implemented
 
-Scope: `docs/UPDATE_SPEC.md` tasks 1–10, including cross-cutting resume and atomic-write requirements. Tasks 7–8 were completed and verified, then tasks 9–10 were completed under the latest user instruction.
+Scope: phase-one `docs/UPDATE_SPEC.md` tasks 1–10 are complete. Under `docs/UPDATE_SPEC_2.md`, S1–S5 are implemented and verified, including checkpoint/resume safety; seven statistical calibration warnings remain. S6 and S7 as separate phases have not been started.
 
 - [x] 17-token event schema, internal traffic context, restored daily reports/latents
 - [x] Seven usable next-zone targets and run-level targets.csv
@@ -272,3 +272,19 @@ next: final full pytest and 200-day run with v4.4.1; report results and stop bef
 done: report/documentation wording — 12 stats/resume tests passed; CV entropy and gaps remain visible, sequence-bound wording matches phase-two inclusive targets, and resume help describes the current schema. README now marks old measurements as historical and explains current CV/interpolation.
 verify: /opt/anaconda3/bin/python3.12 -m pytest -x -q tests/test_stats.py tests/test_resume.py
 next: final v4.4.1 full suite and 200-day check, then attach final results and all knob changes to README.
+in progress: final v4.4.1 acceptance — full pytest and final 200-day S1–S5 report with restored short-nap bounds.
+verify: /opt/anaconda3/bin/python3.12 -m pytest -q
+verify: /opt/anaconda3/bin/python3.12 -m lionsim.run --stats-only --stats-days 200 --seed 42 --out outputs/phase2_s5_verified
+next: final measurement table and concise delivery; S6/S7 remain unstarted.
+done: final v4.4.1 verification — full pytest: 182 passed in 35.92s. Final 200-day report: outputs/phase2_s5_verified/run_20261102_200914; 33 PASS, 7 WARN, 0 FAIL, all hard day invariants valid. Headline L3=0.609133 versus L2=0.702174, a 13.25% improvement. All four S5 correlations pass.
+verify: /opt/anaconda3/bin/python3.12 -m pytest -q
+verify: /opt/anaconda3/bin/python3.12 -m lionsim.run --stats-only --stats-days 200 --seed 42 --out outputs/phase2_s5_verified
+known problems: 7.435 entries/day, 18.51 events/day, Den share 2.488%, Road share 1.479%, sequence uniqueness 44.5%, traffic/Road correlation -0.3010 and walking 5.793667h remain outside the requested ranges. No target bounds were relaxed. S1–S5 mechanisms are implemented; calibration targets are not all achieved.
+in progress: final documentation — commit the full target table, per-report CV table, all changed configuration values and explanations, and final reproduction commands. This is documentation only; runtime code is already fully verified.
+next: S6 — 100-day oracle and 500-day final run (not started); seven calibration warnings remain.
+
+done: final S1–S5 delivery documented in README.md and docs/PHASE2_RESULTS.md, including every changed setting, intermediate trials, full target table, per-report CV losses, reproduction commands and explicit remaining warnings. Historical README.pdf/performance_check.json remain untouched and untracked.
+verify: /opt/anaconda3/bin/python3.12 -m pytest -q (182 passed in 35.92s; no runtime changes after this verification)
+results: outputs/phase2_s5_verified/run_20261102_200914/stats_report.md; 33 PASS, 7 WARN, 0 FAIL; headline L3 improvement=13.25%; all four S5 correlations pass.
+known problems: calibration is not complete; walking and entry/event density targets still miss, along with Den/Road shares, uniqueness and traffic/Road correlation. No claim is made about S6 oracle ratios or a 500-day final evaluation.
+next: S6 — 100-day oracle and 500-day final run (not started); seven calibration warnings remain.

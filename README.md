@@ -615,3 +615,24 @@ and [probability/count details](outputs/oracle_verified/run_20261102_105804/orac
 
 Final acceptance command: `python -m pytest -q`. Results and exact local
 interpreter commands are recorded in `PROGRESS.md`.
+
+## Current phase-two delivery: S1–S5
+
+The implemented distribution is **4.4.1**, with schema **lionsim-v4**.
+All 182 tests pass. The final 200-day seed-42 run has **33 PASS, 7 WARN, 0 FAIL**;
+all hard event invariants pass. [Complete results and every changed knob](docs/PHASE2_RESULTS.md)
+include the full target table and per-report CV losses.
+
+Key measured improvements: no traffic abandonments, 0.605 real abandonments/day,
+86% waterhole days, 11% Road-entry days, all Road entries after 19:00, and
+13.25% headline L3 improvement over L2. All four S5 correlation targets pass.
+
+The requested calibration is **not fully achieved**: entries/events per day,
+Den/Road shares, sequence uniqueness, traffic–Road correlation and walking
+hours remain warnings. Walking is 5.794 h/day despite the daytime budget;
+required trips and the new scouting route can exceed that budget. No targets
+were widened, and no extra events were generated merely to reach a count.
+
+[Final statistics](outputs/phase2_s5_verified/run_20261102_200914/stats_report.md)
+and [JSON report](outputs/phase2_s5_verified/run_20261102_200914/stats_report.json).
+S6’s larger oracle/final runs remain pending; this delivery stops at S5.
