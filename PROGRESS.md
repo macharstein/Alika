@@ -254,3 +254,15 @@ verify: /opt/anaconda3/bin/python3.12 -m pytest -x -q tests/test_cross_time.py t
 assumptions: scouting choice probability=0.9; prey normalization uses fixed [0.5,1.5] references so counterfactual latent ranges do not erase effects. Hungrier waking shifts by 30m × hunger; wake noise is 20m. Low prey adds up to 45m of stationary pre-hunt waiting, not a canceled trip.
 known problems: final 200-day S5 threshold achievement still needs measurement; no claim that all S1–S4 target misses are fixed.
 next: full S5 suite and 200-day report; document final measurements/knob changes, then stop before S6.
+in progress: S5 final measurement — full pytest and 200-day seed-42 statistics. S6's 100-day oracle and 500-day final runs are intentionally not started.
+verify: /opt/anaconda3/bin/python3.12 -m pytest -q
+verify: /opt/anaconda3/bin/python3.12 -m lionsim.run --stats-only --stats-days 200 --seed 42 --out outputs/phase2_s5
+next: update README and PROGRESS with final S1–S5 outcomes and exact reproduction commands.
+done: initial S5 full verification — 181 passed in 35.42s; outputs/phase2_s5/run_20261102_200237: 33 PASS, 7 WARN, 0 FAIL. S5 correlations all pass: prey/dwell=0.8563, prey/chase=-0.6146, hunger/wake=-0.3749, heat/shade=-0.6638; headline L3 improves on L2 by 13.25%.
+known problems: initial combined run still misses total entries/events, Den/Road entry share, sequence uniqueness, traffic/road correlation and walking hours. These are calibration limits, not hidden failures.
+in progress: final S4 nap-limit audit — restore the original 20–60m catnap draw with the 25m minimum; retain the 65–115m total stop as nap plus quiet rest. This preserves short naps while spreading patrol entries over the night. No target ranges change. Add an event-duration regression and rerun final measurements.
+verify: /opt/anaconda3/bin/python3.12 -m pytest -x -q tests/test_behaviour_scenarios.py tests/test_oracle.py
+next: final S1–S5 report and README, then stop before S6.
+done: nap-limit audit — short naps are separate from total stop duration, with exact resume coverage and a new 25–60m completed-nap regression. Terminal sleep still extends to morning. Simulator version 4.4.1 prevents mixing earlier patrol-stop semantics.
+verify: /opt/anaconda3/bin/python3.12 -m pytest -x -q tests/test_behaviour_scenarios.py tests/test_oracle.py
+next: final S5 full verification, 200-day measurement and documentation.

@@ -694,7 +694,8 @@
         "scout_jitter_sd_minutes": "Independent noise in scouting dwell; scheduled heat departures may interrupt scouting.",
         "prey_reference_range": "Fixed normalization for prey-linked dwell and hunt timing; separate from latent sampling bounds.",
         "hunger_wake_shift_minutes": "Maximum earlier waking shift at hunger=1; original 05:00\u201307:00 clip is preserved.",
-        "prey_hunt_delay_max_minutes": "Maximum departure delay beyond hunt start at low prey; high prey has no added delay."
+        "prey_hunt_delay_max_minutes": "Maximum departure delay beyond hunt start at low prey; high prey has no added delay.",
+        "night_pause_minutes_range": "Total stop between night legs; safe-zone short catnaps use the original duration range, followed by quiet rest for the remainder."
       },
       "afternoon_water_probability": 0.75,
       "evening_road_probability": 0.9,
@@ -721,7 +722,11 @@
         1.5
       ],
       "hunger_wake_shift_minutes": 30.0,
-      "prey_hunt_delay_max_minutes": 45
+      "prey_hunt_delay_max_minutes": 45,
+      "night_pause_minutes_range": [
+        65,
+        115
+      ]
     },
     "activity": {
       "groom_mean_minutes": 12.0,
@@ -755,8 +760,8 @@
       "eat_stop_hunger": 0.1,
       "eat_max_minutes": 150,
       "catnap_minutes_range": [
-        65,
-        115
+        20,
+        60
       ],
       "night_walk_minutes_range": [
         2,

@@ -241,3 +241,20 @@ def test_water_trip_is_not_diverted_from_one_cooling_destination_to_another():
     sim._scheduled_interrupts()
     assert sim.goal == 'Waterhole'
     assert sim.abandoned_reason_this_minute is None
+
+
+def test_completed_night_catnaps_keep_original_short_duration_limit():
+    complete = 0
+    config = load_config()
+    for index in range(1, 21):
+        day = simulate_day(config, day_index=index)
+        cutoff = datetime.fromisoformat(f'{day.date}T22:00:00')
+        sleeps = [e for e in day.events if e['token']=='FELL_ASLEEP' and _event_time(e)>=cutoff]
+        wakes = [e for e in day.events if e['token']=='WOKE_UP' and _event_time(e)>=cutoff]
+        for sleep in sleeps:
+            later = [w for w in wakes if _event_time(w)>_event_time(sleep)]
+            if later:
+                complete += 1
+                duration = (_event_time(later[0]) - _event_time(sleep)).total_seconds()/60
+                assert 25 <= duration < 61
+    assert complete > 0

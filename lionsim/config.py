@@ -412,6 +412,7 @@ def validate_config(data: dict[str, Any]) -> None:
     weights = data["learnability"]["behaviour"]["night_patrol_entry_weights"]
     if len(weights) != 3 or any(w < 0 for w in weights) or not math.isclose(sum(weights), 1):
         raise ValueError("night_patrol_entry_weights must be three nonnegative probabilities summing to one")
+    interval("behaviour.night_pause_minutes_range", 1, 1440, integer=True)
     bound("behaviour.night_patrol_distance_penalty", 0)
     bound("behaviour.night_repeat_zone_weight", positive=True)
     bound("behaviour.daytime_travel_budget_minutes", 0, 1440)

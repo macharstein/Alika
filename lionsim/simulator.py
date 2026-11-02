@@ -123,6 +123,7 @@ class _DaySimulation:
         self.night_patrol_remaining: int | None = None
         self.night_visited: set[str] = set()
         self.night_water_pause = False
+        self.night_pause_until = 0
         self.daytime_walking_minutes = 0
         self.nap_start_second = 0
         self.afternoon_visit_chosen = False
@@ -561,7 +562,7 @@ class _DaySimulation:
         minimum = self.behaviour["night_nap_min_minutes"]
         terminal = terminal or self.night_patrol_remaining <= 0
         safe = self.raw_zone in ("Den", "Plain")
-        length = max(minimum, self.duration("catnap_minutes_range"))
+        length = int(self.rng.integers(self.behaviour["night_pause_minutes_range"][0], self.behaviour["night_pause_minutes_range"][1] + 1))
         if not safe or self.day_minutes - self.minute <= minimum or self.night_nap_count >= self.behaviour["night_nap_max_cycles"]:
             self.mode = "night_rest"
             self.until = self.day_minutes if terminal or self.night_nap_count >= self.behaviour["night_nap_max_cycles"] else min(self.day_minutes, self.minute + length)
@@ -572,7 +573,9 @@ class _DaySimulation:
         if terminal or self.night_nap_count >= self.behaviour["night_nap_max_cycles"] or self.day_minutes - self.minute < length + minimum:
             self.mode, self.until = "night_final_sleep", self.day_minutes
         else:
-            self.mode, self.until = "catnap", self.minute + length
+            nap_length = max(minimum, self.duration("catnap_minutes_range"))
+            self.night_pause_until = min(self.day_minutes, self.minute + max(length, nap_length))
+            self.mode, self.until = "catnap", self.minute + nap_length
 
     def choose_goal(self) -> None:
         """Draw a destination from the configured noisy, distance-aware logits."""
@@ -748,7 +751,10 @@ class _DaySimulation:
                 # Preserve the minimum duration in seconds, not just tick counts.
                 second = max(self.nap_start_second, int(self.rng.integers(12, 60)))
                 self.emit("WOKE_UP", second)
-                self.choose_goal()
+                if self.minute < self.night_pause_until:
+                    self.mode, self.until = "night_rest", self.night_pause_until
+                else:
+                    self.choose_goal()
             return
         if self.mode == "night_walk":
             if self.minute >= self.until:
