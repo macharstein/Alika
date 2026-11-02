@@ -78,3 +78,18 @@ verify: /opt/anaconda3/bin/python3.12 -m pytest -x -q tests/test_config.py tests
 assumptions: related activity durations and chase mechanics move with their learning controls to keep each setting in exactly one place; Python callers should read the canonical config paths.
 known problems: original road/rest/walking warnings remain.
 next: full pytest and a resumable 20-day x 100-rollout oracle pilot to close tasks 7–8, then audit task 9 and deliver task 10.
+
+in progress: phase 8 final verification — full pytest plus a 20-day, 100-rollout-per-report oracle pilot in two 10-day chunks. This is a diagnostic pilot, not the full 100-day default experiment. No behavioral parameters changed.
+verify: /opt/anaconda3/bin/python3.12 -m pytest -q
+verify: /opt/anaconda3/bin/python3.12 -m lionsim.run --oracle --oracle-days 20 --oracle-rollouts 100 --seed 42 --workers 4 --chunk-size 10 --out outputs/oracle_pilot
+next: record pilot output directory and resume its second chunk, then close tasks 7–8.
+done: oracle pilot first chunk checkpointed 10/20 days in outputs/oracle_pilot/run_20261102_105202; no minute tables or images retained.
+in progress: resume the same pilot for its remaining ten days.
+verify: /opt/anaconda3/bin/python3.12 -m lionsim.run --resume outputs/oracle_pilot/run_20261102_105202 --workers 4 --chunk-size 10
+next: finish full tests, record oracle comparison and close tasks 7–8.
+done: tasks 7–8 — full pytest: 161 passed in 34.95s. Resumed oracle pilot completed 20/20 days, 100 rollouts per usable report, 42 held-out targets. Saved outputs/oracle_pilot/run_20261102_105202/oracle_report.md and oracle_report.json.
+verify: /opt/anaconda3/bin/python3.12 -m pytest -q
+results: oracle=0.460304, L0=1.861813, L1=1.192013, L2=L3=1.318674 nats; balanced; smoothing floor=0.076227. This 20-day pilot does not establish large-sample calibration or baseline ordering.
+assumptions: no behavioral values or target ranges changed in tasks 7–8; configuration paths moved only.
+known problems: road/rest/walking warnings remain; task 9 audit found no dedicated goal-commitment or catnap-limit regressions yet.
+next: task 9 — add missing commitment/nap regressions, audit oracle edge cases and verify the full acceptance suite; then task 10 delivery.
