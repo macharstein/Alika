@@ -190,3 +190,9 @@ in progress: S3 — one eligible evening road decision weighted by boredom and a
 verify: /opt/anaconda3/bin/python3.12 -m pytest -x -q tests/test_road_dynamics.py tests/test_stats.py tests/test_oracle.py
 assumptions: low traffic uses observed car counts only; future car schedules cannot influence a road goal. Hunt/feeding commitments remain protected; night road destinations are transit opportunities.
 next: measure S3 on 200 days and proceed to S4 without changing target ranges.
+scope update: user now requests finishing S2/S3 work in progress and continuing through S4 and S5. S6 large oracle/final runs and S7 as a separate phase remain outside scope; relevant acceptance tests are included with each implemented increment.
+done: S3 implementation — 51 targeted tests passed. Evening road odds increase with boredom and decrease with observed same-day traffic; unseen future cars do not affect these odds. Road travel targets the nearest boundary; on-road speed receives a bounded 0.2 km/h bonus. Timing/share/correlation targets are reported.
+verify: /opt/anaconda3/bin/python3.12 -m pytest -x -q tests/test_road_dynamics.py tests/test_stats.py tests/test_oracle.py
+assumptions: one favored road decision per eligible non-catch evening; base chance 0.9 × boredom, discount exp(-0.18 × cars above 9), daytime multiplier 0.05. These are initial explicit model choices, not fitted to held-out targets.
+known problems: S3 target achievement still needs the 200-day check; walking/water targets from S2 remain unresolved.
+next: full S3 verification and 200-day measurement, then S4 patrol plus daytime walking-budget changes.

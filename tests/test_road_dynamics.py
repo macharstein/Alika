@@ -266,3 +266,31 @@ def test_default_traffic_delays_are_logged_without_traffic_abandonments():
         reasons = set(day.hidden_state.abandoned_trip_reason.dropna())
         assert not reasons & {'traffic_avoidance','traffic_curiosity'}
     assert delays > 0
+
+
+def test_evening_road_probability_uses_boredom_and_observed_traffic_only():
+    sim = controlled_simulation()
+    sim.minute = sim.offset('21:00')
+    sim.car_seconds = np.arange(10) + sim.offset('16:00') * 60
+    sim.bars[3] = .9
+    low = sim._evening_road_probability()
+    sim.car_seconds = np.concatenate((sim.car_seconds, np.arange(100) + sim.minute * 60 + 60))
+    assert sim._evening_road_probability() == low
+    sim.bars[3] = .1
+    assert sim._evening_road_probability() < low
+    sim.bars[3] = .9
+    sim.car_seconds = np.arange(40) + sim.offset('16:00') * 60
+    assert sim._evening_road_probability() < low / 5
+    evening = sim._road_time_multiplier()
+    sim.minute = sim.offset('17:00')
+    assert sim._road_time_multiplier() < evening
+
+
+def test_seeded_road_entries_are_reachable_and_predominantly_evening():
+    from datetime import datetime
+    entries = []
+    for i in range(1,41):
+        day = simulate_day(load_config(), day_index=i, seed=42)
+        entries.extend(datetime.fromisoformat(e['t']) for e in day.events if e['token']=='ENTER_ROAD')
+    assert entries
+    assert sum(t.hour >= 19 for t in entries) / len(entries) > .5

@@ -117,6 +117,7 @@ class _DaySimulation:
         self.night_nap_count = 0
         self.nap_start_second = 0
         self.afternoon_visit_chosen = False
+        self.evening_road_considered = False
         self.fatigue_latched = False
         self.heat_latched = False
         self.rest_after_arrival = False
@@ -217,7 +218,8 @@ class _DaySimulation:
             return
         cutoff = self.offset(self.behaviours["hunt_end"])
         if self.minute >= cutoff and (self.mode in ("hunting", "fail_rest") or self.goal == "Hunting ground"):
-            self._commit_goal("Plain", "hunt_cutoff")
+            if not self._try_evening_road("hunt_cutoff"):
+                self._commit_goal("Plain", "hunt_cutoff")
             return
         if self.mode in ("grooming", "drinking"):
             return
@@ -327,7 +329,34 @@ class _DaySimulation:
             remaining = max(1, self.offset(self.behaviour["hunt_arrival_deadline"]) - self.minute)
             required = self.zones.distance_to("Hunting ground", *self.position) * 60 / remaining
             speed = max(speed, min(high, required))
+        if self.raw_zone == "Road":
+            speed = min(high, speed + c["road_surface_speed_bonus_kmh"])
         return speed
+
+    def _road_time_multiplier(self) -> float:
+        start = max(self.offset(self.behaviour["road_evening_start"]), self.offset(self.c["tourists"]["end"]))
+        return 1.0 if start <= self.minute < self.offset(self.behaviour["road_evening_end"]) else self.behaviour["road_daytime_multiplier"]
+
+    def _evening_road_probability(self) -> float:
+        seen = int(np.count_nonzero(self.car_seconds < self.minute * 60))
+        excess = max(0, seen - self.behaviour["road_volume_reference_count"])
+        return float(self.behaviour["evening_road_probability"] * self.bars[3]
+                     * math.exp(-self.behaviour["road_volume_decay"] * excess))
+
+    def _try_evening_road(self, reason: str | None = None) -> bool:
+        if self.caught or self.evening_road_considered or self._can_hunt() or self._road_time_multiplier() != 1.0:
+            return False
+        self.evening_road_considered = True
+        if self.rng.random() < self._evening_road_probability():
+            self._commit_goal("Road", reason)
+            return True
+        return False
+
+    def _travel_target(self) -> np.ndarray:
+        if self.goal == "Road" and self.raw_zone != "Road":
+            point, normal = self._nearest_road_boundary()
+            return point - normal * self.behaviour["road_entry_inset_km"]
+        return self.centres[self.goal]
 
     def _consider_car_response(self, elapsed_seconds: int) -> None:
         """React only to cars that have already passed within hearing distance.
@@ -404,7 +433,7 @@ class _DaySimulation:
                 if self.mode == "road_approach":
                     volume = max(0.0, self.latents["tourist_rate_per_hour"]
                                  - self.learnability["latent_ranges"]["tourist_rate_per_hour"][0])
-                    entry_probability = self.behaviour["road_entry_probability"] * math.exp(-self.behaviour["road_entry_traffic_decay"] * volume)
+                    entry_probability = self.behaviour["road_entry_probability"] * self._road_time_multiplier() * math.exp(-self.behaviour["road_entry_traffic_decay"] * volume)
                     enter = self.rng.random() < entry_probability
                     standoff = -self.behaviour["road_entry_inset_km"] if enter else c["approach_standoff_km"]
                     self.road_target = point + normal * standoff
@@ -494,11 +523,13 @@ class _DaySimulation:
         if self.caught:
             self.goal, self.mode, self.arriving = "Feeding spot", "walking", False
             return
+        if self._try_evening_road():
+            return
         if self.midday_slept and not self.afternoon_visit_chosen and self.minute < self.offset(self.behaviour["evening_staging_time"]):
             self.afternoon_visit_chosen = True
             volume = self.latents["tourist_rate_per_hour"]
             low_volume = self.learnability["latent_ranges"]["tourist_rate_per_hour"][0]
-            chance = self.behaviour["road_entry_probability"] * self.bars[3] * math.exp(-self.behaviour["road_entry_traffic_decay"] * max(0, volume - low_volume))
+            chance = self.behaviour["road_entry_probability"] * self._road_time_multiplier() * self.bars[3] * math.exp(-self.behaviour["road_entry_traffic_decay"] * max(0, volume - low_volume))
             if self.rng.random() < chance:
                 self._commit_goal("Road")
                 return
@@ -534,6 +565,8 @@ class _DaySimulation:
                 value += boredom * self.goal_config["boredom_weight"]
             value -= self.goal_config["distance_penalty_per_km"] * float(np.linalg.norm(self.position - self.centres[name]))
             if name == "Road":
+                multiplier = self._road_time_multiplier()
+                value += math.log(max(multiplier, np.finfo(float).tiny))
                 value -= self.goal_config["road_penalty_per_car"] * recent_cars
                 value += self.behaviour["road_goal_boredom_weight"] * boredom
                 value -= self.behaviour["road_goal_traffic_penalty"] * self.latents["tourist_rate_per_hour"]
@@ -565,7 +598,7 @@ class _DaySimulation:
             self.rest_after_arrival = False
             self.mode, self.until = "fatigue_sleep", self.minute + self.behaviour["interrupted_rest_minutes"]
             self.emit("FELL_ASLEEP")
-        elif self._is_night() and self.goal in ("Den", "Plain"):
+        elif self._is_night() and self.goal in ("Den", "Plain", "Road"):
             self.mode, self.until = "night_walk", self.minute + self.duration("night_walk_minutes_range")
         elif self.goal == "Shade" and not self.midday_slept and self.shade_departure <= self.minute < self.midday_wake:
             self.midday_slept = True
@@ -845,7 +878,7 @@ class _DaySimulation:
                                  (self.start + timedelta(seconds=self.road_trigger_second)).isoformat(timespec="seconds"))
             road_distances.append(self._road_distance())
             if self.mode == "walking" and not self.arriving:
-                self._move(self.centres[self.goal], self._patrol_speed(), self.randomness["walk_heading_sd_degrees"])
+                self._move(self._travel_target(), self._patrol_speed(), self.randomness["walk_heading_sd_degrees"])
             elif self.mode == "walking":
                 self._settle_inside()
             elif self.mode in ("road_approach", "road_retreat"):

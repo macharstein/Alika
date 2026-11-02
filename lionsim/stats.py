@@ -156,6 +156,12 @@ def summarize_for_stats(day: Any, reports: list[dict[str, Any]], config: Config)
     }
     drinking_runs = _run_lengths(behaviour, "drinking")
     traffic_count = len(getattr(day, "traffic_times", []))
+    road_times = [datetime.fromisoformat(e["t"]) for e in entries if e["token"] == "ENTER_ROAD"]
+    from .config import minute_offset
+    tourist_start = minute_offset(config["tourists"]["start"], config["time"]["day_start"])
+    tourist_end = minute_offset(config["tourists"]["end"], config["time"]["day_start"]) or 1440
+    road_timing = {"evening": sum(19 <= t.hour < 24 for t in road_times),
+                   "tourist_window": sum(tourist_start <= (t-start).total_seconds()/60 < tourist_end for t in road_times)}
     return {
         "day_index": int(day.day_index), "date": day.date,
         "event_count": len(events), "token_counts": dict(token_counts),
@@ -194,7 +200,7 @@ def summarize_for_stats(day: Any, reports: list[dict[str, Any]], config: Config)
         },
         "latents": {key: _finite(day.latents.get(key)) for key in (
             "start_hunger", "hunt_threshold", "heat", "prey_density", "tourist_rate_per_hour")},
-        "traffic_count": traffic_count,
+        "traffic_count": traffic_count, "road_timing": road_timing,
         "target_rows": target_rows(day, reports),
     }
 
@@ -321,10 +327,9 @@ def build_stats_report(records: Iterable[dict[str, Any]], config: Config) -> dic
     low, high = targets["zone_entry_share"]
     for zone in zone_names:
         road = zone == "Road"
+        zone_low, zone_high = targets["road_entry_share"] if road else (low, high)
         check(f"zone_entry_share.{zone}", entry_shares[zone] if total_entries else None,
-              {"minimum_exclusive": 0, "maximum": high} if road else [low, high],
-              lower=0 if road else low, upper=high, lower_strict=road,
-              note="Road may be below the common minimum; zero still warns." if road else "")
+              [zone_low, zone_high], lower=zone_low, upper=zone_high)
     for setting, flag in (("hunt_attempt_day_fraction", "any_chase"),
                           ("catch_day_fraction", "catch"), ("road_entry_day_fraction", "enter_road")):
         low, high = targets[setting]
@@ -337,6 +342,12 @@ def build_stats_report(records: Iterable[dict[str, Any]], config: Config) -> dic
           upper=targets["top_five_sequence_share_max"], upper_strict=True)
     low, high = targets["mean_walking_speed_kmh"]
     check("mean_walking_speed_kmh", pooled_speed, [low, high], lower=low, upper=high)
+    road_total = zone_counts["Road"]
+    road_fractions = {name: sum(r.get("road_timing", {}).get(name, 0) for r in days) / road_total if road_total else None
+                      for name in ("evening", "tourist_window")}
+    check("road_evening_fraction", road_fractions["evening"], targets["road_evening_fraction_min"], lower=targets["road_evening_fraction_min"])
+    check("road_tourist_window_fraction", road_fractions["tourist_window"], targets["road_tourist_window_fraction_max"], upper=targets["road_tourist_window_fraction_max"])
+    check("road_tourist_correlation", correlations["tourist_volume_vs_road_entries"]["value"], targets["road_tourist_correlation_max"], upper=targets["road_tourist_correlation_max"])
     behaviour_comparison = {}
     for name, interval in targets["hours_per_behaviour"].items():
         if name.startswith("_"):
@@ -381,6 +392,7 @@ def build_stats_report(records: Iterable[dict[str, Any]], config: Config) -> dic
         },
         "next_zone_target_balance": {"by_report_index": class_balance, "overall": _balance(rows)},
         "correlations": correlations,
+        "road_entry_timing_fractions": road_fractions,
         "tourist_volume": _distribution((record["traffic_count"] for record in days), count),
         "checks": checks, "check_counts": {status: status_counts[status] for status in ("PASS", "WARN", "FAIL")},
         "validation": {"days_checked": len(validations), "days_failed": len(failed), "failed_days": failed},

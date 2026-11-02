@@ -348,12 +348,14 @@
       "patrol_energy_weight": "Contribution of energy to position within the configured patrol speed range.",
       "patrol_heat_weight": "Contribution of heat discomfort to reduced patrol speed.",
       "patrol_boredom_weight": "Contribution of boredom to patrol speed.",
-      "patrol_speed_noise_sd": "Minute speed variation as a fraction of the patrol speed range."
+      "patrol_speed_noise_sd": "Minute speed variation as a fraction of the patrol speed range.",
+      "road_surface_speed_bonus_kmh": "Speed bonus on the Road, still clipped to configured patrol-speed bounds."
     },
     "patrol_energy_weight": 0.55,
     "patrol_heat_weight": 0.3,
     "patrol_boredom_weight": 0.15,
-    "patrol_speed_noise_sd": 0.1
+    "patrol_speed_noise_sd": 0.1,
+    "road_surface_speed_bonus_kmh": 0.2
   },
   "tourists": {
     "start": "16:00",
@@ -511,7 +513,7 @@
     ],
     "road_entry_day_fraction": [
       0.1,
-      0.25
+      0.18
     ],
     "unique_sequence_fraction_min": 0.3,
     "top_five_sequence_share_max": 0.5,
@@ -559,7 +561,11 @@
       "smoothed_rest_speed_max_kmh": "Strict maximum pooled apparent speed of sleeping/quiet-rest intervals after five-minute smoothing.",
       "abandoned_trip_mean_max": "Maximum mean real journey abandonments per day; traffic delays are excluded.",
       "traffic_abandonment_share_max": "Maximum traffic_avoidance fraction of actual abandonments; zero if no abandonments.",
-      "waterhole_day_fraction": "Fraction of days containing a confirmed Waterhole entry."
+      "waterhole_day_fraction": "Fraction of days containing a confirmed Waterhole entry.",
+      "road_entry_share": "Road entries as a fraction of all confirmed entries.",
+      "road_tourist_correlation_max": "Maximum Pearson correlation between actual daily tourist count and daily road entry count.",
+      "road_evening_fraction_min": "Minimum fraction of road entries with clock hour 19..23.",
+      "road_tourist_window_fraction_max": "Maximum fraction of road entries during the configured tourist window."
     },
     "observed_true_path_ratio_max": 1.6,
     "smoothed_rest_speed_max_kmh": 0.8,
@@ -568,7 +574,14 @@
     "waterhole_day_fraction": [
       0.8,
       0.88
-    ]
+    ],
+    "road_entry_share": [
+      0.02,
+      0.05
+    ],
+    "road_tourist_correlation_max": -0.35,
+    "road_evening_fraction_min": 0.6,
+    "road_tourist_window_fraction_max": 0.1
   },
   "statistics": {
     "coverage_grid_km": 0.5,
@@ -632,9 +645,21 @@
         "night_nap_min_minutes": "Minimum complete night catnap duration.",
         "night_nap_max_cycles": "Maximum catnap cycles begun in one night.",
         "interrupted_rest_minutes": "Recovery rest following a safety interruption.",
-        "afternoon_water_probability": "Probability of a committed afternoon water visit when no road visit was selected; improves observable heat/drinking and prevents staging turnbacks."
+        "afternoon_water_probability": "Probability of a committed afternoon water visit when no road visit was selected; improves observable heat/drinking and prevents staging turnbacks.",
+        "evening_road_probability": "Maximum one-off evening road choice chance, multiplied by boredom and an observed-traffic discount.",
+        "road_volume_reference_count": "Observed cars per day up to this count carry no extra evening road penalty.",
+        "road_volume_decay": "Exponential road-goal penalty per observed car above the reference count.",
+        "road_daytime_multiplier": "Relative road goal/entry odds outside the post-tourist evening window.",
+        "road_evening_start": "Earliest favored evening road choice; must also be after tourist end.",
+        "road_evening_end": "Latest favored evening road-goal decision, exclusive; travel may finish later."
       },
-      "afternoon_water_probability": 0.85
+      "afternoon_water_probability": 0.85,
+      "evening_road_probability": 0.9,
+      "road_volume_reference_count": 9,
+      "road_volume_decay": 0.18,
+      "road_daytime_multiplier": 0.05,
+      "road_evening_start": "19:00",
+      "road_evening_end": "23:00"
     },
     "activity": {
       "groom_mean_minutes": 12.0,

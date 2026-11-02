@@ -175,13 +175,13 @@ def test_target_statuses_distinguish_statistical_warnings_from_invalid_data():
     assert report["check_counts"]["FAIL"] >= 1
 
 
-def test_road_share_below_common_minimum_is_allowed_when_nonzero():
+def test_road_share_uses_its_own_phase_two_range():
     record = _record()
     record["zone_entry_counts"] = {"Den": 99, "Road": 1}
     report = build_stats_report([record], load_config())
     check = next(check for check in report["checks"] if check["name"] == "zone_entry_share.Road")
     assert check["observed"] == .01
-    assert check["status"] == "PASS"
+    assert check["status"] == "WARN"
 
 
 def test_empty_report_and_next_day_clock_format_are_json_safe():

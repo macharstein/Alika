@@ -398,6 +398,19 @@ def validate_config(data: dict[str, Any]) -> None:
         raise ValueError("At least one chase energy/mood weight must be positive")
     interval("chase.probability_clip", 0, 1)
     interval("road_response.traffic_delay_minutes_range", 1, 1440, integer=True)
+    bound("movement.road_surface_speed_bonus_kmh", 0)
+    for name in ("evening_road_probability", "road_daytime_multiplier"):
+        bound(f"behaviour.{name}", 0, 1)
+    bound("behaviour.road_volume_reference_count", 0)
+    bound("behaviour.road_volume_decay", 0)
+    for name in ("road_evening_start", "road_evening_end"):
+        clock_minutes(data["learnability"]["behaviour"][name])
+    if minute_offset(data["learnability"]["behaviour"]["road_evening_start"], start) >= minute_offset(data["learnability"]["behaviour"]["road_evening_end"], start):
+        raise ValueError("road evening start must precede end")
+    interval("targets.road_entry_share", 0, 1)
+    bound("targets.road_tourist_correlation_max", -1, 1)
+    bound("targets.road_evening_fraction_min", 0, 1)
+    bound("targets.road_tourist_window_fraction_max", 0, 1)
     bound("targets.abandoned_trip_mean_max", 0)
     bound("targets.traffic_abandonment_share_max", 0, 1)
     interval("targets.waterhole_day_fraction", 0, 1)
