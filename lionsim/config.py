@@ -408,6 +408,8 @@ def validate_config(data: dict[str, Any]) -> None:
     for name in ("prey_kopje_dwell_correlation_min", "prey_first_chase_correlation_max", "hunger_wake_correlation_max", "heat_shade_entry_correlation_max"):
         bound(f"targets.{name}", -1, 1)
     bound("targets.headline_l3_improvement_min", 0, 1)
+    interval("targets.oracle_l0_ratio_range", 0, 1)
+    bound("targets.oracle_l2_improvement_min", 0, 1)
     bound("movement.patrol_cruise_fraction", 0, 1)
     weights = data["learnability"]["behaviour"]["night_patrol_entry_weights"]
     if len(weights) != 3 or any(w < 0 for w in weights) or not math.isclose(sum(weights), 1):

@@ -51,6 +51,8 @@ def test_nonstandard_report_intervals_are_supported() -> None:
 
 
 @pytest.mark.parametrize(("expression", "message"), [
+    ("targets.oracle_l0_ratio_range=[0.5,0.25]", "invalid ordered bounds"),
+    ("targets.oracle_l2_improvement_min=1.1", "must lie in"),
     ("randomness.softmax_temperature=0", "must be positive"),
     ("randomness.gps_dropout_probability=1.1", "must lie in"),
     ("randomness.latent_ranges.start_hunger=[0.8,0.2]", "invalid ordered bounds"),

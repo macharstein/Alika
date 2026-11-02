@@ -124,12 +124,13 @@ def evaluate_day(config: Config, day_index: int = 1, seed: int = 42,
 
 
 def oracle_report(rows: list[dict[str, Any]], ladder: dict[str, Any], config: Config) -> dict[str, Any]:
-    """Use the same holdout as the counting ladder; also show all-day oracle loss."""
+    """Compare headline and all reports on the same day folds as the counting ladder."""
     result: dict[str, Any] = {
         'status': 'insufficient_data', 'classes': list(TARGET_CLASSES),
         'units': 'Natural-log multiclass log loss (nats); lower is better.',
         'laplace_alpha': config['learnability']['laplace_alpha'],
-        'rows': rows, 'report_count': len(rows),
+        'rows': rows, 'report_count': len(rows), 'checks': [],
+        'headline_reports': config['learnability']['headline_reports'],
         'all_days_loss_nats': float(np.mean([row['log_loss_nats'] for row in rows])) if rows else None,
         'losses': {**ladder['losses'], 'oracle': None},
         'interpretation': 'Need at least two completed days for the same held-out comparison.',
@@ -143,23 +144,53 @@ def oracle_report(rows: list[dict[str, Any]], ladder: dict[str, Any], config: Co
     testing = [row for row in rows if row['day'] in test_days]
     if len(testing) != ladder['test_rows']:
         raise ValueError('Oracle and baseline holdout must contain the same report rows')
-    loss = float(np.mean([row['log_loss_nats'] for row in testing]))
-    if 'folds' in ladder:
-        fold_losses = [float(np.mean([r['log_loss_nats'] for r in testing if r['day'] in f['test_days']])) for f in ladder['folds']]
+    comparisons = {}
+    checks = []
+    interpretations = {}
+    for scope in ('headline', 'all_reports'):
+        selected = [r for r in testing if scope == 'all_reports' or
+                    r['report_index'] in config['learnability']['headline_reports']]
+        fold_losses = [float(np.mean([r['log_loss_nats'] for r in selected
+                                     if r['day'] in f['test_days']])) for f in ladder['folds']]
         loss = float(np.mean(fold_losses))
-        result['fold_losses_nats'] = fold_losses
-        result['oracle_fold_std_nats'] = float(np.std(fold_losses))
+        comparisons[scope] = {**ladder[scope], 'oracle': {
+            'mean': loss, 'std': float(np.std(fold_losses)), 'fold_losses': fold_losses}}
+        l0, l2 = (ladder[scope][name]['mean'] for name in ('L0', 'L2'))
+        ratio = loss / l0 if l0 > 0 else None
+        improvement = (l2 - loss) / l2 if l2 > 0 else None
+        low, high = config['targets']['oracle_l0_ratio_range']
+        minimum = config['targets']['oracle_l2_improvement_min']
+        for name, observed, expected, passes in (
+            ('oracle_l0_ratio', ratio, [low, high], ratio is not None and low <= ratio <= high),
+            ('oracle_l2_relative_improvement', improvement, minimum,
+             improvement is not None and improvement >= minimum),
+        ):
+            checks.append({'name': f'{scope}.{name}', 'observed': observed, 'expected': expected,
+                           'status': 'FAIL' if observed is None else 'PASS' if passes else 'WARN',
+                           'message': 'Same day folds and report scope as L0–L3; means across folds.'})
+        notes = []
+        if loss > l2:
+            notes.append('oracle above L2: simulator is too noisy')
+        if ratio is not None and ratio < low:
+            notes.append('oracle/L0 below target: simulator is too deterministic; '
+                         'consider increasing learnability.softmax_temperature to randomize future goal choices, '
+                         'then remeasure (no change applied)')
+        if not notes:
+            notes.append('balanced' if all(c['status'] == 'PASS' for c in checks[-2:]) else
+                         'oracle targets not met: inspect ratio and headroom warnings')
+        interpretations[scope] = '; '.join(notes)
+    loss = comparisons['all_reports']['oracle']['mean']
     floor = float(np.mean([row['smoothing_floor_nats'] for row in testing]))
-    l0 = ladder['losses']['L0']
-    options = config['learnability']
-    interpretation = ('oracle near zero: too deterministic' if loss <= options['oracle_near_zero_nats'] else
-                      'oracle close to L0: too noisy' if abs(loss - l0) / l0 <= options['oracle_noise_relative_tolerance'] else
-                      'balanced')
     result.update(status='complete', test_days=ladder['test_days'], test_rows=len(testing),
-                  losses={**ladder['losses'], 'oracle': loss}, interpretation=interpretation,
+                  losses={**ladder['losses'], 'oracle': loss}, comparisons=comparisons,
+                  checks=checks, interpretations=interpretations,
+                  interpretation='Headline: ' + interpretations['headline'] +
+                                 '. All reports: ' + interpretations['all_reports'],
+                  fold_losses_nats=comparisons['all_reports']['oracle']['fold_losses'],
+                  oracle_fold_std_nats=comparisons['all_reports']['oracle']['std'],
                   smoothing_floor_nats=floor,
-                  near_zero_resolvable=floor <= options['oracle_near_zero_nats'],
-                  oracle_minus_L0_nats=loss - l0)
+                  near_zero_resolvable=floor <= config['learnability']['oracle_near_zero_nats'],
+                  oracle_minus_L0_nats=loss - ladder['losses']['L0'])
     return result
 
 
@@ -168,8 +199,16 @@ def render_oracle_markdown(report: dict[str, Any]) -> str:
              report['finite_sample_note'], '', f"All-day oracle loss: {report['all_days_loss_nats']} nats."]
     if report['status'] == 'complete':
         lines += ['', f"Same held-out days: {report['test_days']}; {report['test_rows']} report targets.", '',
-                  '| Model | Held-out log loss (nats) |', '| --- | ---: |']
-        lines += [f'| {name} | {value:.6f} |' for name, value in report['losses'].items()]
+                  '| Scope | L0 | L1 | L2 | L3 | Oracle |',
+                  '| --- | ---: | ---: | ---: | ---: | ---: |']
+        for scope, values in report['comparisons'].items():
+            cells = [f"{values[name]['mean']:.6f} ± {values[name]['std']:.6f}"
+                     for name in ('L0', 'L1', 'L2', 'L3', 'oracle')]
+            lines.append('| ' + scope + ' | ' + ' | '.join(cells) + ' |')
+        lines += ['', 'Mean ± population standard deviation across identical day folds.', '',
+                  '| Check | Status | Observed | Expected |', '| --- | --- | ---: | --- |']
+        lines += [f"| {c['name']} | {c['status']} | {c['observed']} | {c['expected']} |"
+                  for c in report['checks']]
         lines += ['', f"Laplace smoothing floor: {report['smoothing_floor_nats']:.6f} nats.",
                   f"Can resolve the configured near-zero threshold: {report['near_zero_resolvable']}."]
     lines += ['', '## Report-level outcomes', '',

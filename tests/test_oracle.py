@@ -107,20 +107,31 @@ def test_oracle_counts_smoothing_actual_targets_and_reproducibility():
 def test_oracle_comparison_uses_same_holdout_and_reports_sampling_floor():
     from lionsim.oracle import oracle_report, render_oracle_markdown
     config = load_config()
-    ladder = {'status': 'complete', 'losses': dict(L0=2., L1=1.5, L2=1., L3=.9),
-              'test_days': [2], 'test_rows': 1}
-    rows = [{'day': 1, 'log_loss_nats': 10., 'smoothing_floor_nats': .01},
-            {'day': 2, 'log_loss_nats': .05, 'smoothing_floor_nats': .01}]
+    losses = dict(L0=2., L1=1.5, L2=1., L3=.9)
+    ladder = {'status': 'complete', 'losses': losses,
+              'headline': {k: {'mean': v, 'std': 0.} for k, v in losses.items()},
+              'all_reports': {k: {'mean': v, 'std': 0.} for k, v in losses.items()},
+              'test_days': [1, 2, 3], 'test_rows': 6,
+              'folds': [{'test_days': [1, 2]}, {'test_days': [3]}]}
+    rows = [{'day': day, 'report_index': index, 'log_loss_nats': loss, 'smoothing_floor_nats': .01}
+            for day, early in [(1, .1), (2, .3), (3, .9)]
+            for index, loss in [(1, early), (6, .9)]]
     result = oracle_report(rows, ladder, config)
-    assert result['losses']['oracle'] == .05
-    assert result['all_days_loss_nats'] == pytest.approx(5.025)
-    assert result['interpretation'] == 'oracle near zero: too deterministic'
-    rows[1]['log_loss_nats'] = 2.1
-    assert oracle_report(rows, ladder, config)['interpretation'] == 'oracle close to L0: too noisy'
-    rows[1]['log_loss_nats'] = .5
-    rows[1]['smoothing_floor_nats'] = .4
+    # Unequal folds are equally weighted, exactly as in the baseline ladder.
+    assert result['comparisons']['headline']['oracle']['mean'] == pytest.approx(.55)
+    assert result['comparisons']['headline']['oracle']['std'] == pytest.approx(.35)
+    assert result['losses']['oracle'] == pytest.approx(.725)
+    assert all(c['status'] == 'PASS' for c in result['checks'])
+    assert result['interpretations']['headline'] == 'balanced'
+    for row in rows:
+        row['log_loss_nats'] = 2.1
+    assert 'too noisy' in oracle_report(rows, ladder, config)['interpretation']
+    for row in rows:
+        row['log_loss_nats'] = .05
+        row['smoothing_floor_nats'] = .4
     result = oracle_report(rows, ladder, config)
-    assert result['interpretation'] == 'balanced'
+    assert 'too deterministic' in result['interpretation']
+    assert 'learnability.softmax_temperature' in result['interpretation']
     assert result['near_zero_resolvable'] is False
     with pytest.raises(ValueError, match='same report rows'):
         oracle_report(rows[:1], ladder, config)

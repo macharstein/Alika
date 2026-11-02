@@ -288,3 +288,12 @@ verify: /opt/anaconda3/bin/python3.12 -m pytest -q (182 passed in 35.92s; no run
 results: outputs/phase2_s5_verified/run_20261102_200914/stats_report.md; 33 PASS, 7 WARN, 0 FAIL; headline L3 improvement=13.25%; all four S5 correlations pass.
 known problems: calibration is not complete; walking and entry/event density targets still miss, along with Den/Road shares, uniqueness and traffic/Road correlation. No claim is made about S6 oracle ratios or a 500-day final evaluation.
 next: S6 — 100-day oracle and 500-day final run (not started); seven calibration warnings remain.
+
+in progress: phase 2 S6 reporting — startup found no partial source edits; historical README.pdf/performance_check.json remain untouched. Add fold-matched headline/all-report oracle comparisons and S6 target checks. Apply the ratio/headroom targets to both scopes; no behavior parameters will change.
+verify: /opt/anaconda3/bin/python3.12 -m pytest -x -q tests/test_oracle.py tests/test_config.py
+next: commit reporting, support explicit first-three-day images in stats mode, then run the 100-day oracle in 20-day chunks and 500-day statistics in 100-day chunks.
+done: S6 oracle reporting — headline and all-report losses use the same equally weighted day folds as L0–L3, with fold standard deviations and separate ratio/headroom checks in both Markdown reports. Added target defaults 0.25–0.50 and 10%, strict config checks, and unequal-fold/headline/interpretation regression coverage; 65 relevant tests passed.
+verify: /opt/anaconda3/bin/python3.12 -m pytest -x -q tests/test_oracle.py tests/test_config.py tests/test_stats.py
+assumptions: S6 supersedes the old absolute near-zero/near-L0 interpretation; retain the old near-zero setting only as a smoothing-resolution diagnostic. Recommendations do not alter behavior.
+known problems: seven S5 calibration warnings remain; no S6 experiment has run yet.
+next: allow explicitly selected images in statistics mode without saving minute tables.

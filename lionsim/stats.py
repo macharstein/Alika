@@ -553,8 +553,12 @@ def render_stats_markdown(report: dict[str, Any]) -> str:
         oracle = report["oracle"]
         lines += ["", "## Hidden-state oracle", "", oracle["interpretation"], "", oracle["finite_sample_note"]]
         if oracle["status"] == "complete":
-            lines += ["", "| Model | Same held-out log loss (nats) |", "| --- | ---: |"]
-            lines += [f"| {name} | {value:.6f} |" for name, value in oracle["losses"].items()]
+            lines += ["", "| Scope | L0 | L1 | L2 | L3 | Oracle |",
+                      "| --- | ---: | ---: | ---: | ---: | ---: |"]
+            for scope, values in oracle['comparisons'].items():
+                lines.append('| ' + scope + ' | ' + ' | '.join(
+                    f"{values[name]['mean']:.6f} ± {values[name]['std']:.6f}"
+                    for name in ('L0', 'L1', 'L2', 'L3', 'oracle')) + ' |')
             lines += ["", f"Smoothing floor: {oracle['smoothing_floor_nats']:.6f} nats."]
         lines += ["", "See oracle_report.md and oracle_report.json for timestamped per-report probabilities."]
     return "\n".join(lines) + "\n"

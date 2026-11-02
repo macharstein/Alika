@@ -577,7 +577,9 @@
       "prey_first_chase_correlation_max": "Maximum Pearson correlation of prey density with first chase time on hunting days.",
       "hunger_wake_correlation_max": "Maximum Pearson correlation of start hunger with wake time.",
       "heat_shade_entry_correlation_max": "Maximum Pearson correlation of daily heat with shade entry time.",
-      "headline_l3_improvement_min": "Minimum relative improvement of mean cross-validated headline L3 over headline L2."
+      "headline_l3_improvement_min": "Minimum relative improvement of mean cross-validated headline L3 over headline L2.",
+      "oracle_l0_ratio_range": "Oracle/L0 loss range, checked separately for headline and all reports on identical CV days.",
+      "oracle_l2_improvement_min": "Minimum relative oracle improvement over L2 in both headline and all-report comparisons."
     },
     "observed_true_path_ratio_max": 1.6,
     "smoothed_rest_speed_max_kmh": 0.8,
@@ -612,7 +614,12 @@
     "prey_first_chase_correlation_max": -0.3,
     "hunger_wake_correlation_max": -0.3,
     "heat_shade_entry_correlation_max": -0.4,
-    "headline_l3_improvement_min": 0.03
+    "headline_l3_improvement_min": 0.03,
+    "oracle_l0_ratio_range": [
+      0.25,
+      0.5
+    ],
+    "oracle_l2_improvement_min": 0.1
   },
   "statistics": {
     "coverage_grid_km": 0.5,

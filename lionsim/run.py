@@ -215,6 +215,9 @@ def _write_aggregates(directory: Path, records: dict[int, dict[str, Any]], confi
         write_json(directory / "oracle_report.json", evaluation, pretty=True)
         write_text(directory / "oracle_report.md", render_oracle_markdown(evaluation))
         report["oracle"] = {key: value for key, value in evaluation.items() if key != "rows"}
+        for check in evaluation["checks"]:
+            report["checks"].append(check)
+            report["check_counts"][check["status"]] += 1
     write_json(directory / "stats_report.json", report, pretty=True)
     write_text(directory / "stats_report.md", render_stats_markdown(report))
     return validation
