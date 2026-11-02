@@ -193,3 +193,22 @@ def test_empty_report_and_next_day_clock_format_are_json_safe():
     record["time_traces_minutes_after_start"]["first_chase_time"] = 1200
     report = build_stats_report([record], load_config())
     assert report["time_distributions"]["first_chase_time"]["clock_times"]["mean"] == "25:00:00"
+
+
+def test_five_minute_rest_smoothing_reduces_stationary_observation_noise():
+    from lionsim.simulator import simulate_day
+    day = simulate_day(load_config(), seed=42)
+    day.hidden_state.loc[:, 'behaviour'] = 'resting'
+    rng = np.random.default_rng(42)
+    xy = rng.normal(0, .008, (len(day.gps), 2))
+    day.gps.loc[:, ['x_true_km','y_true_km']] = 0.
+    day.gps.loc[:, ['x_km','y_km']] = xy
+    record = summarize_for_stats(day, [], load_config())
+    raw = record['path']['raw_rest_apparent_speed_kmh']
+    smooth = record['path']['smoothed_rest_apparent_speed_kmh']
+    assert .6 < raw < 1.1
+    assert 0 < smooth < raw / 3
+    assert record['path']['observed_true_path_ratio'] is None
+    day.hidden_state.loc[:, 'behaviour'] = 'walking'
+    none = summarize_for_stats(day, [], load_config())
+    assert none['path']['smoothed_rest_apparent_speed_kmh'] is None

@@ -96,6 +96,17 @@ def summarize_for_stats(day: Any, reports: list[dict[str, Any]], config: Config)
     observed_xy = day.gps[["x_km", "y_km"]].to_numpy(dtype=float)
     true_steps = np.linalg.norm(np.diff(true_xy, axis=0), axis=1)
     observed_steps = np.linalg.norm(np.diff(observed_xy, axis=0), axis=1)
+    resting = np.isin(behaviour[:len(observed_steps)], ("sleeping", "resting"))
+    width = config["statistics"]["rest_smoothing_minutes"]
+    if len(resting) >= width:
+        smooth_rest = np.convolve(resting.astype(int), np.ones(width, dtype=int), mode="valid") == width
+        smooth_steps = np.linalg.norm(observed_xy[width:] - observed_xy[:-width], axis=1) / width
+        smooth_distance = float(smooth_steps[smooth_rest].sum())
+        smooth_minutes = int(smooth_rest.sum())
+    else:
+        smooth_distance, smooth_minutes = 0.0, 0
+    raw_rest_distance = float(observed_steps[resting].sum())
+    rest_minutes = int(resting.sum())
     walking = behaviour[:len(true_steps)] == "walking"
     walking_distance = float(true_steps[:len(walking)][walking].sum())
     walking_minutes = int(walking.sum())
@@ -164,6 +175,11 @@ def summarize_for_stats(day: Any, reports: list[dict[str, Any]], config: Config)
         "path": {
             "total_length_km": _finite(true_steps.sum()),
             "observed_total_length_km": _finite(observed_steps.sum()),
+            "observed_true_path_ratio": _finite(observed_steps.sum() / true_steps.sum()) if true_steps.sum() else None,
+            "raw_rest_apparent_speed_kmh": raw_rest_distance * 60 / rest_minutes if rest_minutes else None,
+            "smoothed_rest_apparent_speed_kmh": smooth_distance * 60 / smooth_minutes if smooth_minutes else None,
+            "raw_rest_distance_km": raw_rest_distance, "rest_minutes": rest_minutes,
+            "smoothed_rest_distance_km": smooth_distance, "smoothed_rest_minutes": smooth_minutes,
             "walking_distance_km": _finite(walking_distance),
             "walking_minutes": walking_minutes,
             "mean_walking_speed_kmh": _finite(walking_distance * 60 / walking_minutes) if walking_minutes else None,
@@ -241,11 +257,19 @@ def build_stats_report(records: Iterable[dict[str, Any]], config: Config) -> dic
     top_five_share = sum(frequency for _, frequency in ordered_sequences[:5]) / count if count else None
     sequence_lengths = Counter(len(record["zone_sequence"]) for record in days)
     path_keys = ("total_length_km", "observed_total_length_km", "mean_walking_speed_kmh",
-                 "tortuosity", "map_coverage_fraction", "abandoned_trip_count")
+                 "tortuosity", "map_coverage_fraction", "abandoned_trip_count",
+                 "observed_true_path_ratio", "raw_rest_apparent_speed_kmh", "smoothed_rest_apparent_speed_kmh")
     path_aggregates = {key: _distribution((record["path"].get(key) for record in days), count) for key in path_keys}
     walking_minutes = sum(record["path"]["walking_minutes"] for record in days)
     walking_distance = sum(record["path"]["walking_distance_km"] or 0.0 for record in days)
     pooled_speed = walking_distance * 60 / walking_minutes if walking_minutes else None
+    true_length = sum(r["path"]["total_length_km"] or 0 for r in days)
+    observed_length = sum(r["path"]["observed_total_length_km"] or 0 for r in days)
+    gps_metrics = {"observed_true_path_ratio": observed_length / true_length if true_length else None}
+    for name, distance, duration in (("raw_rest_apparent_speed_kmh", "raw_rest_distance_km", "rest_minutes"),
+                                     ("smoothed_rest_apparent_speed_kmh", "smoothed_rest_distance_km", "smoothed_rest_minutes")):
+        total_minutes = sum(r["path"].get(duration, 0) for r in days)
+        gps_metrics[name] = sum(r["path"].get(distance, 0) for r in days) * 60 / total_minutes if total_minutes else None
     reason_counts: Counter[str] = Counter()
     for record in days:
         reason_counts.update(record["path"]["abandoned_trips_by_reason"])
@@ -281,6 +305,10 @@ def build_stats_report(records: Iterable[dict[str, Any]], config: Config) -> dic
                        "expected": expected, "message": (message + " " + note).strip()})
 
     targets = config["targets"]
+    check("observed_true_path_ratio", gps_metrics["observed_true_path_ratio"],
+          targets["observed_true_path_ratio_max"], upper=targets["observed_true_path_ratio_max"])
+    check("smoothed_rest_apparent_speed_kmh", gps_metrics["smoothed_rest_apparent_speed_kmh"],
+          targets["smoothed_rest_speed_max_kmh"], upper=targets["smoothed_rest_speed_max_kmh"], upper_strict=True)
     entries_distribution = _distribution((record["zone_entry_count"] for record in days), count)
     low, high = targets["zone_entries_per_day"]
     check("zone_entries_per_day", entries_distribution["mean"], [low, high], lower=low, upper=high)
@@ -318,7 +346,7 @@ def build_stats_report(records: Iterable[dict[str, Any]], config: Config) -> dic
                                if count else "No completed days are available.")})
     status_counts = Counter(check["status"] for check in checks)
     return {
-        "schema_version": "statistics-v1", "days_simulated": count,
+        "schema_version": "statistics-v2", "days_simulated": count,
         "day_indices": [record["day_index"] for record in days],
         "events_per_day": _distribution((record["event_count"] for record in days), count),
         "zone_entries_per_day": entries_distribution,
@@ -341,6 +369,7 @@ def build_stats_report(records: Iterable[dict[str, Any]], config: Config) -> dic
         },
         "path_statistics": {
             "aggregates": path_aggregates, "pooled_mean_walking_speed_kmh": pooled_speed,
+            "gps_observation": gps_metrics,
             "abandoned_trips_by_reason": dict(sorted(reason_counts.items())),
             "per_day": [{"day_index": record["day_index"], **record["path"]} for record in days],
         },
@@ -354,6 +383,7 @@ def build_stats_report(records: Iterable[dict[str, Any]], config: Config) -> dic
             "shade_exit_time": "First minute sampled outside Shade after its first confirmed entry; missing when the lion never leaves before day end.",
             "feast": "A day containing at least one EAT_START (not necessarily a completed meal before the day boundary).",
             "mean_walking_speed": "Measured true displacement in all intervals labelled walking, including short settling/arrival intervals; pooled by walking time across days.",
+            "gps_observation": "Pooled observed/true path ratio; apparent rest speeds pool sleeping/quiet-rest intervals. Smoothing uses trailing mean positions and excludes any window spanning non-rest activity.",
             "tortuosity": "Sum of true path lengths divided by sum of endpoint straight-line distances between consecutive confirmed zone entries; zero-length chords excluded, null without an eligible pair.",
             "coverage": f"Fraction of {config['statistics']['coverage_grid_km']:g} km square grid cells visited by true GPS fixes; boundary fixes assigned to the final inside cell.",
             "abandoned_trips": "Count of nonempty abandoned_trip_reason rows; the simulator emits a reason only on the interrupt minute.",
@@ -417,6 +447,7 @@ def render_stats_markdown(report: dict[str, Any]) -> str:
     for name, dist in report["path_statistics"]["aggregates"].items():
         lines.append(f"| {name} | " + " | ".join(_display(dist[key]) for key in ("mean", "min", "median", "max", "missing")) + " |")
     lines += ["", f"Pooled measured walking speed: **{_display(report['path_statistics']['pooled_mean_walking_speed_kmh'])} km/h**.",
+              "GPS observation diagnostics: " + _display(report["path_statistics"]["gps_observation"]) + ".",
               "Abandoned trip reasons: " + _display(report["path_statistics"]["abandoned_trips_by_reason"]) + ".", "",
               "Per-day path metrics are included in `stats_report.json`.", "", "## Next-zone target class balance", ""]
     balances = report["next_zone_target_balance"]

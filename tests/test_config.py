@@ -40,7 +40,7 @@ def test_configs_and_snapshots_do_not_share_mutable_defaults() -> None:
     snapshot["map"]["zones"]["Den"]["center"][0] = 9.0
     first["randomness"]["gps_noise_sd_m"] = 30.0
     assert first["map"]["zones"]["Den"]["center"][0] == 2.0
-    assert second["randomness"]["gps_noise_sd_m"] == 15.0
+    assert second["randomness"]["gps_noise_sd_m"] == 8.0
 
 
 def test_nonstandard_report_intervals_are_supported() -> None:

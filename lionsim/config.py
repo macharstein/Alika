@@ -424,6 +424,9 @@ def validate_config(data: dict[str, Any]) -> None:
         if not name.startswith("_"):
             interval(f"targets.hours_per_behaviour.{name}", 0, 24)
     bound("statistics.coverage_grid_km", positive=True)
+    bound("statistics.rest_smoothing_minutes", 1, 1440)
+    bound("targets.observed_true_path_ratio_max", positive=True)
+    bound("targets.smoothed_rest_speed_max_kmh", positive=True)
     bound("behaviour.afternoon_water_probability", 0, 1)
     bound("learnability.oracle_days", 1)
     bound("learnability.oracle_rollouts", 1)

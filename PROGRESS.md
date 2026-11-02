@@ -153,3 +153,11 @@ done: S1 cross-validation increment — 18 targeted tests passed. Five day-disjo
 verify: /opt/anaconda3/bin/python3.12 -m pytest -x -q tests/test_baselines.py tests/test_oracle.py tests/test_resume.py
 known problems: GPS noise measurements and S2–S4 behavior changes are not yet implemented. Tiny pilot runs use min(5, days) folds and explicitly report that count.
 next: S1 GPS noise reduction and path/apparent-speed diagnostics.
+in progress: S1 GPS diagnostics — reduce default observation SD from 15m to 8m, add observed/true path inflation and raw versus five-minute-smoothed apparent resting speed. Rest includes sleeping and quiet rest; smooth windows crossing moving activity are excluded.
+verify: /opt/anaconda3/bin/python3.12 -m pytest -x -q tests/test_stats.py tests/test_config.py
+next: complete full S1 verification and measure a 200-day baseline before S2.
+done: S1 GPS increment — 53 relevant tests passed. Default GPS SD is 8m; pooled path inflation and raw/smoothed resting apparent speeds are reported with configured checks. Zero true displacement yields an explicit null ratio.
+verify: /opt/anaconda3/bin/python3.12 -m pytest -x -q tests/test_stats.py tests/test_config.py
+assumptions: five-minute smoothing is displacement between consecutive trailing five-fix means; only five fully resting intervals contribute, avoiding activity-transition contamination.
+known problems: no behavior targets adjusted yet; S1 200-day measurement and full suite pending.
+next: verify full S1 and record its 200-day reference before traffic changes.

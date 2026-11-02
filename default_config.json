@@ -130,7 +130,7 @@
     "score_noise_sd": 0.25,
     "walk_heading_sd_degrees": 25.0,
     "stalk_heading_sd_degrees": 60.0,
-    "gps_noise_sd_m": 15.0,
+    "gps_noise_sd_m": 8.0,
     "gps_dropout_probability": 0.01,
     "_comments": {
       "wake_time_mean": "Mean initial waking clock time.",
@@ -547,14 +547,20 @@
       "unique_sequence_fraction_min": "Strict lower bound on unique ordered daily entry sequences.",
       "top_five_sequence_share_max": "Strict upper bound for coverage of the five most common sequences.",
       "mean_walking_speed_kmh": "Mean measured patrol speed from true minute displacements.",
-      "hours_per_behaviour": "Mean-hour diagnostic ranges; resting combines sleeping and quiet rest."
-    }
+      "hours_per_behaviour": "Mean-hour diagnostic ranges; resting combines sleeping and quiet rest.",
+      "observed_true_path_ratio_max": "Maximum pooled observed path length divided by true path length.",
+      "smoothed_rest_speed_max_kmh": "Strict maximum pooled apparent speed of sleeping/quiet-rest intervals after five-minute smoothing."
+    },
+    "observed_true_path_ratio_max": 1.6,
+    "smoothed_rest_speed_max_kmh": 0.8
   },
   "statistics": {
     "coverage_grid_km": 0.5,
     "_comments": {
-      "coverage_grid_km": "Square map-coverage grid cell width in kilometres."
-    }
+      "coverage_grid_km": "Square map-coverage grid cell width in kilometres.",
+      "rest_smoothing_minutes": "Trailing mean-position smoothing width; only complete all-resting windows contribute apparent speeds."
+    },
+    "rest_smoothing_minutes": 5
   },
   "learnability": {
     "behaviour": {
