@@ -759,10 +759,24 @@
       "oracle_near_zero_nats": "Oracle loss at or below this absolute threshold is near zero; report the finite-rollout smoothing floor alongside it.",
       "oracle_noise_relative_tolerance": "Absolute oracle-to-L0 gap divided by L0 at or below this threshold is close to L0; compare identical held-out days.",
       "laplace_alpha": "Positive additive count smoothing for all nine classes.",
-      "train_fraction": "First sorted unique days used for training; remaining complete days are held out.",
-      "l3_min_cell_count": "Minimum training rows in an L3 cell; sparser cells back off to L2.",
+      "train_fraction": "Legacy setting retained for old configs; unused by day-fold cross-validation.",
+      "l3_min_cell_count": "Legacy setting retained for old configs; replaced by l3_interpolation_k.",
       "mostly_noise_relative_tolerance": "L0/L1/L2 loss spread divided by L0 below this threshold means mostly noise.",
-      "near_deterministic_ratio": "L2/L0 below this threshold means nearly deterministic."
-    }
+      "near_deterministic_ratio": "L2/L0 below this threshold means nearly deterministic.",
+      "cv_folds": "Deterministic interleaved folds of whole days; use fewer folds only when fewer days exist.",
+      "headline_reports": "Report indices contributing to headline losses; all usable reports are also evaluated.",
+      "l3_interpolation_k": "Positive L2 prior pseudo-count in (cell class count + k*p_L2)/(cell total + k).",
+      "shade_hour_cut": "Three shade-history bins: not_yet, observed before this hour, observed at/after this hour."
+    },
+    "cv_folds": 5,
+    "headline_reports": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "l3_interpolation_k": 5.0,
+    "shade_hour_cut": 11
   }
 }

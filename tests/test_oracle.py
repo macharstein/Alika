@@ -151,7 +151,7 @@ def test_oracle_cli_resume_matches_uninterrupted_run(tmp_path):
         assert (partial / name).read_bytes() == (full / name).read_bytes()
     oracle = json.loads((partial / 'oracle_report.json').read_text())
     assert oracle['report_count'] == 21
-    assert oracle['test_days'] == [3] and oracle['test_rows'] == 7
+    assert oracle['test_days'] == [1, 2, 3] and oracle['test_rows'] == 21
     assert '2026-01-03T08:00:00' in (partial / 'oracle_report.md').read_text()
     assert 'Hidden-state oracle' in (partial / 'stats_report.md').read_text()
     with pytest.raises(ValueError, match='Cannot change --oracle-rollouts'):

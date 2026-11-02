@@ -143,6 +143,11 @@ def oracle_report(rows: list[dict[str, Any]], ladder: dict[str, Any], config: Co
     if len(testing) != ladder['test_rows']:
         raise ValueError('Oracle and baseline holdout must contain the same report rows')
     loss = float(np.mean([row['log_loss_nats'] for row in testing]))
+    if 'folds' in ladder:
+        fold_losses = [float(np.mean([r['log_loss_nats'] for r in testing if r['day'] in f['test_days']])) for f in ladder['folds']]
+        loss = float(np.mean(fold_losses))
+        result['fold_losses_nats'] = fold_losses
+        result['oracle_fold_std_nats'] = float(np.std(fold_losses))
     floor = float(np.mean([row['smoothing_floor_nats'] for row in testing]))
     l0 = ladder['losses']['L0']
     options = config['learnability']

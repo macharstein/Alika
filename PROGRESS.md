@@ -144,3 +144,12 @@ results: outputs/run_20261102_105804/stats_report.md (200 days; 19 PASS, 3 WARN,
 assumptions: canonical configuration paths and finite-rollout interpretation thresholds are documented; fixes enforce actual nap duration and preserve observed boundary entries without tuning percentages.
 known problems: road days 6.5%, resting 15.754h and walking 6.272h remain outside reference ranges; L3 is 2.60% worse than L2 on the 200-day holdout. Historical README.pdf/performance_check.json remain untouched and untracked.
 next: tasks 1–10 complete; no further phase scheduled.
+
+in progress: phase 2 S1 — inspect clean source tree and implement day-disjoint cross-validation, per-report/headline losses, interpolated L3, and GPS noise measurements. No inherited source edits need finishing; the new user spec and historical PDF/performance artifacts are untracked.
+verify: /opt/anaconda3/bin/python3.12 -m pytest -x -q tests/test_baselines.py tests/test_oracle.py tests/test_stats.py
+assumptions: deterministic interleaved day folds (5, reduced only for tiny pilots); all reports are tested once. Headline reports default 1–5. Three cue bins mean absent/early/late shade, counts 0/1/2+ (catch remains binary in ordinary days). Schema/version changes prohibit resuming old distributions.
+next: finish S1 measurement changes before changing traffic or patrol behavior; implement only S1–S4, not S5–S7 or their large final runs.
+done: S1 cross-validation increment — 18 targeted tests passed. Five day-disjoint folds, per-report and headline fold mean/std, L3 interpolation, zero-cell rate and paired-day L3−L2 uncertainty diagnostics now replace the old split/backoff. Oracle aggregation uses the same fold weighting. Manifest schema is lionsim-v4, simulator 4.0.0.
+verify: /opt/anaconda3/bin/python3.12 -m pytest -x -q tests/test_baselines.py tests/test_oracle.py tests/test_resume.py
+known problems: GPS noise measurements and S2–S4 behavior changes are not yet implemented. Tiny pilot runs use min(5, days) folds and explicitly report that count.
+next: S1 GPS noise reduction and path/apparent-speed diagnostics.

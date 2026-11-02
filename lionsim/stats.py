@@ -436,13 +436,18 @@ def render_stats_markdown(report: dict[str, Any]) -> str:
         ladder = report["baseline_ladder"]
         lines += ["", "## Baseline ladder", "", ladder["interpretation"], ""]
         if ladder["status"] == "complete":
-            lines += ["| Baseline | Held-out log loss (nats) |", "| --- | ---: |"]
-            lines += [f"| {name} | {value:.6f} |" for name, value in ladder["losses"].items()]
-            lines += ["", f"Target entropy: {ladder['target_entropy_nats']:.6f} nats.",
-                      f"Whole-day split: {len(ladder['train_days'])} training / {len(ladder['test_days'])} test days.",
-                      "Absolute gaps: " + str(ladder["absolute_gaps_nats"]),
-                      "Relative gaps: " + str(ladder["relative_gaps"]),
-                      ladder["backoff_rule"], "Backoff row counts: " + str(ladder["backoff_rows"])]
+            lines += ["| Scope | L0 mean ± std | L1 mean ± std | L2 mean ± std | L3 mean ± std |",
+                      "| --- | ---: | ---: | ---: | ---: |"]
+            for scope, values in [("Headline", ladder["headline"]), ("All reports", ladder["all_reports"]), *ladder["by_report_index"].items()]:
+                lines.append(f"| {scope} | " + " | ".join(
+                    "n/a" if values[name]["mean"] is None else f"{values[name]['mean']:.6f} ± {values[name]['std']:.6f}"
+                    for name in ("L0", "L1", "L2", "L3")) + " |")
+            lines += ["", ladder["split_rule"], ladder["backoff_rule"],
+                      f"Effective folds: {ladder['cv_folds']}; headline reports: {ladder['headline_reports']}.",
+                      f"L3 zero-training-cell fraction: {ladder['l3_zero_training_fraction']:.4f}.",
+                      "", "Per-fold headline L3−L2 and standard error of paired day losses (diagnostic only):", "",
+                      "| Fold | L3−L2 nats | Paired day SE |", "| --- | ---: | ---: |"]
+            lines += [f"| {f['fold']} | {_display(f['headline_l3_minus_l2_nats'])} | {_display(f['paired_day_standard_error_nats'])} |" for f in ladder["folds"]]
     if "oracle" in report:
         oracle = report["oracle"]
         lines += ["", "## Hidden-state oracle", "", oracle["interpretation"], "", oracle["finite_sample_note"]]
@@ -454,81 +459,115 @@ def render_stats_markdown(report: dict[str, Any]) -> str:
     return "\n".join(lines) + "\n"
 
 
-def baseline_ladder(rows: Iterable[dict[str, Any]], config: Config) -> dict[str, Any]:
-    """Evaluate smoothed frequency tables using a disjoint holdout of whole days.
+def _cue_bins(row: dict[str, Any], config: Config) -> tuple[str, ...]:
+    shade = row['shade_entry_hour_bucket']
+    shade_bin = ('not_yet' if str(shade) == 'not_yet' else
+                 'early' if int(shade) < config['learnability']['shade_hour_cut'] else 'late')
+    return (shade_bin, *(str(min(2, max(0, int(row[name])))) for name in
+                         ('drinks_so_far', 'chase_attempts_so_far', 'catch_so_far')))
 
-    No latent values or test outcomes affect fitted counts or backoff decisions.
-    L1/L2 unseen cells back off one level; sparse L3 cells back off to L2.
-    """
+
+def baseline_ladder(rows: Iterable[dict[str, Any]], config: Config) -> dict[str, Any]:
+    """Out-of-fold counting losses; each day is held out exactly once."""
     options = config['learnability']
-    alpha = options['laplace_alpha']
-    rows = sorted(list(rows), key=lambda row: (int(row['day']), int(row['report_index'])))
+    alpha, strength = options['laplace_alpha'], options['l3_interpolation_k']
+    rows = sorted(list(rows), key=lambda r: (int(r['day']), int(r['report_index'])))
     if len({(int(r['day']), int(r['report_index'])) for r in rows}) != len(rows):
         raise ValueError('Duplicate day/report target row')
     classes = list(TARGET_CLASSES)
     if any(r['next_zone_target'] not in classes for r in rows):
         raise ValueError('Unknown next-zone target class')
     required = ('shade_entry_hour_bucket', 'drinks_so_far', 'chase_attempts_so_far', 'catch_so_far')
-    if any(any(key not in row or row[key] == '' for key in required) for row in rows):
+    if any(any(key not in r or r[key] == '' for key in required) for r in rows):
         raise ValueError('Baseline evaluation requires observable history cue columns')
     days = sorted({int(r['day']) for r in rows})
+    names = ('L0', 'L1', 'L2', 'L3')
     if len(days) < 2:
-        return {'status': 'insufficient_data', 'interpretation': 'Need at least two days for a day-separated holdout.',
-                'losses': dict.fromkeys(('L0', 'L1', 'L2', 'L3')), 'classes': classes}
-    cut = max(1, min(len(days)-1, int(len(days)*options['train_fraction'])))
-    train_days, test_days = days[:cut], days[cut:]
-    training = [r for r in rows if int(r['day']) in set(train_days)]
-    testing = [r for r in rows if int(r['day']) in set(test_days)]
+        return {'status': 'insufficient_data', 'interpretation': 'Need at least two days for day-disjoint cross-validation.',
+                'losses': dict.fromkeys(names), 'classes': classes}
+    count = min(options['cv_folds'], len(days))
+    headline = set(options['headline_reports'])
 
-    def clean(value: Any) -> str:
-        return '' if value is None else str(value)
-
-    def keys(row: dict[str, Any]) -> list[tuple[str, ...]]:
+    def keys(row):
         bucket = (str(int(row['report_index'])),)
-        state = bucket + (clean(row['current_zone']), clean(row['last_event']))
-        return [(), bucket, state, state + tuple(clean(row[name]) for name in required)]
+        state = bucket + tuple('' if row[k] is None else str(row[k]) for k in ('current_zone', 'last_event'))
+        return [(), bucket, state, state + _cue_bins(row, config)]
 
-    tables: list[dict[tuple[str, ...], Counter[str]]] = [{} for _ in range(4)]
-    for row in training:
-        for level, key in enumerate(keys(row)):
-            tables[level].setdefault(key, Counter())[row['next_zone_target']] += 1
-    losses = np.zeros(4)
+    def mean_losses(records):
+        return {name: float(np.mean([r['losses'][name] for r in records])) if records else None for name in names}
+
+    folds, predictions = [], []
     backoffs = Counter()
-    for row in testing:
-        cell_keys = keys(row)
-        for level in range(4):
-            used = level
-            while used:
-                counts = tables[used].get(cell_keys[used], Counter())
-                minimum = options['l3_min_cell_count'] if used == 3 else 1
-                if sum(counts.values()) >= minimum:
-                    break
-                used -= 1
-            if used != level:
-                backoffs[f'L{level}'] += 1
-            counts = tables[used].get(cell_keys[used], Counter())
-            probability = (counts[row['next_zone_target']] + alpha) / (sum(counts.values()) + alpha * len(classes))
-            losses[level] -= math.log(probability)
-    losses /= len(testing)
-    named = {f'L{i}': float(value) for i, value in enumerate(losses)}
-    absolute = {f'L{i}-L{i+1}': float(losses[i]-losses[i+1]) for i in range(3)}
-    relative = {key: float(value / losses[i]) if losses[i] else None for i, (key, value) in enumerate(absolute.items())}
-    spread = (max(losses[:3])-min(losses[:3])) / losses[0]
-    interpretation = ('mostly noise' if spread <= options['mostly_noise_relative_tolerance'] else
-                      'nearly deterministic' if losses[2] < options['near_deterministic_ratio'] * losses[0] else 'learnable')
-    target_counts = Counter(r['next_zone_target'] for r in testing)
-    entropy = -sum((n/len(testing))*math.log(n/len(testing)) for n in target_counts.values())
-    return {'status': 'complete', 'classes': classes, 'losses': named,
-            'target_entropy_nats': entropy, 'absolute_gaps_nats': absolute,
-            'relative_gaps': relative, 'interpretation': interpretation,
-            'train_days': train_days, 'test_days': test_days,
-            'training_rows': len(training), 'test_rows': len(testing),
-            'backoff_rows': {f'L{i}': backoffs[f'L{i}'] for i in range(1,4)},
-            'laplace_alpha': alpha, 'l3_min_cell_count': options['l3_min_cell_count'],
-            'split_rule': 'First 70% of sorted day IDs for training (fraction configurable); remaining whole days held out.',
-            'backoff_rule': 'Unseen L1 -> L0; unseen L2 -> L1; L3 below minimum training count -> L2, then the same unseen-cell rules.',
-            'units': 'Natural-log multiclass log loss (nats); entropy uses held-out empirical targets.'}
+    for fold_index in range(count):
+        test_days = days[fold_index::count]
+        train_days = sorted(set(days) - set(test_days))
+        training = [r for r in rows if int(r['day']) in set(train_days)]
+        testing = [r for r in rows if int(r['day']) in set(test_days)]
+        tables: list[dict[tuple[str, ...], Counter[str]]] = [{} for _ in names]
+        for row in training:
+            for level, key in enumerate(keys(row)):
+                tables[level].setdefault(key, Counter())[row['next_zone_target']] += 1
+        fold_rows = []
+        for row in testing:
+            cell_keys, probabilities = keys(row), []
+            for level in range(3):
+                counts = tables[level].get(cell_keys[level], Counter())
+                if not counts and level:
+                    probabilities.append(probabilities[level - 1])
+                    backoffs[f'L{level}'] += 1
+                else:
+                    probabilities.append(np.array([(counts[target] + alpha) / (sum(counts.values()) + alpha * len(classes)) for target in classes]))
+            counts = tables[3].get(cell_keys[3], Counter())
+            total = sum(counts.values())
+            probabilities.append((np.array([counts[target] for target in classes]) + strength * probabilities[2]) / (total + strength))
+            target_index = classes.index(row['next_zone_target'])
+            fold_rows.append({'day': int(row['day']), 'report_index': int(row['report_index']),
+                              'fold': fold_index + 1, 'l3_zero_cell': total == 0,
+                              'losses': {name: -math.log(probabilities[i][target_index]) for i, name in enumerate(names)}})
+        predictions.extend(fold_rows)
+        paired = [float(np.mean([r['losses']['L3'] - r['losses']['L2'] for r in fold_rows
+                                 if r['day'] == day and r['report_index'] in headline]))
+                  for day in test_days if any(r['day'] == day and r['report_index'] in headline for r in fold_rows)]
+        folds.append({'fold': fold_index + 1, 'train_days': train_days, 'test_days': test_days,
+                      'test_rows': len(fold_rows), 'training_rows': len(training),
+                      'all_reports': mean_losses(fold_rows),
+                      'headline': mean_losses([r for r in fold_rows if r['report_index'] in headline]),
+                      'by_report_index': {str(index): mean_losses([r for r in fold_rows if r['report_index'] == index])
+                                          for index in range(1, len(config['time']['report_times']))},
+                      'l3_zero_training_fraction': sum(r['l3_zero_cell'] for r in fold_rows) / len(fold_rows),
+                      'headline_l3_minus_l2_nats': float(np.mean(paired)) if paired else None,
+                      'paired_day_standard_error_nats': float(np.std(paired, ddof=1) / math.sqrt(len(paired))) if len(paired) > 1 else None})
 
+    def summary(select):
+        result = {}
+        for name in names:
+            values = [select(f)[name] for f in folds if select(f)[name] is not None]
+            result[name] = {'mean': float(np.mean(values)) if values else None,
+                            'std': float(np.std(values)) if values else None}
+        return result
+
+    all_reports = summary(lambda f: f['all_reports'])
+    head = summary(lambda f: f['headline'])
+    losses = {name: all_reports[name]['mean'] for name in names}
+    absolute = {f'L{i}-L{i+1}': losses[f'L{i}'] - losses[f'L{i+1}'] for i in range(3)}
+    relative = {key: value / losses[f'L{i}'] for i, (key, value) in enumerate(absolute.items())}
+    spread = (max(losses[n] for n in names[:3]) - min(losses[n] for n in names[:3])) / losses['L0']
+    interpretation = ('mostly noise' if spread <= options['mostly_noise_relative_tolerance'] else
+                      'nearly deterministic' if losses['L2'] < options['near_deterministic_ratio'] * losses['L0'] else 'learnable')
+    frequencies = Counter(r['next_zone_target'] for r in rows)
+    entropy = -sum(n / len(rows) * math.log(n / len(rows)) for n in frequencies.values())
+    return {'status': 'complete', 'classes': classes, 'losses': losses,
+            'all_reports': all_reports, 'headline': head, 'headline_reports': sorted(headline),
+            'by_report_index': {str(index): summary(lambda f, index=index: f['by_report_index'][str(index)])
+                                for index in range(1, len(config['time']['report_times']))},
+            'folds': folds, 'cv_folds': count, 'test_days': days, 'test_rows': len(rows),
+            'target_entropy_nats': entropy, 'absolute_gaps_nats': absolute, 'relative_gaps': relative,
+            'interpretation': interpretation, 'laplace_alpha': alpha, 'l3_interpolation_k': strength,
+            'l3_zero_training_fraction': sum(r['l3_zero_cell'] for r in predictions) / len(predictions),
+            'backoff_rows': dict(backoffs),
+            'split_rule': 'Sorted day IDs assigned round-robin to folds. Every day is held out once; no reports from a test day enter its training counts.',
+            'backoff_rule': 'Unseen L1 -> L0; unseen L2 -> L1; L3 interpolates cell counts with k times its L2 probabilities, including zero cells.',
+            'units': 'Natural-log multiclass log loss, mean and population standard deviation across day folds; all-reports and headline scopes are separate.'}
 
 def baselines_from_csv(path: Any, config: Config) -> dict[str, Any]:
     """Read the persisted target table; null zones remain ordinary empty strings."""

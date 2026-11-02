@@ -36,29 +36,42 @@ def toy_rows():
             for day in range(1,31) for report,target in [(1,'ENTER_DEN'),(2,'ENTER_PLAIN')]]
 
 
-def test_smoothed_losses_day_split_and_sparse_backoff():
-    config=load_config(overrides=['learnability.l3_min_cell_count=1000'])
-    result=baseline_ladder(toy_rows(),config)
-    assert result['train_days']==list(range(1,22))
-    assert result['test_days']==list(range(22,31))
-    assert not set(result['train_days']) & set(result['test_days'])
-    assert result['losses']['L0']==pytest.approx(-math.log(22/51))
-    assert result['losses']['L1']==pytest.approx(-math.log(22/30))
-    assert result['losses']['L2']==result['losses']['L3']
-    assert result['backoff_rows']['L3']==18
+def test_cross_validation_day_split_and_interpolation():
+    result=baseline_ladder(toy_rows(),load_config())
+    assert result['cv_folds']==5
+    tested=[]
+    for fold in result['folds']:
+        assert len(fold['train_days'])==24 and len(fold['test_days'])==6
+        assert not set(fold['train_days']) & set(fold['test_days'])
+        tested.extend(fold['test_days'])
+    assert sorted(tested)==list(range(1,31))
+    assert result['losses']['L0']==pytest.approx(-math.log(25/57))
+    assert result['losses']['L1']==pytest.approx(-math.log(25/33))
+    assert result['losses']['L3'] < result['losses']['L2']
     assert result['target_entropy_nats']==pytest.approx(math.log(2))
+    assert result['all_reports']['L0']['std']==pytest.approx(0)
     assert 'END_OF_DAY' in result['classes']
 
 
-def test_unseen_context_backs_off_and_input_order_does_not_change_split():
+def test_unseen_context_interpolates_to_l2_and_order_is_irrelevant():
     rows=toy_rows()
     for row in rows:
-        if row['day']>=22:
-            row['current_zone']='unseen'
+        row['current_zone']=str(row['day'])
     first=baseline_ladder(rows,load_config())
     assert first==baseline_ladder(reversed(rows),load_config())
-    assert first['backoff_rows']['L2']==18
-    assert first['losses']['L1']==first['losses']['L2']
+    assert first['l3_zero_training_fraction']==1
+    assert first['losses']['L1']==first['losses']['L2']==first['losses']['L3']
+
+
+def test_large_prior_approaches_l2_and_headline_excludes_late_reports():
+    rows=toy_rows()
+    for day in range(1,31):
+        rows.append({**rows[0], 'day':day, 'report_index':7, 'next_zone_target':'END_OF_DAY'})
+    result=baseline_ladder(rows,load_config(overrides=['learnability.l3_interpolation_k=1000000000000']))
+    assert result['losses']['L3']==pytest.approx(result['losses']['L2'],abs=1e-9)
+    assert result['headline']['L0']['mean'] != result['all_reports']['L0']['mean']
+    assert set(result['by_report_index'])==set(map(str,range(1,8)))
+    assert result['by_report_index']['3']['L0']['mean'] is None
 
 
 def test_insufficient_data_and_invalid_smoothing():
@@ -76,4 +89,5 @@ def test_200_day_baseline_ladder_is_finite_and_ordered_with_tolerance(tmp_path):
     assert all(math.isfinite(value) and value>=0 for value in losses.values())
     assert losses['L0']+0.03>=losses['L1']
     assert losses['L1']+0.03>=losses['L2']
-    assert len(result['train_days'])==140 and len(result['test_days'])==60
+    assert len(result['folds'])==5 and len(result['test_days'])==200
+    assert all(len(f['train_days'])==160 and len(f['test_days'])==40 for f in result['folds'])

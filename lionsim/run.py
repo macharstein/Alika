@@ -20,7 +20,7 @@ from typing import Any, Iterable, Iterator
 
 import numpy as np
 
-from . import __version__
+from . import __version__, SCHEMA_VERSION
 from .config import Config, load_config
 from .io_utils import atomic_output, create_run_directory, day_directory, write_day, write_json, write_text
 from .events import TOKENS
@@ -223,8 +223,8 @@ def run(args: argparse.Namespace) -> Path:
     if args.resume is not None:
         directory = args.resume.resolve()
         manifest = json.loads((directory / "run_manifest.json").read_text(encoding="utf-8"))
-        if manifest.get("day_log_schema") != "lionsim-v3":
-            raise ValueError("--resume requires a v3 run with daily checkpoints")
+        if manifest.get("schema_version") != SCHEMA_VERSION:
+            raise ValueError("--resume requires the current schema and daily checkpoints")
         if manifest["versions"]["lionsim"] != __version__:
             raise ValueError("Resume requires the same simulator version as the original run")
         if args.config is not None or args.overrides:
@@ -276,7 +276,7 @@ def run(args: argparse.Namespace) -> Path:
             "oracle_rollouts": (args.oracle_rollouts or config["learnability"]["oracle_rollouts"]) if args.oracle else None,
             "started_at": datetime.now().astimezone().isoformat(timespec="seconds"),
             "runtime_seconds": 0.0, "status": "running", "completed_days": 0,
-            "day_log_schema": "lionsim-v3", "vocabulary": list(TOKENS),
+            "schema_version": SCHEMA_VERSION, "day_log_schema": "lionsim-v3", "vocabulary": list(TOKENS),
             "ground_truth_latents_analysis_only": True,
             "seed_derivation": "numpy.random.SeedSequence(seed).spawn(max_day_index)[day_index - 1]",
             "run_fingerprint": _fingerprint(config, seed, start_date), "command": sys.argv,
