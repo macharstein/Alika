@@ -102,3 +102,11 @@ verify: /opt/anaconda3/bin/python3.12 -m pytest -x -q tests/test_behaviour_scena
 assumptions: minimum nap duration applies to event timestamps as well as minute ticks. Wake seconds are bounded below by sleep-start seconds; fewer than a full minimum duration before day end produces quiet rest. Draw counts and default nap lengths remain unchanged.
 known problems: tests exposed and fixed a 24m37s event-log nap despite 25 sleeping ticks, and oracle branches moving an already-observed zero-second entry into a future target. Version bumped to 3.2.1; prior 3.2.0 pilot remains historical and must not be resumed/mixed with corrected outputs. Behavioral target percentages were not tuned.
 next: full pytest for phase 9, then rerun the corrected oracle pilot and required 200-day statistics in phase 10.
+
+in progress: phase 9 final acceptance — full pytest after the targeted timing fixes; retain existing 200-day baseline ordering and seed/image regression coverage.
+verify: /opt/anaconda3/bin/python3.12 -m pytest -q
+next: task 10 — final 200-day report, corrected oracle pilot, README and explicit PASS/WARN/FAIL delivery.
+done: phase 9 — full pytest: 170 passed in 33.44s. All task-9 acceptance areas are covered: 17-token/no-car/zone schema, future targets and END_OF_DAY, hunt cutoff, commitment and reasons, bounded real-duration naps, stats fields, 200-day baseline ordering, exact oracle resumes and seed/worker reproducibility.
+verify: /opt/anaconda3/bin/python3.12 -m pytest -q
+known problems: no failing tests; original statistical target warnings remain for honest measurement in task 10.
+next: task 10 — run the required final 200-day check and corrected oracle pilot; update README with results, assumptions and reproducible commands.
