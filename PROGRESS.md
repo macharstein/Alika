@@ -178,3 +178,15 @@ verify: /opt/anaconda3/bin/python3.12 -m pytest -x -q tests/test_road_dynamics.p
 assumptions: temperature/fatigue/schedule interruptions may still cancel travel; any such interruption during a traffic wait logs the preserved goal. Schema unchanged within v4; simulator version 4.1.0 prevents cross-stage resume mixing.
 known problems: S2 target achievement is not yet measured.
 next: full S2 pytest and 200-day measurement before S3.
+in progress: S2 final verification — 59 targeted tests passed; run full suite and 200-day seed-42 statistics.
+verify: /opt/anaconda3/bin/python3.12 -m pytest -q
+verify: /opt/anaconda3/bin/python3.12 -m lionsim.run --stats-only --stats-days 200 --seed 42 --out outputs/phase2_s2
+next: record S2 measurements and implement S3 evening/low-traffic road visits.
+done: S2 complete — full pytest: 174 passed in 33.87s. Measurement: outputs/phase2_s2/run_20261102_111536. Traffic abandonment share=0 PASS; actual abandonments=1.065/day WARN; waterhole days=66% WARN; walking=6.251833h WARN; resting=15.753917h WARN. Delay replacement alone does not solve long scheduled routes.
+verify: /opt/anaconda3/bin/python3.12 -m pytest -q
+known problems: remaining abandonments are schedule/temperature/fatigue; no thresholds were relaxed. S4 must shorten daytime wandering to make room for night patrols.
+next: S3 — causal evening road goals, then S4 night patrol and daytime travel efficiency.
+in progress: S3 — one eligible evening road decision weighted by boredom and already-observed daily traffic; suppress daytime entry odds, route to the nearest road boundary and add a bounded road-surface speed bonus. Add road timing/share/correlation checks.
+verify: /opt/anaconda3/bin/python3.12 -m pytest -x -q tests/test_road_dynamics.py tests/test_stats.py tests/test_oracle.py
+assumptions: low traffic uses observed car counts only; future car schedules cannot influence a road goal. Hunt/feeding commitments remain protected; night road destinations are transit opportunities.
+next: measure S3 on 200 days and proceed to S4 without changing target ranges.
