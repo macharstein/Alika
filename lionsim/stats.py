@@ -440,7 +440,7 @@ def build_stats_report(records: Iterable[dict[str, Any]], config: Config) -> dic
             "coverage": f"Fraction of {config['statistics']['coverage_grid_km']:g} km square grid cells visited by true GPS fixes; boundary fixes assigned to the final inside cell.",
             "abandoned_trips": "Count of nonempty abandoned_trip_reason rows; the simulator emits a reason only on the interrupt minute.",
             "correlations": "Pearson coefficients using available paired daily values; null with an explanation for insufficient/constant observations. These describe synthetic association, not causal proof.",
-            "target_status": "PASS is inside the configured range; WARN is a finite statistic outside it; FAIL means no finite statistic or a hard validation failure. Requested strict sequence bounds are exclusive.",
+            "target_status": "PASS is inside the configured range; WARN is a finite statistic outside it; FAIL means no finite statistic or a hard validation failure. Phase-two sequence bounds are inclusive; the smoothed resting-speed upper bound is strict.",
             "scope": "Descriptive statistics plus optional held-out counting baselines and hidden-state oracle evaluation. No ML libraries are used.",
         },
     }
@@ -543,6 +543,8 @@ def render_stats_markdown(report: dict[str, Any]) -> str:
                     for name in ("L0", "L1", "L2", "L3")) + " |")
             lines += ["", ladder["split_rule"], ladder["backoff_rule"],
                       f"Effective folds: {ladder['cv_folds']}; headline reports: {ladder['headline_reports']}.",
+                      f"Target entropy over evaluated rows: {ladder['target_entropy_nats']:.6f} nats.",
+                      "Mean all-report loss gaps: " + str(ladder["absolute_gaps_nats"]),
                       f"L3 zero-training-cell fraction: {ladder['l3_zero_training_fraction']:.4f}.",
                       "", "Per-fold headline L3−L2 and standard error of paired day losses (diagnostic only):", "",
                       "| Fold | L3−L2 nats | Paired day SE |", "| --- | ---: | ---: |"]

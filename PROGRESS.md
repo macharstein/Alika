@@ -266,3 +266,9 @@ next: final S1–S5 report and README, then stop before S6.
 done: nap-limit audit — short naps are separate from total stop duration, with exact resume coverage and a new 25–60m completed-nap regression. Terminal sleep still extends to morning. Simulator version 4.4.1 prevents mixing earlier patrol-stop semantics.
 verify: /opt/anaconda3/bin/python3.12 -m pytest -x -q tests/test_behaviour_scenarios.py tests/test_oracle.py
 next: final S5 full verification, 200-day measurement and documentation.
+in progress: final S1–S5 documentation and report wording — explain schema/distribution change, CV/interpolation, all changed knobs and measured misses; correct obsolete report scope/bound language without altering numeric calculations.
+verify: /opt/anaconda3/bin/python3.12 -m pytest -x -q tests/test_stats.py tests/test_resume.py
+next: final full pytest and 200-day run with v4.4.1; report results and stop before S6.
+done: report/documentation wording — 12 stats/resume tests passed; CV entropy and gaps remain visible, sequence-bound wording matches phase-two inclusive targets, and resume help describes the current schema. README now marks old measurements as historical and explains current CV/interpolation.
+verify: /opt/anaconda3/bin/python3.12 -m pytest -x -q tests/test_stats.py tests/test_resume.py
+next: final v4.4.1 full suite and 200-day check, then attach final results and all knob changes to README.

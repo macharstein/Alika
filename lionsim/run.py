@@ -79,7 +79,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--oracle-days", type=_positive, default=None, help="oracle days (default: learnability.oracle_days, 100)")
     parser.add_argument("--oracle-rollouts", type=_positive, default=None, help="rollouts per usable report (default: learnability.oracle_rollouts, 100)")
     parser.add_argument("--keep-files", action="store_true", help="retain daily JSON and minute tables in statistics/oracle mode")
-    parser.add_argument("--resume", type=Path, metavar="RUN_DIR", help="resume/checkpoint an existing v3 run")
+    parser.add_argument("--resume", type=Path, metavar="RUN_DIR", help="resume/checkpoint a run using the current schema and simulator version")
     parser.add_argument("--chunk-size", type=_positive, default=200, help="maximum new days per invocation (default: 200)")
     return parser
 

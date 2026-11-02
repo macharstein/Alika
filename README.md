@@ -6,6 +6,14 @@ every three hours. This is a configurable stochastic simulator for inspecting sy
 data, not an empirically calibrated model of lion behaviour. There is no machine
 learning, training code, or external service dependency.
 
+Current distribution: **4.4.1**, implementing `docs/UPDATE_SPEC_2.md` S1–S5.
+The manifest `schema_version` is **lionsim-v4**; the compact daily JSON shape
+remains v3. **Old seeds produce different data** because the model and GPS noise
+changed. Reproducibility requires the same version and effective configuration;
+resume refuses other versions. The previous phase's measurements below are
+historical. Current settings, changed knobs and results are in the final section.
+S6's large oracle/500-day runs have not been performed.
+
 ## Setup and first run
 
 Use **Python 3.10 or newer**. Some macOS installations still make `python3` point
@@ -293,7 +301,7 @@ here; hidden-state columns are analysis labels, not observed inputs.
    Temperature starts at ambient × the daily heat latent, clipped to `[0,1]`.
    Wake time is a clipped normal draw rounded to a whole second; the matching
    `WOKE_UP` is always the first event. Initial and midday waking are followed by
-   grooming. Night catnap waking is followed by walking.
+   grooming. Night catnap waking can be followed by quiet rest before the next patrol leg.
 4. Groom durations use an arithmetic-mean-12-minute lognormal distribution
    (default log-space sigma 0.45). Drinks use a gamma distribution (shape 2,
    mean 8 minutes). Behaviour durations round to whole minutes with a one-minute
@@ -406,7 +414,9 @@ days stage for an evening hunt; the first stalking encounter uses a bounded
 3–25-minute exponential wait to ensure an attempt. Other days do not hunt.
 Hunting goals, entries and chases are forbidden outside the configured hunting
 window. A catch commits to Feed/eat/sleep. Night naps are at least 25 minutes,
-at most three cycles, with the last extending to day end to avoid chatter.
+at most four cycles in phase two, with terminal sleep extending to day end.
+Short naps retain the original 20–60-minute draw and a 25-minute minimum; longer
+night stops include quiet rest after waking.
 Trips are committed; physiological and schedule interruptions record an
 abandoned goal and reason in hidden_state. Traffic curiosity does not freely
 cancel a committed journey. Heat shifts shade departure earlier, waking later,
@@ -433,24 +443,32 @@ multiclass log loss, in nats. The table keeps its original six columns and adds
 Cues use only events at or before report time, never hidden bars or daily latents;
 `not_yet` represents no observed shade entry. Catch is an observed-event boolean.
 
-The first 70% of sorted unique day IDs train frequency tables; the remaining
-whole days form the holdout (no report from a test day trains any table). L0 is
-frequency only; L1 conditions on report index; L2 adds current zone/last event;
-L3 adds the four history cues. Every class—including END_OF_DAY—gets Laplace
-alpha=1. Unseen L1/L2 cells back off one level. L3 cells with fewer than 10
-training observations back off to L2. These values are configurable under
-`learnability`; no thresholds are chosen using held-out labels.
+Sorted day IDs are assigned round-robin to five folds. Each day is held out
+once, and every report from that day stays outside its fold's training counts.
+Tiny runs use `min(5, day_count)` folds and disclose that number. Results report
+fold mean and population standard deviation for each report, headline reports
+1–5, and all reports. L0 is frequency only; L1 adds report index; L2 adds current
+zone and last event. Unseen L1/L2 cells fall back one level.
 
-The report gives test-target entropy, absolute loss gaps and relative gaps
-(previous minus next, divided by previous), and backoff counts. If the spread
-of L0/L1/L2 divided by L0 is at most 3%, interpretation is `mostly noise`; if
-L2/L0 is below 0.2 it is `nearly deterministic`; otherwise `learnable`. These
-are the requested diagnostic heuristics, not proof of biological realism.
-Losses are measured honestly; no sorting or forced ordering is applied. Fewer
-than two days yields an explicit insufficient-data result with null losses.
+L3 uses coarse observed-history bins: absent/early/late shade entry (cut at 11:00),
+and 0/1/2+ drinks, chase attempts and catches. Catch is normally binary, so its
+third bin is unused unless multiple catches are present in supplied data. L3
+interpolates rather than discarding sparse cells:
+`p_L3 = (class_count + k * p_L2) / (cell_count + k)`, with k=5. An empty L3 cell
+therefore equals L2 exactly. L0–L2 use Laplace alpha=1 across all nine classes.
+The report gives the zero-training-cell fraction, and each fold's paired daily
+headline L3−L2 gap and standard error. Those fold gaps are diagnostics, with no
+pass/fail test. The S5 headline improvement target is reported separately.
 
-Simulator version 3.2.1 rejects resumes from other simulator versions. Start a
-new run for current evaluation; existing completed datasets remain untouched.
+`learnability.headline_reports`, `cv_folds`, `l3_interpolation_k`, `shade_hour_cut`
+and `laplace_alpha` control evaluation. Legacy `train_fraction` and
+`l3_min_cell_count` remain loadable but are unused. No holdout outcomes tune
+counts, bins or priors. Missing per-report samples produce null values rather
+than invented losses. Fewer than two days yields insufficient data.
+
+The original noise/determinism interpretation remains a heuristic based on
+all-report losses; it is not a biological validation. Historical 70/30 results
+below should not be directly compared with the new cross-validation averages.
 
 Measured phase-6 check (`--stats-only --stats-days 200 --seed 42`): 19 PASS,
 3 WARN, 0 FAIL. Held-out losses were L0=1.810101, L1=0.979962,
@@ -505,8 +523,10 @@ baselines. `oracle_report.json` stores timestamped counts, class probabilities,
 actual original targets and log loss. `oracle_report.md` shows the comparison
 and each report's time, target and probability in human-readable tables.
 
-The main oracle/L0–L3 comparison uses identical held-out day IDs. All-day oracle
-loss is also shown separately. With fewer than two completed days, comparison
+The main oracle/L0–L3 comparison uses the same out-of-fold evaluated day IDs
+and mean-across-fold weighting. All-day row-weighted oracle loss is also shown
+separately. This preserves the existing oracle tool; S6-specific experiments
+and its additional decision thresholds are still pending. With fewer than two completed days, comparison
 is explicitly unavailable. Default interpretations are: oracle loss <=0.1 nats
 means **oracle near zero: too deterministic**; otherwise an absolute gap to L0
 within 10% of L0 means **oracle close to L0: too noisy**; otherwise **balanced**.
