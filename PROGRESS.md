@@ -93,3 +93,12 @@ results: oracle=0.460304, L0=1.861813, L1=1.192013, L2=L3=1.318674 nats; balance
 assumptions: no behavioral values or target ranges changed in tasks 7–8; configuration paths moved only.
 known problems: road/rest/walking warnings remain; task 9 audit found no dedicated goal-commitment or catnap-limit regressions yet.
 next: task 9 — add missing commitment/nap regressions, audit oracle edge cases and verify the full acceptance suite; then task 10 delivery.
+
+in progress: phase 9 — add controlled goal-commitment/interrupt tests, paired event and hidden-state nap duration/cycle assertions, explicit cutoff entries, and oracle report-boundary/invalid-checkpoint regressions. Existing schema/targets/stats/200-day baseline/seed tests are retained rather than duplicated.
+verify: /opt/anaconda3/bin/python3.12 -m pytest -x -q tests/test_behaviour_scenarios.py tests/test_oracle.py
+next: fix any discovered edge cases, run the full acceptance suite, then perform task 10's 200-day statistics delivery.
+done: phase 9 missing regressions and fixes — 20 targeted tests passed. Added direct commitment/interrupt and missing-reason checks, configured nap cycle/minimum-duration tests, late-day short-nap prevention, explicit ENTER_HUNT cutoff checking, exact report-boundary oracle conditioning, and incomplete oracle-checkpoint recovery.
+verify: /opt/anaconda3/bin/python3.12 -m pytest -x -q tests/test_behaviour_scenarios.py tests/test_oracle.py
+assumptions: minimum nap duration applies to event timestamps as well as minute ticks. Wake seconds are bounded below by sleep-start seconds; fewer than a full minimum duration before day end produces quiet rest. Draw counts and default nap lengths remain unchanged.
+known problems: tests exposed and fixed a 24m37s event-log nap despite 25 sleeping ticks, and oracle branches moving an already-observed zero-second entry into a future target. Version bumped to 3.2.1; prior 3.2.0 pilot remains historical and must not be resumed/mixed with corrected outputs. Behavioral target percentages were not tuned.
+next: full pytest for phase 9, then rerun the corrected oracle pilot and required 200-day statistics in phase 10.

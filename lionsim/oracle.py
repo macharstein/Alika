@@ -9,6 +9,7 @@ No rollout trajectories or hidden snapshots are written to disk.
 from __future__ import annotations
 
 from collections import Counter
+from copy import deepcopy
 import hashlib
 import json
 import math
@@ -50,7 +51,34 @@ def branch_snapshot(snapshot: _DaySimulation, sequence: np.random.SeedSequence) 
     else:
         branch.car_seconds = past.copy()
     branch.car_minute_counts = np.bincount(branch.car_seconds // 60, minlength=branch.day_minutes)
+    _condition_boundary_entry(snapshot, branch)
     return branch
+
+
+def _condition_boundary_entry(snapshot: _DaySimulation, branch: _DaySimulation) -> None:
+    """Keep zero-second entries in the observed prefix, never in the target.
+
+    The engine state is immediately before the minute tick, whereas reports
+    include events stamped exactly at its boundary. Zone hysteresis is already
+    determined by the boundary position. Condition the first entry-time draw on
+    whether that entry is observed at second zero; do not reveal its future
+    second or any later outcome. All subsequent RNG draws remain independent.
+    """
+    zone = snapshot._lookup(snapshot.position)
+    eligible = (snapshot.hungry_day and not snapshot.caught
+                and snapshot.offset(snapshot.behaviours['hunt_start']) <= snapshot.next_minute
+                < snapshot.offset(snapshot.behaviours['hunt_end']))
+    if zone == 'Hunting ground' and not eligible:
+        zone = None
+    if deepcopy(snapshot.tracker).update(zone) is None:
+        return
+    observed_at_zero = int(deepcopy(snapshot.rng).integers(0, 10)) == 0
+    while True:
+        state = branch.rng.bit_generator.state
+        if (int(branch.rng.integers(0, 10)) == 0) == observed_at_zero:
+            # advance_to consumes this accepted draw in its ordinary entry step.
+            branch.rng.bit_generator.state = state
+            return
 
 
 def next_target(events: list[dict[str, Any]], report_time: str) -> str:
@@ -104,7 +132,7 @@ def oracle_report(rows: list[dict[str, Any]], ladder: dict[str, Any], config: Co
         'all_days_loss_nats': float(np.mean([row['log_loss_nats'] for row in rows])) if rows else None,
         'losses': {**ladder['losses'], 'oracle': None},
         'interpretation': 'Need at least two completed days for the same held-out comparison.',
-        'conditioning': 'Minute-boundary hidden state before its tick; fixed daily latents, goal, bars, memory and committed schedules. Future traffic and future decisions are resampled.',
+        'conditioning': 'Minute-boundary hidden state before its tick; fixed daily latents, goal, bars, memory and committed schedules. Future traffic and future decisions are resampled; entry timing is conditioned on the observed zero-second report boundary.',
         'seed_derivation': 'SHA-256 of snapshot PCG64 state, day and minute -> SeedSequence.spawn(rollouts); does not advance the original RNG.',
         'finite_sample_note': 'Monte Carlo estimates with Laplace smoothing; small pilots are diagnostic. The smoothing floor limits measurable loss even for unanimous rollouts. No threshold tuning is performed.',
     }

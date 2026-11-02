@@ -178,3 +178,45 @@ def test_oracle_cli_defaults_overrides_keep_files_and_mode_guards(tmp_path):
     normal = run(parser.parse_args(['--stats-only', '--stats-days', '1', '--out', str(tmp_path)]))
     with pytest.raises(ValueError, match='Cannot switch'):
         run(parser.parse_args(['--resume', str(normal), '--oracle']))
+
+
+@pytest.mark.parametrize('at_zero', [True, False])
+def test_oracle_preserves_entry_observed_at_exact_report_boundary(at_zero):
+    from lionsim.oracle import branch_snapshot, rollout_sequences
+    from lionsim.zones import HysteresisTracker
+    snapshot = simulation()
+    snapshot.advance_to(180)
+    snapshot.position = snapshot.centres['Waterhole'].copy()
+    snapshot.tracker = HysteresisTracker(required_minutes=1, initial_zone='Den')
+    # An entry stamped exactly at the report time is observed, not a target.
+    for seed in range(100):
+        rng = np.random.default_rng(seed)
+        if (int(rng.integers(0, 10)) == 0) == at_zero:
+            snapshot.rng = np.random.default_rng(seed)
+            break
+    expected = _DaySimulation.resume(snapshot)
+    expected.advance_to(181)
+    boundary = (snapshot.start + timedelta(minutes=180)).isoformat()
+    seen = [e for e in expected.events if e['t'] == boundary]
+    assert bool(seen) == at_zero
+    for child in rollout_sequences(snapshot, 10):
+        branch = branch_snapshot(snapshot, child)
+        branch.advance_to(181)
+        assert [e for e in branch.events if e['t'] == boundary] == seen
+
+
+def test_resume_regenerates_incomplete_oracle_checkpoint_only(tmp_path):
+    import json
+    from lionsim.io_utils import write_json
+    from lionsim.run import build_parser, run
+    parser = build_parser()
+    directory = run(parser.parse_args(['--oracle', '--oracle-days', '2', '--oracle-rollouts', '1', '--out', str(tmp_path)]))
+    before = (directory / 'oracle_report.json').read_bytes()
+    first, second = sorted((directory / 'checkpoints').glob('*.json'))
+    stamp = second.stat().st_mtime_ns
+    damaged = json.loads(first.read_text())
+    damaged['oracle'].pop()
+    write_json(first, damaged)
+    run(parser.parse_args(['--resume', str(directory)]))
+    assert second.stat().st_mtime_ns == stamp
+    assert (directory / 'oracle_report.json').read_bytes() == before

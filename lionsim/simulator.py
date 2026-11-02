@@ -115,6 +115,7 @@ class _DaySimulation:
         self.evening_staged = False
         self.shade_trip_started = False
         self.night_nap_count = 0
+        self.nap_start_second = 0
         self.afternoon_visit_chosen = False
         self.fatigue_latched = False
         self.heat_latched = False
@@ -601,15 +602,18 @@ class _DaySimulation:
             return
         if self.mode == "catnap":
             if self.minute >= self.until:
-                self.emit("WOKE_UP")
+                # Preserve the minimum duration in seconds, not just tick counts.
+                second = max(self.nap_start_second, int(self.rng.integers(12, 60)))
+                self.emit("WOKE_UP", second)
                 self.choose_goal()
             return
         if self.mode == "night_walk":
             if self.minute >= self.until:
-                if self.day_minutes - self.minute < self.behaviour["night_nap_min_minutes"]:
+                if self.day_minutes - self.minute <= self.behaviour["night_nap_min_minutes"]:
                     self.mode, self.until = "resting", self.day_minutes
                     return
-                self.emit("FELL_ASLEEP")
+                self.nap_start_second = int(self.rng.integers(12, 60))
+                self.emit("FELL_ASLEEP", self.nap_start_second)
                 self.night_nap_count += 1
                 length = max(self.behaviour["night_nap_min_minutes"], self.duration("catnap_minutes_range"))
                 if self.night_nap_count >= self.behaviour["night_nap_max_cycles"] or self.day_minutes - self.minute < length + self.behaviour["night_nap_min_minutes"]:

@@ -122,7 +122,81 @@ def test_hunting_stops_at_22_even_when_hunger_and_prey_remain_high(failed_hunts)
     starts = [event for event in day.events if event["token"] == "CHASE_START"]
     assert starts
     assert all(_event_time(event) < cutoff for event in starts)
+    assert all(_event_time(event) < cutoff for event in day.events if event["token"] == "ENTER_HUNT")
     night = day.hidden_state[day.hidden_state["t_iso"] >= cutoff.isoformat(timespec="seconds")]
     assert len(night) == 7 * 60
     assert not (night["behaviour"] == "hunting").any()
     assert (night["hunger"] > day.latents["hunt_threshold"]).all()
+
+
+def test_committed_trip_survives_destination_redraws_until_a_logged_interrupt():
+    import numpy as np
+    from lionsim.simulator import _DaySimulation
+    config = load_config(overrides=['randomness.bar_noise_sd=0'])
+    sim = _DaySimulation(config, 1, 42, '2026-01-01', np.random.SeedSequence(42))
+    sim.minute = sim.offset('08:00')
+    sim.position = np.array([6.0, 6.0])
+    sim.raw_zone = None
+    sim.mode, sim.goal = 'walking', 'Waterhole'
+    sim.bars[:] = [.5, .8, .5, .8, .5]
+    for _ in range(10):
+        sim._transitions()
+        assert sim.goal == 'Waterhole' and sim.mode == 'walking'
+        assert sim.abandoned_goal_this_minute is None
+        sim.minute += 1
+    sim.bars[2] = 1
+    sim._transitions()
+    assert sim.goal == 'Shade'
+    assert sim.abandoned_goal_this_minute == 'Waterhole'
+    assert sim.abandoned_reason_this_minute == 'temperature'
+
+
+def test_full_day_trip_changes_have_reasons_and_validator_rejects_missing_reason():
+    from copy import deepcopy
+    config = load_config(overrides=["road_response.enabled=false"])
+    day = simulate_day(config, day_index=2, seed=42)
+    hidden = day.hidden_state
+    previous = hidden.shift(1)
+    abandoned = ((previous['movement_intent'] == 'travel')
+                 & (previous['goal'] != hidden['zone'])
+                 & (previous['goal'] != hidden['goal']))
+    assert abandoned.any()
+    assert hidden.loc[abandoned, 'abandoned_trip_reason'].notna().all()
+    assert (hidden.loc[abandoned, 'abandoned_goal'] == previous.loc[abandoned, 'goal']).all()
+    broken = deepcopy(day)
+    broken.hidden_state.loc[hidden.index[abandoned][0], 'abandoned_trip_reason'] = None
+    validation = validate_day(broken, config)
+    assert not validation['valid']
+    assert any('no logged reason' in error for error in validation['errors'])
+
+
+@pytest.mark.parametrize('cycles', [1, 2, 3])
+def test_night_catnaps_enforce_minimum_real_duration_and_maximum_cycles(cycles):
+    config = _hunting_config('chase.probability_clip=[0,0]',
+                             'learnability.activity.catnap_minutes_range=[1,1]',
+                             f'learnability.behaviour.night_nap_max_cycles={cycles}')
+    day = _simulate(config)
+    night_start = datetime.fromisoformat(f'{day.date}T22:00:00')
+    end = datetime.fromisoformat(day.gps.iloc[-1]['t_iso'])
+    sleeps = [e for e in day.events if e['token'] == 'FELL_ASLEEP' and _event_time(e) >= night_start]
+    wakes = [e for e in day.events if e['token'] == 'WOKE_UP' and _event_time(e) >= night_start]
+    assert len(sleeps) == cycles
+    assert len(wakes) == cycles - 1
+    minimum = config['learnability']['behaviour']['night_nap_min_minutes']
+    for sleep in sleeps:
+        wake_time = next((_event_time(w) for w in wakes if _event_time(w) > _event_time(sleep)), end)
+        assert (wake_time - _event_time(sleep)).total_seconds() >= minimum * 60
+        start_minute = _minute(day, sleep)
+        assert (day.hidden_state.iloc[start_minute:start_minute + minimum]['behaviour'] == 'sleeping').all()
+
+
+def test_no_short_terminal_nap_when_only_minimum_ticks_remain():
+    import numpy as np
+    from lionsim.simulator import _DaySimulation
+    config = load_config()
+    sim = _DaySimulation(config, 1, 42, '2026-01-01', np.random.SeedSequence(42))
+    sim.minute = sim.day_minutes - config['learnability']['behaviour']['night_nap_min_minutes']
+    sim.mode, sim.goal, sim.until = 'night_walk', 'Plain', sim.minute
+    sim._transitions()
+    assert sim.mode == 'resting'
+    assert not any(e['token'] == 'FELL_ASLEEP' for e in sim.events)
