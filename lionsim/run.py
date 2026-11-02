@@ -67,13 +67,13 @@ def build_parser() -> argparse.ArgumentParser:
                         help="simulated calendar date of day 1")
     parser.add_argument("--out", type=Path, default=Path("outputs"), help="output root")
     parser.add_argument("--image-days", type=_nonnegative, metavar="K",
-                        help="render first K selected days (default: every day)")
+                        help="render first K selected days (default: all normal days; none in stats/oracle mode)")
     parser.add_argument("--no-images", action="store_true", help="disable report PNGs and contact sheets")
     parser.add_argument("--workers", type=_positive, default=1, metavar="W",
                         help="worker processes (default: 1)")
     parser.add_argument("--day-index", type=_positive, metavar="I",
                         help="regenerate exactly one 1-based day; overrides --days")
-    parser.add_argument("--stats-only", action="store_true", help="collect statistics without images or minute tables")
+    parser.add_argument("--stats-only", action="store_true", help="collect statistics without minute tables; images require --image-days")
     parser.add_argument("--stats-days", type=_positive, default=None, help="statistics days (default: 200)")
     parser.add_argument("--oracle", action="store_true", help="evaluate hidden-state rollout oracle and counting baselines")
     parser.add_argument("--oracle-days", type=_positive, default=None, help="oracle days (default: learnability.oracle_days, 100)")
@@ -110,9 +110,10 @@ def _run_day(job: dict[str, Any]) -> dict[str, Any]:
     reports = build_reports(day, config)
     validation = validate_day(day, config)
     written: list[dict[str, Any]] = []
-    if job["keep_files"]:
+    if job["keep_files"] or job["render"]:
         directory = day_directory(job["run_directory"], day.day_index, job["folder_width"])
-        write_day(day, reports, directory, prefer_parquet=config["output"]["prefer_parquet"])
+        if job["keep_files"]:
+            write_day(day, reports, directory, prefer_parquet=config["output"]["prefer_parquet"])
         if job["render"]:
             from .plotting import render_reports
 
@@ -268,7 +269,7 @@ def run(args: argparse.Namespace) -> Path:
             days = args.oracle_days or config["learnability"]["oracle_days"]
         indices = [args.day_index] if args.day_index is not None else list(range(1, days + 1))
         image_days = len(indices) if args.image_days is None else min(len(indices), args.image_days)
-        if args.no_images or args.stats_only or args.oracle:
+        if args.no_images or ((args.stats_only or args.oracle) and args.image_days is None):
             image_days = 0
         directory = create_run_directory(args.out).resolve()
         manifest = {

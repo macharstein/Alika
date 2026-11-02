@@ -297,3 +297,11 @@ verify: /opt/anaconda3/bin/python3.12 -m pytest -x -q tests/test_oracle.py tests
 assumptions: S6 supersedes the old absolute near-zero/near-L0 interpretation; retain the old near-zero setting only as a smoothing-resolution diagnostic. Recommendations do not alter behavior.
 known problems: seven S5 calibration warnings remain; no S6 experiment has run yet.
 next: allow explicitly selected images in statistics mode without saving minute tables.
+in progress: S6 image selection — let --stats-only --image-days K explicitly render the first K days, while defaults still produce no images or minute files. Track PNGs in checkpoints so missing images regenerate on resume; bump package version to 4.5.0 for the reporting/output contract, without changing trajectories.
+verify: /opt/anaconda3/bin/python3.12 -m pytest -x -q tests/test_resume.py tests/test_oracle.py
+next: run the 100-day oracle in five 20-day chunks.
+done: S6 explicit image selection — 13 resume/oracle tests passed. Stats/oracle modes remain image-free by default, but explicit --image-days K now writes only selected PNGs, with checkpoint file validation and missing-image repair; no minute files are needed. Package version is 4.5.0; simulation behavior and seeds are unchanged from 4.4.1.
+verify: /opt/anaconda3/bin/python3.12 -m pytest -x -q tests/test_resume.py tests/test_oracle.py
+assumptions: --no-images still overrides an explicit image limit; image selection is immutable on resume.
+known problems: S5 calibration warnings are unchanged.
+next: first 20 days of the 100-day × 100-rollout oracle, then four resumptions.
