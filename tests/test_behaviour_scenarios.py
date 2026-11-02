@@ -154,17 +154,22 @@ def test_committed_trip_survives_destination_redraws_until_a_logged_interrupt():
 def test_full_day_trip_changes_have_reasons_and_validator_rejects_missing_reason():
     from copy import deepcopy
     config = load_config(overrides=["road_response.enabled=false"])
-    day = simulate_day(config, day_index=2, seed=42)
-    hidden = day.hidden_state
-    previous = hidden.shift(1)
-    abandoned = ((previous['movement_intent'] == 'travel')
-                 & (previous['goal'] != hidden['zone'])
-                 & (previous['goal'] != hidden['goal']))
-    assert abandoned.any()
-    assert hidden.loc[abandoned, 'abandoned_trip_reason'].notna().all()
-    assert (hidden.loc[abandoned, 'abandoned_goal'] == previous.loc[abandoned, 'goal']).all()
+    candidates = []
+    for index in range(1, 11):
+        day = simulate_day(config, day_index=index, seed=42)
+        hidden = day.hidden_state
+        previous = hidden.shift(1)
+        abandoned = ((previous['movement_intent'] == 'travel')
+                     & (previous['goal'] != hidden['zone'])
+                     & (previous['goal'] != hidden['goal']))
+        assert hidden.loc[abandoned, 'abandoned_trip_reason'].notna().all()
+        assert (hidden.loc[abandoned, 'abandoned_goal'] == previous.loc[abandoned, 'goal']).all()
+        if abandoned.any():
+            candidates.append((day, hidden.index[abandoned][0]))
+    assert candidates
+    day, abandoned_index = candidates[0]
     broken = deepcopy(day)
-    broken.hidden_state.loc[hidden.index[abandoned][0], 'abandoned_trip_reason'] = None
+    broken.hidden_state.loc[abandoned_index, 'abandoned_trip_reason'] = None
     validation = validate_day(broken, config)
     assert not validation['valid']
     assert any('no logged reason' in error for error in validation['errors'])

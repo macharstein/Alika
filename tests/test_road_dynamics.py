@@ -291,6 +291,7 @@ def test_seeded_road_entries_are_reachable_and_predominantly_evening():
     entries = []
     for i in range(1,41):
         day = simulate_day(load_config(), day_index=i, seed=42)
+        assert validate_day(day, load_config())['valid']
         entries.extend(datetime.fromisoformat(e['t']) for e in day.events if e['token']=='ENTER_ROAD')
     assert entries
     assert sum(t.hour >= 19 for t in entries) / len(entries) > .5

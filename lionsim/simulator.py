@@ -598,7 +598,7 @@ class _DaySimulation:
             self.rest_after_arrival = False
             self.mode, self.until = "fatigue_sleep", self.minute + self.behaviour["interrupted_rest_minutes"]
             self.emit("FELL_ASLEEP")
-        elif self._is_night() and self.goal in ("Den", "Plain", "Road"):
+        elif self._is_night() and self.goal in ("Den", "Plain"):
             self.mode, self.until = "night_walk", self.minute + self.duration("night_walk_minutes_range")
         elif self.goal == "Shade" and not self.midday_slept and self.shade_departure <= self.minute < self.midday_wake:
             self.midday_slept = True

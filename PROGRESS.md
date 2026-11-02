@@ -196,3 +196,14 @@ verify: /opt/anaconda3/bin/python3.12 -m pytest -x -q tests/test_road_dynamics.p
 assumptions: one favored road decision per eligible non-catch evening; base chance 0.9 × boredom, discount exp(-0.18 × cars above 9), daytime multiplier 0.05. These are initial explicit model choices, not fitted to held-out targets.
 known problems: S3 target achievement still needs the 200-day check; walking/water targets from S2 remain unresolved.
 next: full S3 verification and 200-day measurement, then S4 patrol plus daytime walking-budget changes.
+in progress: S3 final verification — full pytest and 200-day seed-42 report.
+verify: /opt/anaconda3/bin/python3.12 -m pytest -q
+verify: /opt/anaconda3/bin/python3.12 -m lionsim.run --stats-only --stats-days 200 --seed 42 --out outputs/phase2_s3
+next: S4 night patrols with naps, preserving catch-night terminal sleep and the hunting cutoff.
+in progress: S3 validation fix — full suite found a brittle single-day interruption fixture, and the 200-day run found illegal Road naps. Road visits now use quiet rest before onward travel; the commitment regression audits ten fixed days instead of requiring a particular day to be interrupted. Simulator 4.2.1 isolates the corrected distribution.
+verify: /opt/anaconda3/bin/python3.12 -m pytest -x -q tests/test_behaviour_scenarios.py tests/test_road_dynamics.py
+known problems: initial S3 measured 8% Road days, 81.25% evening entries, 12.5% tourist-window entries, correlation -0.243. Timing improved, but frequency/correlation targets remain misses; the failed run is historical, not final validation evidence.
+next: finish S3 verification before S4; keep sleep-location invariants unchanged.
+done: S3 correction — 41 behavior/road tests passed; added hard validation to the fixed-seed road-reachability batch. Road stops preserve the original rule that sleep occurs only at safe resting zones.
+verify: /opt/anaconda3/bin/python3.12 -m pytest -x -q tests/test_behaviour_scenarios.py tests/test_road_dynamics.py
+next: full corrected S3 suite and measurement, then S4.
