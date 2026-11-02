@@ -207,3 +207,15 @@ next: finish S3 verification before S4; keep sleep-location invariants unchanged
 done: S3 correction — 41 behavior/road tests passed; added hard validation to the fixed-seed road-reachability batch. Road stops preserve the original rule that sleep occurs only at safe resting zones.
 verify: /opt/anaconda3/bin/python3.12 -m pytest -x -q tests/test_behaviour_scenarios.py tests/test_road_dynamics.py
 next: full corrected S3 suite and measurement, then S4.
+in progress: corrected S3 final verification — full pytest plus a fresh 200-day run; do not reuse failed v4.2.0 checkpoints.
+verify: /opt/anaconda3/bin/python3.12 -m pytest -q
+verify: /opt/anaconda3/bin/python3.12 -m lionsim.run --stats-only --stats-days 200 --seed 42 --out outputs/phase2_s3_verified
+next: S4 plan — draw 1–3 night destinations (mostly 2–3), use 60–110-minute naps at Plain/Den and quiet rests at visit zones, terminal sleep after a catch; constrain new voluntary daytime travel, favor shorter nearby goals and bound a faster cruise pace within 2–4 km/h. Finish heat-bound water trips rather than redirecting them to Shade; a short hunt-start grace avoids needless water turnbacks. Record all resulting knob changes and targets.
+done: corrected S3 complete — full pytest: 176 passed; fresh 200-day run verifies hard invariants. Road timing improves but frequency/correlation and walking/water targets are still measured warnings, to be re-evaluated after S4.
+verify: /opt/anaconda3/bin/python3.12 -m pytest -q
+verify: /opt/anaconda3/bin/python3.12 -m lionsim.run --stats-only --stats-days 200 --seed 42 --out outputs/phase2_s3_verified
+next: S4 night patrol implementation, followed by S5 cross-time links as newly requested.
+in progress: S4 — finite 1–3-destination night plans, long enough pauses to spread entries across late reports, naps only at safe zones, quiet rest/playing at other visits. Preserve catch-night terminal sleep. Reduce voluntary daytime wandering, retain bounded state-dependent pace, and stop diverting a hot lion away from its cooling water destination.
+verify: /opt/anaconda3/bin/python3.12 -m pytest -x -q tests/test_behaviour_scenarios.py tests/test_road_dynamics.py tests/test_stats.py tests/test_oracle.py
+assumptions: 1–3 planned destinations may include incidental zone crossings; all actual entries are measured. A maximum four nap cycles does not require four naps. Daytime travel budget prevents new voluntary journeys, never cancels an underway trip.
+next: measure S4; explicitly document any remaining misses, then implement S5 latent/observable time links.
