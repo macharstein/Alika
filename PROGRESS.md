@@ -224,3 +224,16 @@ verify: /opt/anaconda3/bin/python3.12 -m pytest -x -q tests/test_behaviour_scena
 assumptions: daytime voluntary-travel budget=120 minutes; nearby-goal distance penalty 0.3→0.8; patrol cruise fraction=0.35 within the same 2–4 km/h range. Existing trips finish; shade/water/hunt schedules override the voluntary budget. Hot water-bound lions continue toward water; hunt-start grace for finishing water travel is at most 30 minutes. These explicit changes aim to reserve night walking time, not relax targets.
 known problems: combined S4 target achievement has not yet been measured.
 next: measure and fully verify S4, then S5 cross-time links.
+in progress: S4 final measurement and acceptance — full pytest and 200-day seed-42 run; inspect warnings before any additional changes.
+verify: /opt/anaconda3/bin/python3.12 -m pytest -q
+verify: /opt/anaconda3/bin/python3.12 -m lionsim.run --stats-only --stats-days 200 --seed 42 --out outputs/phase2_s4
+next: record S4 results, then implement S5 and stop before S6.
+done: S4 first full verification — 178 passed in 35.28s; outputs/phase2_s4/run_20261102_195237 has 0 hard validation failures. Walking fell from 6.252h (S2) to 5.158750h; waterhole days rose to 94%; entries=6.75/day, events=21.52/day; report-6 END_OF_DAY=37%. These remain target misses, not concealed passes.
+verify: /opt/anaconda3/bin/python3.12 -m pytest -q
+known problems: added night water visits plus protected daytime water travel make water coverage too high; Road days remain 8.5%, correlation -0.294. More night structure reduced early report dominance but overall entry/event targets are not yet met.
+next: one documented S4 adjustment before S5 — water-choice probability 0.85→0.75 to preserve day variation; cruise fraction 0.35→0.50 to reduce walking time while preserving state effects; Road low-volume reference 9→14 observed cars to make low-traffic night visits less rare; daytime road multiplier 0.05→0.01 to suppress tourist-window entries. Do not change target ranges.
+in progress: S4 measured adjustment and re-verification; S5 will subsequently add the requested morning scouting route and latent timing links.
+verify: /opt/anaconda3/bin/python3.12 -m pytest -x -q tests/test_behaviour_scenarios.py tests/test_road_dynamics.py tests/test_oracle.py
+done: S4 adjustment — targeted behavior/road/oracle checks passed with the documented four knob changes; no reference ranges changed. Night patrols remain causal and bounded, and older checkpoint versions cannot be mixed with v4.3.1.
+verify: /opt/anaconda3/bin/python3.12 -m pytest -x -q tests/test_behaviour_scenarios.py tests/test_road_dynamics.py tests/test_oracle.py
+next: complete S4 full verification, then S5 morning scouting, hunger-linked waking and prey-linked hunt timing.

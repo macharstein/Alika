@@ -357,7 +357,7 @@
     "patrol_boredom_weight": 0.15,
     "patrol_speed_noise_sd": 0.1,
     "road_surface_speed_bonus_kmh": 0.2,
-    "patrol_cruise_fraction": 0.35
+    "patrol_cruise_fraction": 0.5
   },
   "tourists": {
     "start": "16:00",
@@ -679,11 +679,11 @@
         "daytime_travel_budget_minutes": "After this much pre-night walking, finish current trips but decline new voluntary daytime wandering; water, shade and hunt schedules still apply.",
         "water_trip_grace_minutes": "Maximum hunt-start grace for completing an already committed water journey; hunt cutoff remains unchanged."
       },
-      "afternoon_water_probability": 0.85,
+      "afternoon_water_probability": 0.75,
       "evening_road_probability": 0.9,
-      "road_volume_reference_count": 9,
+      "road_volume_reference_count": 14,
       "road_volume_decay": 0.18,
-      "road_daytime_multiplier": 0.05,
+      "road_daytime_multiplier": 0.01,
       "road_evening_start": "19:00",
       "road_evening_end": "23:00",
       "night_patrol_entry_weights": [
