@@ -45,6 +45,12 @@ report boundaries, output serialization, and worker-count independence.
 | `--no-images` | Disable all report images and contact sheets; overrides image-days |
 | `--workers W` | `1`; independent worker processes |
 | `--day-index I` | Regenerate exactly original day I, **1-based**; overrides days |
+| `--stats-only` / `--stats-days N` | Statistics without daily files; default 200 days |
+| `--oracle` / `--oracle-days N` | Hidden-state oracle plus baselines; default 100 days |
+| `--oracle-rollouts R` | Independent continuations per usable report; default 100 |
+| `--keep-files` | Keep daily JSON and minute tables in stats/oracle mode; no images |
+| `--chunk-size N` | At most 200 new days per invocation by default |
+| `--resume RUN_DIR` | Continue the saved run, skipping completed day checkpoints |
 
 Regenerate original day 137, with the original base seed, start date, and config:
 
@@ -91,7 +97,9 @@ from disk on resume. An interrupted worker loses at most its current day. JSON,
 CSV, gzip, Parquet, Markdown and PNG outputs use temporary files in the destination
 folder followed by atomic rename. Resume uses the saved seed/configuration and
 requires the same simulator version. Partial runs report statistics only for
-completed days. No oracle is implemented in this phase.
+completed days. Oracle mode uses the same checkpoint/resume mechanism; each day
+checkpoint also contains its rollout counts and probabilities. A partially
+evaluated day is rerun; completed oracle days are skipped.
 
 Workers write their own days and return only compact counters. At most twice
 the worker count is submitted ahead; complete daily data are never accumulated
@@ -112,18 +120,30 @@ adjacent `_comment` or `_comments` entry. Documentation keys are preserved in
 the manifest but never used by simulation. `Config` is a dataclass whose default
 factory loads this file; each instance owns a separate copy.
 
-Groups are `time`, `map`, `randomness`, `bars`, `goal`, `behaviours`, `movement`,
-`chase`, `tourists`, `road_response`, `behaviour`, `targets`, `statistics`,
-`learnability`, `output`, `images`, and `validation`. The primary randomness
-knobs—including latent ranges, bar noise, softmax temperature, heading noise,
-GPS noise/dropouts, and base catch probability—are grouped under `randomness`.
-Duration distribution parameters sit alongside their respective behaviours.
+Groups are `time`, `map`, `randomness`, `bars`, `goal`, `movement`,
+`tourists`, `road_response`, `targets`, `statistics`, `learnability`, `output`,
+`images`, and `validation`. Learnability controls have one canonical home:
+
+| Path below `learnability` | Controls |
+| --- | --- |
+| `softmax_temperature`, `latent_ranges`, `chase_base_probability` | Goal randomness, daily hidden-state ranges and base catch probability |
+| `behaviour` | Goal commitment, fatigue/heat interrupts, heat/traffic effects and night nap limits |
+| `activity` | Activity durations, `hunt_start`, `hunt_end` and `catnap_minutes_range` |
+| `chase` | Catch probability clipping/factors and chase mechanics |
+| `laplace_alpha`, `train_fraction`, `l3_min_cell_count` | Counting evaluation and backoff |
+| `oracle_days`, `oracle_rollouts`, `oracle_near_zero_nats`, `oracle_noise_relative_tolerance` | Oracle workload and interpretation |
+
+Bar noise, heading noise and GPS noise/dropouts remain under `randomness`.
+Older JSON/CLI paths (`behaviour.*`, `behaviours.*`, `chase.*`, and the three
+moved `randomness.*` settings) remain accepted as aliases. In files, explicit
+canonical values win over legacy values; CLI overrides apply in order, last
+one wins. Python callers and saved manifests use canonical paths exclusively.
 
 ```sh
 python -m lionsim.run --config my_config.json \
   --set randomness.gps_noise_sd_m=25 \
-  --set randomness.softmax_temperature=0.9 \
-  --set 'randomness.latent_ranges.start_hunger=[0.6,1.0]' \
+  --set learnability.softmax_temperature=0.9 \
+  --set 'learnability.latent_ranges.start_hunger=[0.6,1.0]' \
   --set 'goal.periods.4.priors.Hunting ground=3.0' \
   --set road_response.approach_probability=0.8
 ```
@@ -153,6 +173,10 @@ outputs/run_YYYYMMDD_HHMMSS/
   run_manifest.json
   summary_stats.json
   validation_report.json
+  stats_report.json / stats_report.md
+  targets.csv
+  checkpoints/day_0001.json
+  oracle_report.json / oracle_report.md  # oracle mode only
   days/day_0001/
     day.json
     gps.parquet                 # or gps.csv.gz
@@ -279,7 +303,8 @@ here; hidden-state columns are analysis labels, not observed inputs.
 5. Midday sleep occurs after reaching Shade, at most once daily. Its normal
    scheduled wake is clipped to 14:00–18:00; cooling can wake the lion after
    14:00. A behaviour normally chooses its next goal when it ends, so period
-   boundaries do not teleport the animal or interrupt a journey.
+   boundaries never teleport the animal; only explicit physiological or scheduled
+   interrupts can cancel a committed journey, with a recorded reason.
 6. Goal scores use distance to zone **centre**, noisy logits, and a numerically
    stable softmax. Unspecified afternoon/evening priors are low (`0`); explicit
    none values are `-5`. Hunger determines hunting eligibility. No-catch night
@@ -334,7 +359,8 @@ here; hidden-state columns are analysis labels, not observed inputs.
     also including day start. The endpoint GPS fix is included. After-midnight
     reports use the following calendar date. The next-zone class in summaries
     means the next confirmed `ENTER_*` strictly **after** the report; absence
-    is an explicit `no_future_entry` category, including the final report.
+    is `END_OF_DAY`. The final report has no target and is excluded from
+    `targets.csv` and all loss evaluations.
 17. The requested behaviour budgets are diagnostic reference means, not forced
     daily quotas. Resting combines sleep and quiet rest for the 16–20-hour
     check, while the summary also reports them separately. Two short grooming
@@ -342,10 +368,10 @@ here; hidden-state columns are analysis labels, not observed inputs.
     drinking depends on visits. Default ranges beyond resting are explicit
     modelling assumptions in `validation.hours_ranges`. Budget warnings do
     not invalidate otherwise consistent event logs or claim biological realism.
-18. The token vocabulary is exactly 17 names (CAR_PASSED is internal traffic only). `ENTER_WATER`,
+18. The token vocabulary is exactly 17 names (cars are internal traffic, never event tokens). `ENTER_WATER`,
     `ENTER_HUNT`, `ENTER_FEED`, and `ENTER_ROAD` map to Waterhole, Hunting ground,
     Feeding spot, and Road. A chase outcome must immediately follow its start
-    ignoring cars; a meal requires an unused catch; sleep is allowed only in
+    in the public event sequence; a meal requires an unused catch; sleep is allowed only in
     Den, Shade, Feeding spot, or Plain.
 19. To preserve causal ordering within a minute, entry events use random seconds
     0–9 and ordinary activity events generally use 12–59. Wake-following grooming
@@ -362,7 +388,7 @@ produce **2**. Unexpected execution failures mark the manifest as failed and
 retain successful-day counters and an explicit execution error. Completed
 runs with only statistical warnings exit **0**.
 
-`summary_stats.json` contains event counts per day (mean/min/max), all 18 token
+`summary_stats.json` contains event counts per day (mean/min/max), all 17 token
 frequencies, mean behaviour hours, catch-day fraction, chase success rate,
 mean zone entries, next-zone counts/proportions for every report clock time,
 and total/mean/min/max tourist cars. A success rate with no chases is `null`.
@@ -391,7 +417,7 @@ The initial 200-day diagnostic had no Road entries. To make afternoon visits
 possible, staging moved from 16:30 to 17:00, committed Road/Water trips finish
 before staging, and an afternoon water probability of 0.65 was added. Road
 selection depends on boredom and decreasing traffic volume probability; its
-percentage is measured, not forced. Other new controls live in `behaviour`;
+percentage is measured, not forced. Other new controls live in `learnability.behaviour`;
 reference checks live in `targets`, and map coverage uses a 0.5 km grid from
 `statistics`. No check ranges were widened to obtain passes. WARN means a finite
 statistic outside its reference range; FAIL means a missing statistic or broken
@@ -423,10 +449,8 @@ are the requested diagnostic heuristics, not proof of biological realism.
 Losses are measured honestly; no sorting or forced ordering is applied. Fewer
 than two days yields an explicit insufficient-data result with null losses.
 
-Simulator version 3.1.0 prevents resuming older checkpoints that lack these
-history cues. Start a new statistics run for baseline evaluation; existing
-completed datasets and their reports remain untouched. Task 7 (oracle) is not
-implemented here.
+Simulator version 3.2.1 rejects resumes from other simulator versions. Start a
+new run for current evaluation; existing completed datasets remain untouched.
 
 Measured phase-6 check (`--stats-only --stats-days 200 --seed 42`): 19 PASS,
 3 WARN, 0 FAIL. Held-out losses were L0=1.810101, L1=0.979962,
@@ -436,3 +460,138 @@ counting baseline. The requested interpretation was `learnable`. Outstanding
 warnings: Road-entry days 6.5%, resting 15.754 h, walking 6.272 h. Full report:
 [phase-6 statistics](outputs/run_20261101_210910/stats_report.md). All 143 tests
 passed. These measured deviations were not removed by adjusting target ranges.
+
+
+## Hidden-state oracle (tasks 7–8)
+
+```sh
+python -m lionsim.run --oracle --oracle-days 100 --oracle-rollouts 100 --seed 42
+```
+
+Oracle mode evaluates every usable report in the first N independent days.
+Use `--oracle-days` rather than `--days`, `--stats-days` or `--day-index` in this
+mode. CLI oracle sizes override the corresponding `learnability` defaults;
+both the effective workload and full model configuration are in the manifest.
+Daily files and images are omitted by default. `--keep-files` retains original
+daily JSON/GPS/hidden state, never rollout trajectories or snapshots.
+
+For a resumable diagnostic pilot:
+
+```sh
+python -m lionsim.run --oracle --oracle-days 20 --oracle-rollouts 100 --seed 42 --workers 4 --chunk-size 10
+python -m lionsim.run --resume outputs/run_YYYYMMDD_HHMMSS --workers 4 --chunk-size 10
+```
+
+A snapshot deep-copies position, bars, mode, goal, hysteresis, memories, RNG,
+daily latents, committed schedules and recorded history. Resuming with the saved
+RNG reproduces all original events, GPS noise/dropouts, traffic and hidden rows.
+The engine integrates minute ticks: snapshots are immediately before the report
+minute's tick. Entries stamped at second zero are already observed, so oracle
+branches condition their entry timing on that fact; they cannot shift those
+entries into future targets. Previously committed delayed events and scheduled
+wakes remain part of the hidden state.
+
+Branch streams are derived by SHA-256 of the saved PCG64 state, day index and
+minute, then `SeedSequence.spawn`. This does not consume the original stream.
+Branches retain daily latents and committed durations; they resample future
+decisions and unobserved future Poisson traffic. Cars at or before the report
+boundary, previous exposure and pending reactions are preserved. The oracle
+therefore does not benefit from the original day's pre-generated future cars.
+
+Each branch runs the full remainder of the day. Its first strictly future entry
+(or END_OF_DAY) contributes to one of nine counts. Probabilities are
+`(count + alpha) / (rollouts + 9 * alpha)`, using the same Laplace alpha as the
+baselines. `oracle_report.json` stores timestamped counts, class probabilities,
+actual original targets and log loss. `oracle_report.md` shows the comparison
+and each report's time, target and probability in human-readable tables.
+
+The main oracle/L0–L3 comparison uses identical held-out day IDs. All-day oracle
+loss is also shown separately. With fewer than two completed days, comparison
+is explicitly unavailable. Default interpretations are: oracle loss <=0.1 nats
+means **oracle near zero: too deterministic**; otherwise an absolute gap to L0
+within 10% of L0 means **oracle close to L0: too noisy**; otherwise **balanced**.
+These thresholds are configurable diagnostics, not calibration guarantees.
+
+Finite rollout counts and smoothing limit the result. Even unanimous 100-rollout
+predictions with alpha=1 have loss `-log(101/109) = 0.076227` nats. Reports expose
+this floor and whether the near-zero threshold is resolvable. A small-day pilot
+can give unstable baseline ordering; do not equate its heuristic classification
+with evidence from a large independent evaluation.
+
+## Acceptance and changes (tasks 9–10)
+
+The acceptance suite covers event schema, strict future targets, hunt cutoffs,
+committed goals and interrupt reasons, configured nap limits, statistics keys,
+200-day counting losses, exact oracle continuation, checkpoint recovery, legacy
+configuration migration, seed/worker reproducibility, and text-free images.
+
+Tests exposed two timing issues fixed in version 3.2.1: independent event-second
+jitter could make a 25-tick nap appear shorter than 25 minutes, and oracle
+branches could move an entry already observed at the report boundary into the
+future. Nap wake seconds now respect the sleep-start second; an interval with
+insufficient remaining seconds becomes quiet rest. Oracle branches condition
+on the zero-second entry observation. No behavior probabilities, latent ranges,
+nap limits, speed values or target-check ranges were tuned in tasks 7–10.
+Configuration grouping changed paths, not model values. New oracle settings
+control evaluation workload and interpretation only.
+
+## Verified delivery (2026-11-02, version 3.2.1)
+
+The required `--stats-only --stats-days 200 --seed 42` run completed all 200 days:
+**19 PASS, 3 WARN, 0 FAIL**. All 200 days passed event invariants. The three
+warnings remain unchanged; their reference ranges were not widened.
+
+| Check | Status | Observed | Expected |
+| --- | --- | ---: | --- |
+| zone_entries_per_day | **PASS** | 6.28 | [6.0, 12.0] |
+| zone_entry_share.Den | **PASS** | 0.0398 | [0.03, 0.35] |
+| zone_entry_share.Shade | **PASS** | 0.1919 | [0.03, 0.35] |
+| zone_entry_share.Kopje | **PASS** | 0.176 | [0.03, 0.35] |
+| zone_entry_share.Waterhole | **PASS** | 0.0916 | [0.03, 0.35] |
+| zone_entry_share.Hunting ground | **PASS** | 0.1139 | [0.03, 0.35] |
+| zone_entry_share.Feeding spot | **PASS** | 0.0549 | [0.03, 0.35] |
+| zone_entry_share.Plain | **PASS** | 0.3217 | [0.03, 0.35] |
+| zone_entry_share.Road | **PASS** | 0.0104 | {'minimum_exclusive': 0, 'maximum': 0.35} |
+| hunt_attempt_day_fraction | **PASS** | 0.68 | [0.5, 0.7] |
+| catch_day_fraction | **PASS** | 0.345 | [0.2, 0.4] |
+| road_entry_day_fraction | **WARN** | 0.065 | [0.1, 0.25] |
+| unique_sequence_fraction | **PASS** | 0.5 | {'minimum_exclusive': 0.3} |
+| top_five_sequence_share | **PASS** | 0.25 | {'maximum_exclusive': 0.5} |
+| mean_walking_speed_kmh | **PASS** | 2.9516 | [2.0, 4.0] |
+| hours_per_behaviour.resting | **WARN** | 15.7542 | [16.0, 20.0] |
+| hours_per_behaviour.walking | **WARN** | 6.2716 | [1.0, 5.0] |
+| hours_per_behaviour.hunting | **PASS** | 0.8713 | [0.2, 3.0] |
+| hours_per_behaviour.grooming | **PASS** | 0.4175 | [0.1, 2.5] |
+| hours_per_behaviour.eating | **PASS** | 0.5352 | [0.0, 1.5] |
+| hours_per_behaviour.drinking | **PASS** | 0.1502 | [0.0, 1.0] |
+| event_invariants | **PASS** | 0 | 0 |
+
+
+[Full 200-day statistics](outputs/run_20261102_105804/stats_report.md) and
+[machine-readable report](outputs/run_20261102_105804/stats_report.json).
+
+The 140/60-day baseline split gives L0=1.810101, L1=0.979962,
+L2=0.821198 and L3=0.842583 nats; interpretation **learnable**.
+L3 remains 2.60% worse than L2; the sparse-cell backoff is reported honestly.
+
+The corrected oracle pilot completed 20 days × 7 reports × 100 rollouts
+in two resumable chunks. Its 42 held-out targets are from days 15–20:
+
+| Model | Same pilot holdout loss (nats) |
+| --- | ---: |
+| L0 | 1.861813 |
+| L1 | 1.192013 |
+| L2 | 1.318674 |
+| L3 | 1.318674 |
+| oracle | 0.460304 |
+
+Pilot interpretation: **balanced**; smoothing floor **0.076227 nats**.
+This is a 20-day diagnostic, not the default 100-day experiment. Its L2/L3
+values are higher than L1 on this small holdout; no ordering was forced.
+Compare models within the same table, not across different test sets.
+
+[Timestamped oracle report](outputs/oracle_verified/run_20261102_105804/oracle_report.md)
+and [probability/count details](outputs/oracle_verified/run_20261102_105804/oracle_report.json).
+
+Final acceptance command: `python -m pytest -q`. Results and exact local
+interpreter commands are recorded in `PROGRESS.md`.

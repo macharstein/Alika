@@ -359,7 +359,7 @@ def build_stats_report(records: Iterable[dict[str, Any]], config: Config) -> dic
             "abandoned_trips": "Count of nonempty abandoned_trip_reason rows; the simulator emits a reason only on the interrupt minute.",
             "correlations": "Pearson coefficients using available paired daily values; null with an explanation for insufficient/constant observations. These describe synthetic association, not causal proof.",
             "target_status": "PASS is inside the configured range; WARN is a finite statistic outside it; FAIL means no finite statistic or a hard validation failure. Requested strict sequence bounds are exclusive.",
-            "scope": "Descriptive statistics plus optional held-out counting baselines. The oracle remains outside this phase.",
+            "scope": "Descriptive statistics plus optional held-out counting baselines and hidden-state oracle evaluation. No ML libraries are used.",
         },
     }
 
@@ -512,7 +512,7 @@ def baseline_ladder(rows: Iterable[dict[str, Any]], config: Config) -> dict[str,
     losses /= len(testing)
     named = {f'L{i}': float(value) for i, value in enumerate(losses)}
     absolute = {f'L{i}-L{i+1}': float(losses[i]-losses[i+1]) for i in range(3)}
-    relative = {key: value / losses[i] if losses[i] else None for i, (key, value) in enumerate(absolute.items())}
+    relative = {key: float(value / losses[i]) if losses[i] else None for i, (key, value) in enumerate(absolute.items())}
     spread = (max(losses[:3])-min(losses[:3])) / losses[0]
     interpretation = ('mostly noise' if spread <= options['mostly_noise_relative_tolerance'] else
                       'nearly deterministic' if losses[2] < options['near_deterministic_ratio'] * losses[0] else 'learnable')

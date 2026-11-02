@@ -110,3 +110,23 @@ done: phase 9 — full pytest: 170 passed in 33.44s. All task-9 acceptance areas
 verify: /opt/anaconda3/bin/python3.12 -m pytest -q
 known problems: no failing tests; original statistical target warnings remain for honest measurement in task 10.
 next: task 10 — run the required final 200-day check and corrected oracle pilot; update README with results, assumptions and reproducible commands.
+
+in progress: phase 10 delivery — generate the required 200-day seed-42 report and a corrected version-3.2.1 oracle pilot, then update README with all measured statuses and assumptions. Do not adjust simulator values or diagnostic ranges to force passes.
+verify: /opt/anaconda3/bin/python3.12 -m lionsim.run --stats-only --stats-days 200 --seed 42
+verify: /opt/anaconda3/bin/python3.12 -m lionsim.run --oracle --oracle-days 20 --oracle-rollouts 100 --seed 42 --workers 4 --chunk-size 10 --out outputs/oracle_verified
+next: record output directories, resume the oracle pilot, update README and run final full pytest.
+done: final 200-day run completed at outputs/run_20261102_105804; corrected oracle first chunk completed 10/20 days at outputs/oracle_verified/run_20261102_105804. README now documents canonical configuration, oracle assumptions, checkpoint commands and both timing fixes.
+in progress: resume the corrected oracle pilot and read final PASS/WARN/FAIL measurements for README.
+verify: /opt/anaconda3/bin/python3.12 -m lionsim.run --resume outputs/oracle_verified/run_20261102_105804 --workers 4 --chunk-size 10
+next: publish measured result tables in README, run final full pytest and commit delivery.
+in progress: phase 10 report polish — remove a stale 'oracle not in this phase' definition and NumPy type wrappers from Markdown relative gaps; numeric losses and simulation outputs are unchanged. Regenerate aggregate reports from completed checkpoints afterward.
+verify: /opt/anaconda3/bin/python3.12 -m pytest -x -q tests/test_stats.py tests/test_baselines.py
+next: refresh both completed reports, record results and finish documentation.
+done: phase 10 reports/documentation — 14 relevant statistics/baseline tests passed. Refreshed aggregates atomically from existing checkpoints; final numeric results are unchanged. README now includes every target status, canonical settings/aliases, CLI and chunked oracle commands, assumptions, finite-rollout limits and both timing fixes.
+verify: /opt/anaconda3/bin/python3.12 -m pytest -x -q tests/test_stats.py tests/test_baselines.py
+verify: /opt/anaconda3/bin/python3.12 -m lionsim.run --resume outputs/run_20261102_105804
+verify: /opt/anaconda3/bin/python3.12 -m lionsim.run --resume outputs/oracle_verified/run_20261102_105804
+results: 200-day run: 19 PASS, 3 WARN, 0 FAIL; road days 6.5%, resting 15.754167h, walking 6.271583h. L0=1.810101, L1=0.979962, L2=0.821198, L3=0.842583. Corrected 20-day/100-rollout oracle pilot: oracle=0.460304 versus L0=1.861813 on the same 42 targets; balanced, floor=0.076227.
+assumptions: no behavior/control values or target ranges changed to obtain passes; canonical grouping and evaluation defaults do not tune trajectories. Oracle pilot is not the full 100-day default workload.
+known problems: three statistical warnings and L3's 2.60% regression versus L2 remain measured limitations. README.pdf and performance_check.json remain untouched.
+next: run final full pytest, commit completion, then stop with tasks 1–10 complete.
