@@ -121,7 +121,7 @@
   },
   "randomness": {
     "wake_time_mean": "06:00",
-    "wake_time_sd_minutes": 30.0,
+    "wake_time_sd_minutes": 20.0,
     "wake_time_clip": [
       "05:00",
       "07:00"
@@ -572,7 +572,12 @@
       "non_feast_late_entry_fraction_min": "Minimum non-feast-day fraction with a confirmed zone entry strictly after 23:00.",
       "feast_post_meal_entry_fraction_max": "Maximum feast-day fraction with a zone entry after EAT_END.",
       "end_of_day_report_6_range": "END_OF_DAY fraction at report index 6.",
-      "end_of_day_report_7_range": "END_OF_DAY fraction at report index 7."
+      "end_of_day_report_7_range": "END_OF_DAY fraction at report index 7.",
+      "prey_kopje_dwell_correlation_min": "Minimum Pearson correlation of prey density with first Kopje-to-next-entry time gap, where observable.",
+      "prey_first_chase_correlation_max": "Maximum Pearson correlation of prey density with first chase time on hunting days.",
+      "hunger_wake_correlation_max": "Maximum Pearson correlation of start hunger with wake time.",
+      "heat_shade_entry_correlation_max": "Maximum Pearson correlation of daily heat with shade entry time.",
+      "headline_l3_improvement_min": "Minimum relative improvement of mean cross-validated headline L3 over headline L2."
     },
     "observed_true_path_ratio_max": 1.6,
     "smoothed_rest_speed_max_kmh": 0.8,
@@ -602,7 +607,12 @@
     "end_of_day_report_7_range": [
       0.6,
       0.8
-    ]
+    ],
+    "prey_kopje_dwell_correlation_min": 0.4,
+    "prey_first_chase_correlation_max": -0.3,
+    "hunger_wake_correlation_max": -0.3,
+    "heat_shade_entry_correlation_max": -0.4,
+    "headline_l3_improvement_min": 0.03
   },
   "statistics": {
     "coverage_grid_km": 0.5,
@@ -677,7 +687,14 @@
         "night_patrol_distance_penalty": "Per-km logit penalty for long night legs, favoring nearby territory.",
         "night_repeat_zone_weight": "Relative weight for a previously visited night destination.",
         "daytime_travel_budget_minutes": "After this much pre-night walking, finish current trips but decline new voluntary daytime wandering; water, shade and hunt schedules still apply.",
-        "water_trip_grace_minutes": "Maximum hunt-start grace for completing an already committed water journey; hunt cutoff remains unchanged."
+        "water_trip_grace_minutes": "Maximum hunt-start grace for completing an already committed water journey; hunt cutoff remains unchanged.",
+        "morning_scout_probability": "Probability of a morning scouting trip to Kopje after initial grooming.",
+        "scout_base_minutes": "Minimum mean Kopje scouting dwell before heading toward Plain.",
+        "scout_prey_extra_minutes": "Additional scouting dwell from low to high prey signal; observable in the next entry gap.",
+        "scout_jitter_sd_minutes": "Independent noise in scouting dwell; scheduled heat departures may interrupt scouting.",
+        "prey_reference_range": "Fixed normalization for prey-linked dwell and hunt timing; separate from latent sampling bounds.",
+        "hunger_wake_shift_minutes": "Maximum earlier waking shift at hunger=1; original 05:00\u201307:00 clip is preserved.",
+        "prey_hunt_delay_max_minutes": "Maximum departure delay beyond hunt start at low prey; high prey has no added delay."
       },
       "afternoon_water_probability": 0.75,
       "evening_road_probability": 0.9,
@@ -694,7 +711,17 @@
       "night_patrol_distance_penalty": 0.8,
       "night_repeat_zone_weight": 0.25,
       "daytime_travel_budget_minutes": 120,
-      "water_trip_grace_minutes": 30
+      "water_trip_grace_minutes": 30,
+      "morning_scout_probability": 0.9,
+      "scout_base_minutes": 20.0,
+      "scout_prey_extra_minutes": 75.0,
+      "scout_jitter_sd_minutes": 8.0,
+      "prey_reference_range": [
+        0.5,
+        1.5
+      ],
+      "hunger_wake_shift_minutes": 30.0,
+      "prey_hunt_delay_max_minutes": 45
     },
     "activity": {
       "groom_mean_minutes": 12.0,

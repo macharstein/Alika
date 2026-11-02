@@ -398,6 +398,16 @@ def validate_config(data: dict[str, Any]) -> None:
         raise ValueError("At least one chase energy/mood weight must be positive")
     interval("chase.probability_clip", 0, 1)
     interval("road_response.traffic_delay_minutes_range", 1, 1440, integer=True)
+    for name in ("morning_scout_probability",):
+        bound(f"behaviour.{name}", 0, 1)
+    for name in ("scout_base_minutes", "scout_prey_extra_minutes", "scout_jitter_sd_minutes", "hunger_wake_shift_minutes", "prey_hunt_delay_max_minutes"):
+        bound(f"behaviour.{name}", 0)
+    left, right = interval("behaviour.prey_reference_range", 0)
+    if left >= right:
+        raise ValueError("prey_reference_range must have positive width")
+    for name in ("prey_kopje_dwell_correlation_min", "prey_first_chase_correlation_max", "hunger_wake_correlation_max", "heat_shade_entry_correlation_max"):
+        bound(f"targets.{name}", -1, 1)
+    bound("targets.headline_l3_improvement_min", 0, 1)
     bound("movement.patrol_cruise_fraction", 0, 1)
     weights = data["learnability"]["behaviour"]["night_patrol_entry_weights"]
     if len(weights) != 3 or any(w < 0 for w in weights) or not math.isclose(sum(weights), 1):

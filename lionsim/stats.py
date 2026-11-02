@@ -137,6 +137,11 @@ def summarize_for_stats(day: Any, reports: list[dict[str, Any]], config: Config)
         for value in day.hidden_state["abandoned_trip_reason"]:
             if isinstance(value, str) and value.strip():
                 abandoned[value] += 1
+    kopje_dwell = None
+    for index, event in enumerate(entries[:-1]):
+        if event["token"] == "ENTER_KOPJE":
+            kopje_dwell = (datetime.fromisoformat(entries[index+1]["t"]) - datetime.fromisoformat(event["t"])).total_seconds() / 60
+            break
     shade_entry = _first_event_minute(events, "ENTER_SHADE", start)
     shade_exit: float | None = None
     if shade_entry is not None and "zone" in day.hidden_state:
@@ -183,6 +188,7 @@ def summarize_for_stats(day: Any, reports: list[dict[str, Any]], config: Config)
         },
         "time_traces_minutes_after_start": traces,
         "mean_drinking_bout_minutes": float(np.mean(drinking_runs)) if drinking_runs else None,
+        "kopje_dwell_minutes": kopje_dwell,
         "path": {
             "total_length_km": _finite(true_steps.sum()),
             "observed_total_length_km": _finite(observed_steps.sum()),
@@ -287,6 +293,9 @@ def build_stats_report(records: Iterable[dict[str, Any]], config: Config) -> dic
     for record in days:
         reason_counts.update(record["path"]["abandoned_trips_by_reason"])
     correlations = {
+        "prey_density_vs_kopje_dwell": _correlation((r["latents"]["prey_density"], r.get("kopje_dwell_minutes")) for r in days),
+        "prey_density_vs_first_chase_time": _correlation((r["latents"]["prey_density"], r["time_traces_minutes_after_start"]["first_chase_time"]) for r in days),
+        "start_hunger_vs_wake_time": _correlation((r["latents"]["start_hunger"], r["time_traces_minutes_after_start"]["wake_time"]) for r in days),
         "start_hunger_vs_hunting_day": _correlation((record["latents"]["start_hunger"], int(record["day_flags"]["any_chase"])) for record in days),
         "heat_vs_shade_entry_time": _correlation((record["latents"]["heat"], record["time_traces_minutes_after_start"]["shade_entry_time"]) for record in days),
         "heat_vs_shade_wake_time": _correlation((record["latents"]["heat"], record["time_traces_minutes_after_start"]["shade_wake_time"]) for record in days),
@@ -366,6 +375,13 @@ def build_stats_report(records: Iterable[dict[str, Any]], config: Config) -> dic
         observed = class_balance.get(str(index), {}).get("fractions", {}).get("END_OF_DAY")
         interval = targets[f"end_of_day_report_{index}_range"]
         check(f"end_of_day_report_{index}", observed, interval, lower=interval[0], upper=interval[1])
+    for metric, target, lower in (
+            ("prey_density_vs_kopje_dwell", "prey_kopje_dwell_correlation_min", True),
+            ("prey_density_vs_first_chase_time", "prey_first_chase_correlation_max", False),
+            ("start_hunger_vs_wake_time", "hunger_wake_correlation_max", False),
+            ("heat_vs_shade_entry_time", "heat_shade_entry_correlation_max", False)):
+        check(metric, correlations[metric]["value"], targets[target],
+              lower=targets[target] if lower else None, upper=None if lower else targets[target])
     behaviour_comparison = {}
     for name, interval in targets["hours_per_behaviour"].items():
         if name.startswith("_"):
@@ -428,6 +444,22 @@ def build_stats_report(records: Iterable[dict[str, Any]], config: Config) -> dic
             "scope": "Descriptive statistics plus optional held-out counting baselines and hidden-state oracle evaluation. No ML libraries are used.",
         },
     }
+
+
+def add_headline_check(report: dict[str, Any], config: Config) -> None:
+    """Attach the learnability target only after out-of-fold losses exist."""
+    ladder = report["baseline_ladder"]
+    improvement = None
+    if ladder["status"] == "complete":
+        l2, l3 = (ladder["headline"][name]["mean"] for name in ("L2", "L3"))
+        if l2 is not None and l3 is not None and l2 > 0:
+            improvement = (l2 - l3) / l2
+    target = config["targets"]["headline_l3_improvement_min"]
+    status = "FAIL" if improvement is None else "PASS" if improvement >= target else "WARN"
+    report["checks"].append({"name": "headline_l3_relative_improvement", "status": status,
+                             "observed": improvement, "expected": target,
+                             "message": "Relative improvement of mean CV headline L3 over L2; no forced ordering."})
+    report["check_counts"][status] += 1
 
 
 def _display(value: Any) -> str:

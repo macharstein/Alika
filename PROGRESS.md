@@ -249,3 +249,8 @@ in progress: S5 — prey-linked morning Kopje scouting dwell (20–95m plus 8m n
 verify: /opt/anaconda3/bin/python3.12 -m pytest -x -q tests/test_cross_time.py tests/test_behaviour_scenarios.py tests/test_oracle.py tests/test_stats.py tests/test_baselines.py
 assumptions: first Kopje-to-next-entry gap is measured where a later entry exists, including travel; missing gaps stay null. The 22:00 cutoff is unchanged. Scouting stays observable through pauses and timing, not new tokens or exposed hidden latents.
 next: measure S5 on 200 days, record all targets and any misses, update README, full pytest and commit completion.
+done: S5 initial implementation — 41 targeted tests passed, including controlled latent comparisons, measured correlation directions, behavioral invariants, oracle exact resumes, and cross-validated baselines. Scouting and delayed hunts remain within the unchanged event vocabulary and hunting cutoff.
+verify: /opt/anaconda3/bin/python3.12 -m pytest -x -q tests/test_cross_time.py tests/test_behaviour_scenarios.py tests/test_oracle.py tests/test_stats.py tests/test_baselines.py
+assumptions: scouting choice probability=0.9; prey normalization uses fixed [0.5,1.5] references so counterfactual latent ranges do not erase effects. Hungrier waking shifts by 30m × hunger; wake noise is 20m. Low prey adds up to 45m of stationary pre-hunt waiting, not a canceled trip.
+known problems: final 200-day S5 threshold achievement still needs measurement; no claim that all S1–S4 target misses are fixed.
+next: full S5 suite and 200-day report; document final measurements/knob changes, then stop before S6.

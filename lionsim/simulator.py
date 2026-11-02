@@ -90,9 +90,12 @@ class _DaySimulation:
             for name, bounds in self.learnability["latent_ranges"].items()
             if not name.startswith("_")
         }
+        prey_low, prey_high = self.behaviour["prey_reference_range"]
+        self.prey_signal = float(np.clip((self.latents["prey_density"] - prey_low) / (prey_high - prey_low), 0, 1))
+        self.hunt_ready_minute = self.offset(self.behaviours["hunt_start"]) + int(round((1 - self.prey_signal) * self.behaviour["prey_hunt_delay_max_minutes"]))
         wake_clip = [self.offset(t) for t in self.randomness["wake_time_clip"]]
         wake_minutes = float(np.clip(
-            self.rng.normal(self.offset(self.randomness["wake_time_mean"]), self.randomness["wake_time_sd_minutes"]),
+            self.rng.normal(self.offset(self.randomness["wake_time_mean"]) - self.latents["start_hunger"] * self.behaviour["hunger_wake_shift_minutes"], self.randomness["wake_time_sd_minutes"]),
             *wake_clip,
         ))
         self.wake_seconds = int(round(wake_minutes * 60))
@@ -108,6 +111,8 @@ class _DaySimulation:
         self.until = 0
         self.caught = False
         self.midday_slept = False
+        self.morning_scout_considered = False
+        self.morning_scout_completed = False
         self.hungry_day = self.latents["start_hunger"] > self.latents["hunt_threshold"]
         self.hunt_departed = False
         self.chase_count = 0
@@ -520,7 +525,7 @@ class _DaySimulation:
 
     def _can_hunt(self) -> bool:
         return (
-            self.offset(self.behaviours["hunt_start"]) <= self.minute < self.offset(self.behaviours["hunt_end"])
+            self.hunt_ready_minute <= self.minute < self.offset(self.behaviours["hunt_end"])
             and self.hungry_day and not self.caught
         )
 
@@ -576,6 +581,14 @@ class _DaySimulation:
             return
         if self._is_night():
             self._choose_night_goal()
+            return
+        if not self.morning_scout_considered and not self.midday_slept and self.minute < self.shade_departure:
+            self.morning_scout_considered = True
+            if self.rng.random() < self.behaviour["morning_scout_probability"]:
+                self._commit_goal("Kopje")
+                return
+        if self.hungry_day and self.offset(self.behaviours["hunt_start"]) <= self.minute < self.hunt_ready_minute and self.raw_zone is not None:
+            self.goal, self.mode, self.until = self.raw_zone, "resting", self.hunt_ready_minute
             return
         if self._try_evening_road():
             return
@@ -660,6 +673,14 @@ class _DaySimulation:
             else:
                 self._night_pause()
                 return
+        if self.goal == "Kopje" and not self.morning_scout_completed and self.minute < self.shade_departure:
+            dwell = self.behaviour["scout_base_minutes"] + self.prey_signal * self.behaviour["scout_prey_extra_minutes"]
+            dwell += float(self.rng.normal(0, self.behaviour["scout_jitter_sd_minutes"]))
+            self.mode, self.until = "scouting", self.minute + max(1, int(round(dwell)))
+            return
+        if self.goal == "Plain" and self.morning_scout_completed and not self.midday_slept and self.minute < self.shade_departure:
+            self.mode, self.until = "resting", self.shade_departure
+            return
         if self.caught and self.goal == "Feeding spot":
             self.mode, self.until = "eating", self.minute + self.behaviours["eat_max_minutes"]
             self.emit("EAT_START")
@@ -686,8 +707,8 @@ class _DaySimulation:
                 wait = self.rng.exponential(1 / rate) if rate > 0 else self.behaviour["first_chase_wait_max_minutes"]
                 wait = np.clip(wait, self.behaviour["first_chase_wait_min_minutes"], self.behaviour["first_chase_wait_max_minutes"])
                 self.first_chase_due = min(self.minute + int(round(wait)), self.offset(self.behaviours["hunt_end"]) - 1)
-        elif self.goal == "Plain" and self.hungry_day and self.evening_staged and self.minute < self.offset(self.behaviours["hunt_start"]):
-            self.mode, self.until = "resting", self.offset(self.behaviours["hunt_start"])
+        elif self.goal == "Plain" and self.hungry_day and self.evening_staged and self.minute < self.hunt_ready_minute:
+            self.mode, self.until = "resting", self.hunt_ready_minute
         else:
             key = "rest_minutes_range" if self.goal in ("Den", "Shade", "Plain") else "visit_minutes_range"
             self.mode, self.until = "resting", self.minute + self.duration(key)
@@ -736,6 +757,11 @@ class _DaySimulation:
         if self.mode == "night_rest":
             if self.minute >= self.until:
                 self._choose_night_goal()
+            return
+        if self.mode == "scouting":
+            if self.minute >= self.until:
+                self.morning_scout_completed = True
+                self._commit_goal("Plain")
             return
         if self.mode == "hunting":
             if not self._can_hunt():
@@ -849,7 +875,7 @@ class _DaySimulation:
     def _activity(self) -> str:
         if self.mode in ("initial_sleep", "midday_sleep", "catnap", "final_sleep", "fatigue_sleep", "night_final_sleep"):
             return "sleeping"
-        if self.mode in ("resting", "fail_rest", "road_watch", "traffic_wait", "night_rest"):
+        if self.mode in ("resting", "fail_rest", "road_watch", "traffic_wait", "night_rest", "scouting"):
             return "resting"
         if self.mode == "walking" and self.arriving:
             return "resting"

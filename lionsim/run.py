@@ -25,7 +25,7 @@ from .config import Config, load_config
 from .io_utils import atomic_output, create_run_directory, day_directory, write_day, write_json, write_text
 from .events import TOKENS
 from .reports import build_reports, target_rows
-from .stats import summarize_for_stats, build_stats_report, render_stats_markdown, baselines_from_csv
+from .stats import summarize_for_stats, build_stats_report, render_stats_markdown, baselines_from_csv, add_headline_check
 from .simulator import simulate_day
 from .validate import SummaryAccumulator, summarize_day, validate_day
 
@@ -206,6 +206,7 @@ def _write_aggregates(directory: Path, records: dict[int, dict[str, Any]], confi
                 writer.writerows(record["targets"])
     report = build_stats_report([record["stats"] for record in ordered], config)
     report["baseline_ladder"] = baselines_from_csv(directory / "targets.csv", config)
+    add_headline_check(report, config)
     if oracle:
         from .oracle import oracle_report, render_oracle_markdown
 

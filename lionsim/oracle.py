@@ -65,9 +65,10 @@ def _condition_boundary_entry(snapshot: _DaySimulation, branch: _DaySimulation) 
     second or any later outcome. All subsequent RNG draws remain independent.
     """
     zone = snapshot._lookup(snapshot.position)
-    eligible = (snapshot.hungry_day and not snapshot.caught
-                and snapshot.offset(snapshot.behaviours['hunt_start']) <= snapshot.next_minute
-                < snapshot.offset(snapshot.behaviours['hunt_end']))
+    previous_minute = branch.minute
+    branch.minute = snapshot.next_minute
+    eligible = branch._can_hunt()
+    branch.minute = previous_minute
     if zone == 'Hunting ground' and not eligible:
         zone = None
     if deepcopy(snapshot.tracker).update(zone) is None:
