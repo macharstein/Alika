@@ -120,61 +120,28 @@
     }
   },
   "randomness": {
-    "latent_ranges": {
-      "start_hunger": [
-        0.1,
-        1.0
-      ],
-      "hunt_threshold": [
-        0.3,
-        0.5
-      ],
-      "heat": [
-        0.7,
-        1.3
-      ],
-      "prey_density": [
-        0.5,
-        1.5
-      ],
-      "tourist_rate_per_hour": [
-        3.0,
-        12.0
-      ],
-      "_comments": {
-        "start_hunger": "Daily uniform initial hunger range.",
-        "hunt_threshold": "Daily uniform minimum hunger for stalking.",
-        "heat": "Daily uniform ambient-temperature multiplier.",
-        "prey_density": "Daily uniform prey encounter multiplier.",
-        "tourist_rate_per_hour": "Daily uniform Poisson car rate."
-      }
-    },
     "wake_time_mean": "06:00",
     "wake_time_sd_minutes": 30.0,
     "wake_time_clip": [
       "05:00",
       "07:00"
     ],
-    "softmax_temperature": 0.7,
     "bar_noise_sd": 0.005,
     "score_noise_sd": 0.25,
     "walk_heading_sd_degrees": 25.0,
     "stalk_heading_sd_degrees": 60.0,
     "gps_noise_sd_m": 15.0,
     "gps_dropout_probability": 0.01,
-    "chase_base_probability": 0.3,
     "_comments": {
       "wake_time_mean": "Mean initial waking clock time.",
       "wake_time_sd_minutes": "Standard deviation of the daily normal wake time.",
       "wake_time_clip": "Earliest/latest initial wake clock times.",
-      "softmax_temperature": "Higher values spread goal probabilities more evenly.",
       "bar_noise_sd": "Independent Gaussian bar perturbation per minute before clipping to [0,1].",
       "score_noise_sd": "Gaussian goal-logit noise at each goal choice.",
       "walk_heading_sd_degrees": "Gaussian patrol heading noise.",
       "stalk_heading_sd_degrees": "Gaussian stalking heading noise.",
       "gps_noise_sd_m": "Independent x/y Gaussian GPS observation noise in metres.",
-      "gps_dropout_probability": "Independent missing-fix probability; observed coordinates are forward-filled.",
-      "chase_base_probability": "Base catch probability, adjusted by energy and mood."
+      "gps_dropout_probability": "Independent missing-fix probability; observed coordinates are forward-filled."
     }
   },
   "bars": {
@@ -363,70 +330,6 @@
       "periods": "24-hour exhaustive clock windows and logit priors; high=2, medium=1, low=0, none=-5."
     }
   },
-  "behaviours": {
-    "groom_mean_minutes": 12.0,
-    "groom_lognormal_sigma": 0.45,
-    "rest_minutes_range": [
-      30,
-      90
-    ],
-    "visit_minutes_range": [
-      8,
-      25
-    ],
-    "midday_sleep_start": "10:00",
-    "midday_wake_mean": "16:00",
-    "midday_wake_sd_minutes": 30.0,
-    "midday_wake_clip": [
-      "14:00",
-      "18:00"
-    ],
-    "cool_wake_after": "14:00",
-    "cool_wake_temperature": 0.45,
-    "drink_mean_minutes": 8.0,
-    "drink_gamma_shape": 2.0,
-    "hunt_start": "18:30",
-    "hunt_end": "22:00",
-    "prey_encounters_per_hour": 0.8,
-    "fail_rest_minutes_range": [
-      10,
-      20
-    ],
-    "eat_stop_hunger": 0.1,
-    "eat_max_minutes": 150,
-    "catnap_minutes_range": [
-      20,
-      60
-    ],
-    "night_walk_minutes_range": [
-      2,
-      8
-    ],
-    "night_start": "22:00",
-    "_comments": {
-      "groom_mean_minutes": "Arithmetic mean of each lognormal grooming session.",
-      "groom_lognormal_sigma": "Log-space standard deviation of grooming duration.",
-      "rest_minutes_range": "Uniform daytime stationary resting duration at a destination.",
-      "visit_minutes_range": "Uniform patrol/stalk destination dwell duration where applicable.",
-      "midday_sleep_start": "Earliest midday sleep at Shade.",
-      "midday_wake_mean": "Normal scheduled end of midday sleep.",
-      "midday_wake_sd_minutes": "Variation in scheduled midday wake time.",
-      "midday_wake_clip": "Bounds on scheduled midday waking.",
-      "cool_wake_after": "Earliest clock time for temperature-triggered waking.",
-      "cool_wake_temperature": "Temperature below which midday sleep can end after cool_wake_after.",
-      "drink_mean_minutes": "Gamma-distributed drinking-session mean.",
-      "drink_gamma_shape": "Shape of drinking-duration gamma distribution.",
-      "hunt_start": "Earliest stalking clock time.",
-      "hunt_end": "Clock cutoff for stalking and new chases.",
-      "prey_encounters_per_hour": "Base Poisson encounter rate multiplied by daily prey density.",
-      "fail_rest_minutes_range": "Uniform rest duration after a failed chase.",
-      "eat_stop_hunger": "Hunger threshold ending a meal.",
-      "eat_max_minutes": "Maximum eating duration after a catch.",
-      "catnap_minutes_range": "Uniform night catnap duration.",
-      "night_walk_minutes_range": "Uniform night walking duration between naps.",
-      "night_start": "Clock time at which no-catch night behaviour begins."
-    }
-  },
   "movement": {
     "patrol_speed_kmh_range": [
       2.0,
@@ -451,35 +354,6 @@
     "patrol_heat_weight": 0.3,
     "patrol_boredom_weight": 0.15,
     "patrol_speed_noise_sd": 0.1
-  },
-  "chase": {
-    "speed_kmh": 50.0,
-    "duration_seconds_range": [
-      20,
-      40
-    ],
-    "outcome_delay_seconds_range": [
-      10,
-      60
-    ],
-    "factor_min": 0.6,
-    "factor_max": 1.3,
-    "energy_weight": 0.5,
-    "mood_weight": 0.5,
-    "probability_clip": [
-      0.05,
-      0.6
-    ],
-    "_comments": {
-      "speed_kmh": "Short-burst chase speed.",
-      "duration_seconds_range": "Uniform chase duration, fitting start and outcome inside one minute.",
-      "outcome_delay_seconds_range": "Allowed delay between CHASE_START and CATCH/FAIL; duration must lie inside this range.",
-      "factor_min": "Catch-factor value when energy and mood are zero.",
-      "factor_max": "Catch-factor value when energy and mood are one.",
-      "energy_weight": "Energy weight in catch factor, normalized with mood weight.",
-      "mood_weight": "Mood weight in catch factor, normalized with energy weight.",
-      "probability_clip": "Lower and upper bound on final catch probability."
-    }
   },
   "tourists": {
     "start": "16:00",
@@ -611,63 +485,6 @@
       "boredom_relief_per_watch_hour": "Boredom reduction during a curiosity observation pause."
     }
   },
-  "behaviour": {
-    "goal_commitment": true,
-    "fatigue_interrupt_threshold": 0.1,
-    "fatigue_recovery_threshold": 0.35,
-    "heat_interrupt_threshold": 0.94,
-    "heat_recovery_threshold": 0.7,
-    "heat_reference": 1.0,
-    "shade_entry_heat_shift_minutes": 100.0,
-    "shade_entry_jitter_sd_minutes": 12.0,
-    "shade_departure_window": [
-      "09:00",
-      "11:00"
-    ],
-    "shade_wake_heat_shift_minutes": 90.0,
-    "shade_wake_jitter_sd_minutes": 15.0,
-    "drink_heat_multiplier": 1.0,
-    "evening_staging_time": "17:00",
-    "hunt_arrival_deadline": "20:00",
-    "first_chase_wait_max_minutes": 25,
-    "first_chase_wait_min_minutes": 3,
-    "road_goal_boredom_weight": 2.0,
-    "road_goal_traffic_penalty": 0.22,
-    "road_entry_probability": 0.45,
-    "road_entry_traffic_decay": 0.18,
-    "road_entry_inset_km": 0.08,
-    "night_nap_min_minutes": 25,
-    "night_nap_max_cycles": 3,
-    "interrupted_rest_minutes": 30,
-    "_comments": {
-      "goal_commitment": "Keep destinations until arrival unless a recorded safety or schedule interrupt occurs.",
-      "fatigue_interrupt_threshold": "Interrupt travel when energy falls below this threshold.",
-      "fatigue_recovery_threshold": "Rearm fatigue interruption only after this energy recovery threshold.",
-      "heat_interrupt_threshold": "Interrupt travel when temperature exceeds this threshold.",
-      "heat_recovery_threshold": "Rearm heat interruption after temperature falls below this threshold.",
-      "heat_reference": "Reference daily heat latent for timing and drinking effects.",
-      "shade_entry_heat_shift_minutes": "Minutes earlier shade departure per unit above reference heat.",
-      "shade_entry_jitter_sd_minutes": "Gaussian noise on heat-driven shade departure time.",
-      "shade_departure_window": "Allowed clock window for starting the committed shade journey.",
-      "shade_wake_heat_shift_minutes": "Minutes later midday wake per unit above reference heat.",
-      "shade_wake_jitter_sd_minutes": "Gaussian noise on heat-driven midday wake time.",
-      "drink_heat_multiplier": "Fractional change of drink duration per unit heat above reference.",
-      "evening_staging_time": "Start positioning for an evening trip; hunger eligibility is fixed for the day.",
-      "hunt_arrival_deadline": "Desired latest initial hunting-ground arrival for hungry days.",
-      "first_chase_wait_max_minutes": "Maximum initial eligible stalking wait before the first chase attempt.",
-      "first_chase_wait_min_minutes": "Minimum initial stalking wait before a first chase attempt.",
-      "road_goal_boredom_weight": "Additional road attractiveness when bored.",
-      "road_goal_traffic_penalty": "Road-goal penalty associated with traffic volume.",
-      "road_entry_probability": "Base chance an eligible low-traffic curiosity approach enters the road.",
-      "road_entry_traffic_decay": "Decay of road-entry probability as traffic volume increases.",
-      "road_entry_inset_km": "Distance inside the road boundary for an entry destination.",
-      "night_nap_min_minutes": "Minimum complete night catnap duration.",
-      "night_nap_max_cycles": "Maximum catnap cycles begun in one night.",
-      "interrupted_rest_minutes": "Recovery rest following a safety interruption.",
-      "afternoon_water_probability": "Probability of a committed afternoon water visit when no road visit was selected; improves observable heat/drinking and prevents staging turnbacks."
-    },
-    "afternoon_water_probability": 0.65
-  },
   "targets": {
     "zone_entries_per_day": [
       6.0,
@@ -740,6 +557,187 @@
     }
   },
   "learnability": {
+    "behaviour": {
+      "goal_commitment": true,
+      "fatigue_interrupt_threshold": 0.1,
+      "fatigue_recovery_threshold": 0.35,
+      "heat_interrupt_threshold": 0.94,
+      "heat_recovery_threshold": 0.7,
+      "heat_reference": 1.0,
+      "shade_entry_heat_shift_minutes": 100.0,
+      "shade_entry_jitter_sd_minutes": 12.0,
+      "shade_departure_window": [
+        "09:00",
+        "11:00"
+      ],
+      "shade_wake_heat_shift_minutes": 90.0,
+      "shade_wake_jitter_sd_minutes": 15.0,
+      "drink_heat_multiplier": 1.0,
+      "evening_staging_time": "17:00",
+      "hunt_arrival_deadline": "20:00",
+      "first_chase_wait_max_minutes": 25,
+      "first_chase_wait_min_minutes": 3,
+      "road_goal_boredom_weight": 2.0,
+      "road_goal_traffic_penalty": 0.22,
+      "road_entry_probability": 0.45,
+      "road_entry_traffic_decay": 0.18,
+      "road_entry_inset_km": 0.08,
+      "night_nap_min_minutes": 25,
+      "night_nap_max_cycles": 3,
+      "interrupted_rest_minutes": 30,
+      "_comments": {
+        "goal_commitment": "Keep destinations until arrival unless a recorded safety or schedule interrupt occurs.",
+        "fatigue_interrupt_threshold": "Interrupt travel when energy falls below this threshold.",
+        "fatigue_recovery_threshold": "Rearm fatigue interruption only after this energy recovery threshold.",
+        "heat_interrupt_threshold": "Interrupt travel when temperature exceeds this threshold.",
+        "heat_recovery_threshold": "Rearm heat interruption after temperature falls below this threshold.",
+        "heat_reference": "Reference daily heat latent for timing and drinking effects.",
+        "shade_entry_heat_shift_minutes": "Minutes earlier shade departure per unit above reference heat.",
+        "shade_entry_jitter_sd_minutes": "Gaussian noise on heat-driven shade departure time.",
+        "shade_departure_window": "Allowed clock window for starting the committed shade journey.",
+        "shade_wake_heat_shift_minutes": "Minutes later midday wake per unit above reference heat.",
+        "shade_wake_jitter_sd_minutes": "Gaussian noise on heat-driven midday wake time.",
+        "drink_heat_multiplier": "Fractional change of drink duration per unit heat above reference.",
+        "evening_staging_time": "Start positioning for an evening trip; hunger eligibility is fixed for the day.",
+        "hunt_arrival_deadline": "Desired latest initial hunting-ground arrival for hungry days.",
+        "first_chase_wait_max_minutes": "Maximum initial eligible stalking wait before the first chase attempt.",
+        "first_chase_wait_min_minutes": "Minimum initial stalking wait before a first chase attempt.",
+        "road_goal_boredom_weight": "Additional road attractiveness when bored.",
+        "road_goal_traffic_penalty": "Road-goal penalty associated with traffic volume.",
+        "road_entry_probability": "Base chance an eligible low-traffic curiosity approach enters the road.",
+        "road_entry_traffic_decay": "Decay of road-entry probability as traffic volume increases.",
+        "road_entry_inset_km": "Distance inside the road boundary for an entry destination.",
+        "night_nap_min_minutes": "Minimum complete night catnap duration.",
+        "night_nap_max_cycles": "Maximum catnap cycles begun in one night.",
+        "interrupted_rest_minutes": "Recovery rest following a safety interruption.",
+        "afternoon_water_probability": "Probability of a committed afternoon water visit when no road visit was selected; improves observable heat/drinking and prevents staging turnbacks."
+      },
+      "afternoon_water_probability": 0.65
+    },
+    "activity": {
+      "groom_mean_minutes": 12.0,
+      "groom_lognormal_sigma": 0.45,
+      "rest_minutes_range": [
+        30,
+        90
+      ],
+      "visit_minutes_range": [
+        8,
+        25
+      ],
+      "midday_sleep_start": "10:00",
+      "midday_wake_mean": "16:00",
+      "midday_wake_sd_minutes": 30.0,
+      "midday_wake_clip": [
+        "14:00",
+        "18:00"
+      ],
+      "cool_wake_after": "14:00",
+      "cool_wake_temperature": 0.45,
+      "drink_mean_minutes": 8.0,
+      "drink_gamma_shape": 2.0,
+      "hunt_start": "18:30",
+      "hunt_end": "22:00",
+      "prey_encounters_per_hour": 0.8,
+      "fail_rest_minutes_range": [
+        10,
+        20
+      ],
+      "eat_stop_hunger": 0.1,
+      "eat_max_minutes": 150,
+      "catnap_minutes_range": [
+        20,
+        60
+      ],
+      "night_walk_minutes_range": [
+        2,
+        8
+      ],
+      "night_start": "22:00",
+      "_comments": {
+        "groom_mean_minutes": "Arithmetic mean of each lognormal grooming session.",
+        "groom_lognormal_sigma": "Log-space standard deviation of grooming duration.",
+        "rest_minutes_range": "Uniform daytime stationary resting duration at a destination.",
+        "visit_minutes_range": "Uniform patrol/stalk destination dwell duration where applicable.",
+        "midday_sleep_start": "Earliest midday sleep at Shade.",
+        "midday_wake_mean": "Normal scheduled end of midday sleep.",
+        "midday_wake_sd_minutes": "Variation in scheduled midday wake time.",
+        "midday_wake_clip": "Bounds on scheduled midday waking.",
+        "cool_wake_after": "Earliest clock time for temperature-triggered waking.",
+        "cool_wake_temperature": "Temperature below which midday sleep can end after cool_wake_after.",
+        "drink_mean_minutes": "Gamma-distributed drinking-session mean.",
+        "drink_gamma_shape": "Shape of drinking-duration gamma distribution.",
+        "hunt_start": "Earliest stalking clock time.",
+        "hunt_end": "Clock cutoff for stalking and new chases.",
+        "prey_encounters_per_hour": "Base Poisson encounter rate multiplied by daily prey density.",
+        "fail_rest_minutes_range": "Uniform rest duration after a failed chase.",
+        "eat_stop_hunger": "Hunger threshold ending a meal.",
+        "eat_max_minutes": "Maximum eating duration after a catch.",
+        "catnap_minutes_range": "Uniform night catnap duration.",
+        "night_walk_minutes_range": "Uniform night walking duration between naps.",
+        "night_start": "Clock time at which no-catch night behaviour begins."
+      }
+    },
+    "chase": {
+      "speed_kmh": 50.0,
+      "duration_seconds_range": [
+        20,
+        40
+      ],
+      "outcome_delay_seconds_range": [
+        10,
+        60
+      ],
+      "factor_min": 0.6,
+      "factor_max": 1.3,
+      "energy_weight": 0.5,
+      "mood_weight": 0.5,
+      "probability_clip": [
+        0.05,
+        0.6
+      ],
+      "_comments": {
+        "speed_kmh": "Short-burst chase speed.",
+        "duration_seconds_range": "Uniform chase duration, fitting start and outcome inside one minute.",
+        "outcome_delay_seconds_range": "Allowed delay between CHASE_START and CATCH/FAIL; duration must lie inside this range.",
+        "factor_min": "Catch-factor value when energy and mood are zero.",
+        "factor_max": "Catch-factor value when energy and mood are one.",
+        "energy_weight": "Energy weight in catch factor, normalized with mood weight.",
+        "mood_weight": "Mood weight in catch factor, normalized with energy weight.",
+        "probability_clip": "Lower and upper bound on final catch probability."
+      }
+    },
+    "latent_ranges": {
+      "start_hunger": [
+        0.1,
+        1.0
+      ],
+      "hunt_threshold": [
+        0.3,
+        0.5
+      ],
+      "heat": [
+        0.7,
+        1.3
+      ],
+      "prey_density": [
+        0.5,
+        1.5
+      ],
+      "tourist_rate_per_hour": [
+        3.0,
+        12.0
+      ],
+      "_comments": {
+        "start_hunger": "Daily uniform initial hunger range.",
+        "hunt_threshold": "Daily uniform minimum hunger for stalking.",
+        "heat": "Daily uniform ambient-temperature multiplier.",
+        "prey_density": "Daily uniform prey encounter multiplier.",
+        "tourist_rate_per_hour": "Daily uniform Poisson car rate."
+      }
+    },
+    "softmax_temperature": 0.7,
+    "chase_base_probability": 0.3,
     "oracle_days": 100,
     "oracle_rollouts": 100,
     "oracle_near_zero_nats": 0.1,
@@ -750,6 +748,12 @@
     "mostly_noise_relative_tolerance": 0.03,
     "near_deterministic_ratio": 0.2,
     "_comments": {
+      "behaviour": "Committed goals, physiological interrupts, heat/traffic effects and bounded night naps.",
+      "activity": "Activity timing and durations, including the hunt cutoff and catnap range.",
+      "chase": "Chase mechanics and energy/mood-dependent catch probabilities.",
+      "latent_ranges": "Uniform per-day hidden-state ranges, sampled once at initialization.",
+      "softmax_temperature": "Higher values spread goal probabilities more evenly.",
+      "chase_base_probability": "Base catch probability, adjusted by energy and mood.",
       "oracle_days": "Default number of independent original days in oracle mode; CLI --oracle-days takes precedence.",
       "oracle_rollouts": "Default independent continuation samples per usable report; CLI --oracle-rollouts takes precedence.",
       "oracle_near_zero_nats": "Oracle loss at or below this absolute threshold is near zero; report the finite-rollout smoothing floor alongside it.",

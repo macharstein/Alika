@@ -94,7 +94,7 @@ def test_failed_chases_rest_for_full_duration_then_resume(failed_hunts):
     assert len(failures) >= 2
     assert len(failures) == len(starts)
     assert not any(event["token"] in ("CATCH", "EAT_START", "EAT_END") for event in day.events)
-    rest_minutes = config["behaviours"]["fail_rest_minutes_range"][0]
+    rest_minutes = config["learnability"]["activity"]["fail_rest_minutes_range"][0]
     for failure, next_start in zip(failures[:-1], starts[1:]):
         first_rest_row = _minute(day, failure) + 1
         recovery = day.hidden_state.iloc[first_rest_row:first_rest_row + rest_minutes]

@@ -104,8 +104,8 @@ def validate_day(day: DayResult, config: Config) -> dict[str, Any]:
     eating = False
     meal_finished = False
     sleeping_after_meal = False
-    delay_min, delay_max = config["chase"]["outcome_delay_seconds_range"]
-    hunt_start, hunt_end = config["behaviours"]["hunt_start"], config["behaviours"]["hunt_end"]
+    delay_min, delay_max = config["learnability"]["chase"]["outcome_delay_seconds_range"]
+    hunt_start, hunt_end = config["learnability"]["activity"]["hunt_start"], config["learnability"]["activity"]["hunt_end"]
     eligible = (day.latents.get("start_hunger", 1.0) > day.latents.get("hunt_threshold", 0.0))
     for event, t in parsed:
         token, zone = event.get("token"), event.get("zone")

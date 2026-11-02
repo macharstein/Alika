@@ -25,6 +25,53 @@ LEGACY_IMAGE_KEYS = frozenset({
 })
 
 
+# Canonical settings live under learnability; old files and CLI expressions
+# are migrated before validation. Manifests store only canonical values.
+LEARNABILITY_ALIASES = {
+    "behaviour": "learnability.behaviour",
+    "behaviours": "learnability.activity",
+    "chase": "learnability.chase",
+    "randomness.latent_ranges": "learnability.latent_ranges",
+    "randomness.softmax_temperature": "learnability.softmax_temperature",
+    "randomness.chase_base_probability": "learnability.chase_base_probability",
+}
+
+
+def _canonical_path(path: str) -> str:
+    for old, new in LEARNABILITY_ALIASES.items():
+        if path == old or path.startswith(old + "."):
+            return new + path[len(old):]
+    return path
+
+
+def _migrate_legacy(data: dict[str, Any]) -> dict[str, Any]:
+    """Explicit canonical values win over corresponding legacy file values."""
+    data = deepcopy(data)
+    if not isinstance(data, dict):
+        raise ValueError("Configuration must be a JSON object")
+    for old, new in LEARNABILITY_ALIASES.items():
+        parts = old.split(".")
+        parent = data
+        for part in parts[:-1]:
+            parent = parent.get(part, {})
+            if not isinstance(parent, dict):
+                break
+        if not isinstance(parent, dict) or parts[-1] not in parent:
+            continue
+        value = parent.pop(parts[-1])
+        if isinstance(parent.get("_comments"), dict):
+            parent["_comments"].pop(parts[-1], None)
+        destination = data.setdefault("learnability", {})
+        if not isinstance(destination, dict):
+            raise ValueError("learnability must be an object")
+        key = new.split(".", 1)[1]
+        if key not in destination:
+            destination[key] = value
+        elif isinstance(value, dict) and isinstance(destination[key], dict):
+            destination[key] = {**value, **destination[key]}
+    return data
+
+
 def _defaults() -> dict[str, Any]:
     """Keep the shipped, commented JSON as the single source of default values."""
     with DEFAULT_CONFIG_PATH.open(encoding="utf-8") as handle:
@@ -57,7 +104,7 @@ class Config:
     data: dict[str, Any] = field(default_factory=_defaults)
 
     def __post_init__(self) -> None:
-        self.data = deepcopy(self.data)
+        self.data = _migrate_legacy(self.data)
         images = self.data.get("images")
         if isinstance(images, dict):
             for key in LEGACY_IMAGE_KEYS:
@@ -112,7 +159,7 @@ def _override(data: dict[str, Any], expression: str) -> None:
     if "=" not in expression:
         raise ValueError(f"Override must use dotted.key=value, got {expression!r}")
     path, value_text = expression.split("=", 1)
-    parts = path.strip().split(".")
+    parts = _canonical_path(path.strip()).split(".")
     if not parts or any(not part for part in parts):
         raise ValueError(f"Invalid dotted override key: {path!r}")
     current: Any = data
@@ -145,7 +192,7 @@ def load_config(path: str | Path | None = None, overrides: list[str] | None = No
                 custom = json.load(handle)
         except (OSError, json.JSONDecodeError) as exc:
             raise ValueError(f"Cannot load configuration {path}: {exc}") from exc
-        _merge(data, custom)
+        _merge(data, _migrate_legacy(custom))
     for expression in overrides or []:
         _override(data, expression)
     return Config(data)
@@ -192,7 +239,7 @@ def validate_config(data: dict[str, Any]) -> None:
 
     def get(path: str) -> Any:
         value: Any = data
-        for key in path.split("."):
+        for key in _canonical_path(path).split("."):
             value = value[key]
         return value
 
@@ -306,14 +353,14 @@ def validate_config(data: dict[str, Any]) -> None:
     for name in ("rest_minutes_range", "visit_minutes_range", "fail_rest_minutes_range", "catnap_minutes_range", "night_walk_minutes_range"):
         interval(f"behaviours.{name}", 1, 1440, integer=True)
     for name in ("midday_sleep_start", "midday_wake_mean", "cool_wake_after", "hunt_start", "hunt_end", "night_start"):
-        clock_minutes(data["behaviours"][name])
-    midday_clips = data["behaviours"]["midday_wake_clip"]
+        clock_minutes(data["learnability"]["activity"][name])
+    midday_clips = data["learnability"]["activity"]["midday_wake_clip"]
     if len(midday_clips) != 2:
         raise ValueError("behaviours.midday_wake_clip must contain two clock times")
     midday_left, midday_right = [minute_offset(value, start) for value in midday_clips]
-    if not midday_left <= minute_offset(data["behaviours"]["midday_wake_mean"], start) <= midday_right:
+    if not midday_left <= minute_offset(data["learnability"]["activity"]["midday_wake_mean"], start) <= midday_right:
         raise ValueError("Midday wake mean must fall within ordered midday_wake_clip bounds")
-    if minute_offset(data["behaviours"]["hunt_start"], start) >= minute_offset(data["behaviours"]["hunt_end"], start):
+    if minute_offset(data["learnability"]["activity"]["hunt_start"], start) >= minute_offset(data["learnability"]["activity"]["hunt_end"], start):
         raise ValueError("behaviours.hunt_start must precede hunt_end in the simulated day")
     interval("movement.patrol_speed_kmh_range", positive=True)
     bound("movement.stalk_speed_kmh", positive=True)
@@ -343,30 +390,30 @@ def validate_config(data: dict[str, Any]) -> None:
         raise ValueError("chase.duration_seconds_range must lie inside outcome_delay_seconds_range")
     bound("chase.factor_min", 0)
     bound("chase.factor_max", positive=True)
-    if data["chase"]["factor_min"] > data["chase"]["factor_max"]:
+    if data["learnability"]["chase"]["factor_min"] > data["learnability"]["chase"]["factor_max"]:
         raise ValueError("chase.factor_min cannot exceed factor_max")
     for name in ("energy_weight", "mood_weight"):
         bound(f"chase.{name}", 0)
-    if data["chase"]["energy_weight"] + data["chase"]["mood_weight"] <= 0:
+    if data["learnability"]["chase"]["energy_weight"] + data["learnability"]["chase"]["mood_weight"] <= 0:
         raise ValueError("At least one chase energy/mood weight must be positive")
     interval("chase.probability_clip", 0, 1)
     for name in ("fatigue_interrupt_threshold", "fatigue_recovery_threshold", "heat_interrupt_threshold", "heat_recovery_threshold", "road_entry_probability"):
         bound(f"behaviour.{name}", 0, 1)
-    if data["behaviour"]["fatigue_interrupt_threshold"] >= data["behaviour"]["fatigue_recovery_threshold"]:
+    if data["learnability"]["behaviour"]["fatigue_interrupt_threshold"] >= data["learnability"]["behaviour"]["fatigue_recovery_threshold"]:
         raise ValueError("Fatigue recovery threshold must exceed interrupt threshold")
-    if data["behaviour"]["heat_recovery_threshold"] >= data["behaviour"]["heat_interrupt_threshold"]:
+    if data["learnability"]["behaviour"]["heat_recovery_threshold"] >= data["learnability"]["behaviour"]["heat_interrupt_threshold"]:
         raise ValueError("Heat recovery threshold must be below interrupt threshold")
     for name in ("heat_reference", "night_nap_min_minutes", "night_nap_max_cycles", "interrupted_rest_minutes", "first_chase_wait_min_minutes", "first_chase_wait_max_minutes"):
         bound(f"behaviour.{name}", positive=True)
-    if data["behaviour"]["first_chase_wait_min_minutes"] > data["behaviour"]["first_chase_wait_max_minutes"]:
+    if data["learnability"]["behaviour"]["first_chase_wait_min_minutes"] > data["learnability"]["behaviour"]["first_chase_wait_max_minutes"]:
         raise ValueError("First chase wait bounds must be ordered")
     for name in ("shade_entry_heat_shift_minutes", "shade_entry_jitter_sd_minutes", "shade_wake_heat_shift_minutes", "shade_wake_jitter_sd_minutes", "drink_heat_multiplier", "road_goal_boredom_weight", "road_goal_traffic_penalty", "road_entry_traffic_decay", "road_entry_inset_km"):
         bound(f"behaviour.{name}", 0)
-    window = data["behaviour"]["shade_departure_window"]
+    window = data["learnability"]["behaviour"]["shade_departure_window"]
     if len(window) != 2 or minute_offset(window[0], start) > minute_offset(window[1], start):
         raise ValueError("behaviour.shade_departure_window must contain ordered clock times")
     for name in ("evening_staging_time", "hunt_arrival_deadline"):
-        clock_minutes(data["behaviour"][name])
+        clock_minutes(data["learnability"]["behaviour"][name])
     for name in ("zone_entry_share", "hunt_attempt_day_fraction", "catch_day_fraction", "road_entry_day_fraction"):
         interval(f"targets.{name}", 0, 1)
     interval("targets.zone_entries_per_day", 0)

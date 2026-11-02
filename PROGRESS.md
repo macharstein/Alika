@@ -69,3 +69,12 @@ verify: /opt/anaconda3/bin/python3.12 -m pytest -x -q tests/test_oracle.py tests
 assumptions: oracle mode writes statistics and probabilities without images or minute tables unless --keep-files is passed; --oracle-days defines the first N independent days. Existing --chunk-size bounds work per invocation.
 known problems: percentage warnings unchanged; low-rollout pilots cannot resolve losses below their reported smoothing floor.
 next: group the learnability knobs under the canonical learnability config object while accepting old file/CLI paths.
+
+in progress: phase 8 config grouping — make learnability.behaviour, learnability.activity, learnability.chase, latent_ranges, softmax_temperature and chase_base_probability canonical. Preserve legacy JSON/--set aliases without duplicate runtime values; explicit canonical file values win, CLI overrides apply in order.
+verify: /opt/anaconda3/bin/python3.12 -m pytest -x -q tests/test_config.py tests/test_oracle.py tests/test_behaviour_scenarios.py tests/test_validation_rules.py
+next: full task 7–8 verification and oracle pilot, then tasks 9–10 audit and delivery.
+done: phase 8 canonical configuration — 85 relevant tests passed. All requested learnability knobs are grouped and commented; legacy partial files and dotted CLI paths migrate, canonical file values take precedence, list overrides and CLI order work, and manifests contain no duplicate legacy controls. Simulation values were not tuned.
+verify: /opt/anaconda3/bin/python3.12 -m pytest -x -q tests/test_config.py tests/test_oracle.py tests/test_behaviour_scenarios.py tests/test_validation_rules.py
+assumptions: related activity durations and chase mechanics move with their learning controls to keep each setting in exactly one place; Python callers should read the canonical config paths.
+known problems: original road/rest/walking warnings remain.
+next: full pytest and a resumable 20-day x 100-rollout oracle pilot to close tasks 7–8, then audit task 9 and deliver task 10.

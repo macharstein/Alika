@@ -59,10 +59,11 @@ class _DaySimulation:
     ) -> None:
         self.config = config
         self.c = config.data
+        self.learnability = self.c["learnability"]
         self.randomness = self.c["randomness"]
         self.bar_config = self.c["bars"]
-        self.behaviours = self.c["behaviours"]
-        self.behaviour = self.c["behaviour"]
+        self.behaviours = self.learnability["activity"]
+        self.behaviour = self.learnability["behaviour"]
         self.movement = self.c["movement"]
         self.road_config = self.c["road_response"]
         self.goal_config = self.c["goal"]
@@ -86,7 +87,7 @@ class _DaySimulation:
         self.events: list[dict[str, Any]] = []
         self.latents = {
             name: float(self.rng.uniform(*bounds))
-            for name, bounds in self.randomness["latent_ranges"].items()
+            for name, bounds in self.learnability["latent_ranges"].items()
             if not name.startswith("_")
         }
         wake_clip = [self.offset(t) for t in self.randomness["wake_time_clip"]]
@@ -348,7 +349,7 @@ class _DaySimulation:
         # nearby aversive stimulus is an explicit interruption, logged below.
         committed = self.behaviour["goal_commitment"] and self.mode == "walking"
         volume = max(0.0, self.latents["tourist_rate_per_hour"]
-                     - self.randomness["latent_ranges"]["tourist_rate_per_hour"][0])
+                     - self.learnability["latent_ranges"]["tourist_rate_per_hour"][0])
         traffic_discount = math.exp(-self.behaviour["road_entry_traffic_decay"] * volume)
         kind: str | None = None
         if pressured and self.rng.random() < c["avoidance_probability"]:
@@ -388,7 +389,7 @@ class _DaySimulation:
                 self.mode, self.arriving = pending["kind"], False
                 if self.mode == "road_approach":
                     volume = max(0.0, self.latents["tourist_rate_per_hour"]
-                                 - self.randomness["latent_ranges"]["tourist_rate_per_hour"][0])
+                                 - self.learnability["latent_ranges"]["tourist_rate_per_hour"][0])
                     entry_probability = self.behaviour["road_entry_probability"] * math.exp(-self.behaviour["road_entry_traffic_decay"] * volume)
                     enter = self.rng.random() < entry_probability
                     standoff = -self.behaviour["road_entry_inset_km"] if enter else c["approach_standoff_km"]
@@ -475,7 +476,7 @@ class _DaySimulation:
         if self.midday_slept and not self.afternoon_visit_chosen and self.minute < self.offset(self.behaviour["evening_staging_time"]):
             self.afternoon_visit_chosen = True
             volume = self.latents["tourist_rate_per_hour"]
-            low_volume = self.randomness["latent_ranges"]["tourist_rate_per_hour"][0]
+            low_volume = self.learnability["latent_ranges"]["tourist_rate_per_hour"][0]
             chance = self.behaviour["road_entry_probability"] * self.bars[3] * math.exp(-self.behaviour["road_entry_traffic_decay"] * max(0, volume - low_volume))
             if self.rng.random() < chance:
                 self._commit_goal("Road")
@@ -516,7 +517,7 @@ class _DaySimulation:
                 value += self.behaviour["road_goal_boredom_weight"] * boredom
                 value -= self.behaviour["road_goal_traffic_penalty"] * self.latents["tourist_rate_per_hour"]
             scores.append(value + float(self.rng.normal(0, self.randomness["score_noise_sd"])))
-        logits = np.asarray(scores) / self.randomness["softmax_temperature"]
+        logits = np.asarray(scores) / self.learnability["softmax_temperature"]
         probabilities = np.exp(logits - logits.max())
         probabilities /= probabilities.sum()
         self.goal = str(self.rng.choice(candidates, p=probabilities))
@@ -694,14 +695,14 @@ class _DaySimulation:
 
     def _chase(self) -> None:
         self.chase_count += 1
-        c = self.c["chase"]
+        c = self.learnability["chase"]
         duration = int(round(float(self.rng.uniform(*c["duration_seconds_range"]))))
         start_second = int(self.rng.integers(0, 60 - duration))
         self.emit("CHASE_START", start_second)
         weights = c["energy_weight"] + c["mood_weight"]
         condition = (c["energy_weight"] * self.bars[1] + c["mood_weight"] * self.bars[4]) / weights
         factor = c["factor_min"] + (c["factor_max"] - c["factor_min"]) * condition
-        probability = float(np.clip(self.randomness["chase_base_probability"] * factor, *c["probability_clip"]))
+        probability = float(np.clip(self.learnability["chase_base_probability"] * factor, *c["probability_clip"]))
         success = bool(self.rng.random() < probability)
         direction = float(self.rng.uniform(-math.pi, math.pi))
         distance = c["speed_kmh"] * duration / 3600
