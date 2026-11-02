@@ -140,6 +140,9 @@ class _DaySimulation:
         self.road_trigger_second: int | None = None
         self.road_until = 0
         self.road_cooldown_until = 0
+        self.traffic_resume_mode = "walking"
+        self.traffic_resume_until = 0
+        self.delayed_by_traffic_this_minute = False
         # Heat shifts both shade seeking and wake timing, leaving observable cues.
         heat_difference = self.latents["heat"] - self.behaviour["heat_reference"]
         departure_clip = [self.offset(t) for t in self.behaviour["shade_departure_window"]]
@@ -181,11 +184,12 @@ class _DaySimulation:
             "abandoned_reasons": abandoned_reasons,
             "patrol_speeds": patrol_speeds,
         }
+        self.history["traffic_delays"] = []
         self.next_minute = 0
 
     def _record_abandoned_trip(self, reason: str) -> None:
         """Record an interrupted journey once, at the minute of the decision."""
-        if self.mode == "walking" and self.raw_zone != self.goal:
+        if self.mode in ("walking", "traffic_wait") and self.raw_zone != self.goal:
             self.abandoned_goal_this_minute = self.goal
             self.abandoned_reason_this_minute = reason
         elif self.mode in ("road_approach", "road_retreat"):
@@ -222,7 +226,7 @@ class _DaySimulation:
             self._commit_goal("Hunting ground", "evening_hunt_window")
             return
         if self.hungry_day and not self.evening_staged and self.offset(self.behaviour["evening_staging_time"]) <= self.minute < self.offset(self.behaviours["hunt_start"]):
-            if self.mode == "walking" and self.goal in ("Road", "Waterhole") and self.raw_zone != self.goal:
+            if self.mode in ("walking", "traffic_wait") and self.goal in ("Road", "Waterhole") and self.raw_zone != self.goal:
                 return
             self.evening_staged = True
             self._commit_goal("Plain", "evening_staging")
@@ -354,7 +358,7 @@ class _DaySimulation:
         traffic_discount = math.exp(-self.behaviour["road_entry_traffic_decay"] * volume)
         kind: str | None = None
         if pressured and self.rng.random() < c["avoidance_probability"]:
-            kind = "road_retreat"
+            kind = "traffic_wait" if c["traffic_wait_enabled"] else "road_retreat"
         elif not responding and not committed and bored and energetic and self.bars[4] >= c["minimum_mood"]:
             if self.rng.random() < c["approach_probability"] * traffic_discount:
                 kind = "road_approach"
@@ -382,12 +386,21 @@ class _DaySimulation:
         if self.road_pending is not None and self.minute >= self.road_pending["start_minute"]:
             pending, self.road_pending = self.road_pending, None
             if not self.caught and self.mode in ("walking", "resting", "road_approach", "road_watch"):
-                self._record_abandoned_trip("traffic_avoidance" if pending["kind"] == "road_retreat" else "traffic_curiosity")
+                self.delayed_by_traffic_this_minute = pending["kind"] in ("traffic_wait", "road_retreat")
+                previous_mode, previous_until = self.mode, self.until
+                if pending["kind"] == "traffic_wait":
+                    self.traffic_resume_mode = previous_mode if previous_mode in ("walking", "resting") else "walking"
+                    self.traffic_resume_until = previous_until
                 if self.road_resume_goal is None:
                     self.road_resume_goal = self.goal
                 point, normal = self._nearest_road_boundary()
                 self.road_trigger_second = pending["trigger_second"]
                 self.mode, self.arriving = pending["kind"], False
+                if self.mode == "traffic_wait":
+                    length = int(self.rng.integers(c["traffic_delay_minutes_range"][0], c["traffic_delay_minutes_range"][1] + 1))
+                    self.road_until = self.minute + length
+                    self.traffic_resume_until += length
+                    return True
                 if self.mode == "road_approach":
                     volume = max(0.0, self.latents["tourist_rate_per_hour"]
                                  - self.learnability["latent_ranges"]["tourist_rate_per_hour"][0])
@@ -401,6 +414,13 @@ class _DaySimulation:
                     self.road_until = self.minute + c["retreat_max_minutes"]
                 self.road_target = np.clip(self.road_target, [0, 0],
                                             [self.c["map"]["width_km"], self.c["map"]["height_km"]])
+        if self.mode == "traffic_wait":
+            if self.minute < self.road_until:
+                return True
+            mode, until = self.traffic_resume_mode, self.traffic_resume_until
+            self._finish_road_response()
+            self.mode, self.until = mode, until
+            return False
         if self.mode == "road_watch":
             if self.minute >= self.road_until:
                 self._finish_road_response()
@@ -729,7 +749,7 @@ class _DaySimulation:
     def _activity(self) -> str:
         if self.mode in ("initial_sleep", "midday_sleep", "catnap", "final_sleep", "fatigue_sleep", "night_final_sleep"):
             return "sleeping"
-        if self.mode in ("resting", "fail_rest", "road_watch"):
+        if self.mode in ("resting", "fail_rest", "road_watch", "traffic_wait"):
             return "resting"
         if self.mode == "walking" and self.arriving:
             return "resting"
@@ -738,7 +758,7 @@ class _DaySimulation:
         return self.mode
 
     def _movement_intent(self) -> str:
-        if self.mode.startswith("road_"):
+        if self.mode.startswith("road_") or self.mode == "traffic_wait":
             return self.mode
         if self.mode == "walking":
             return "arrival" if self.arriving else "travel"
@@ -798,6 +818,7 @@ class _DaySimulation:
         for minute in range(self.next_minute, stop_minute):
             self.minute = minute
             self.abandoned_goal_this_minute = None
+            self.delayed_by_traffic_this_minute = False
             self.abandoned_reason_this_minute = None
             true_positions[minute] = self.position
             self.raw_zone = self._lookup(self.position)
@@ -842,6 +863,7 @@ class _DaySimulation:
                     self._move(target, speed, self.randomness["stalk_heading_sd_degrees"] if self.mode == "hunting" else self.randomness["walk_heading_sd_degrees"], confine=confined)
             else:
                 self._jitter()
+            self.history["traffic_delays"].append(self.delayed_by_traffic_this_minute)
             abandoned_goals.append(self.abandoned_goal_this_minute)
             abandoned_reasons.append(self.abandoned_reason_this_minute)
             patrol_speeds.append(float(np.linalg.norm(self.position - true_positions[minute])) * 60 if behaviour == "walking" else None)
@@ -885,6 +907,7 @@ class _DaySimulation:
         hidden["movement_intent"] = intents
         hidden["road_trigger_t_iso"] = road_triggers
         hidden["road_distance_km"] = road_distances
+        hidden["delayed_by_traffic"] = self.history["traffic_delays"]
         hidden["abandoned_goal"] = abandoned_goals
         hidden["abandoned_trip_reason"] = abandoned_reasons
         hidden["actual_patrol_speed_kmh"] = patrol_speeds

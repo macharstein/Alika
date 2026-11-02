@@ -169,6 +169,7 @@ def summarize_for_stats(day: Any, reports: list[dict[str, Any]], config: Config)
             "feast": token_counts["EAT_START"] > 0,
             "enter_road": token_counts["ENTER_ROAD"] > 0,
             "enter_hunt": token_counts["ENTER_HUNT"] > 0,
+            "enter_water": token_counts["ENTER_WATER"] > 0,
         },
         "time_traces_minutes_after_start": traces,
         "mean_drinking_bout_minutes": float(np.mean(drinking_runs)) if drinking_runs else None,
@@ -187,6 +188,7 @@ def summarize_for_stats(day: Any, reports: list[dict[str, Any]], config: Config)
             "tortuosity_segment_count": len(segment_ratios),
             "map_coverage_fraction": visited / cell_count,
             "visited_grid_cells": visited, "total_grid_cells": cell_count,
+            "delayed_by_traffic_count": int(day.hidden_state["delayed_by_traffic"].sum()) if "delayed_by_traffic" in day.hidden_state else 0,
             "abandoned_trip_count": sum(abandoned.values()),
             "abandoned_trips_by_reason": dict(abandoned),
         },
@@ -242,7 +244,7 @@ def build_stats_report(records: Iterable[dict[str, Any]], config: Config) -> dic
     total_entries = sum(zone_counts.values())
     entry_shares = {name: zone_counts[name] / total_entries if total_entries else 0.0 for name in zone_names}
     fractions = {flag: sum(bool(record["day_flags"][flag]) for record in days) / count if count else None
-                 for flag in ("any_chase", "catch", "feast", "enter_road", "enter_hunt")}
+                 for flag in ("any_chase", "catch", "feast", "enter_road", "enter_hunt", "enter_water")}
     hours = {name: minutes[name] / (count * 60) if count else None for name in BEHAVIOURS}
     hours["sleeping_resting"] = ((minutes["sleeping"] + minutes["resting"]) / (count * 60) if count else None)
     traces = {}
@@ -258,7 +260,7 @@ def build_stats_report(records: Iterable[dict[str, Any]], config: Config) -> dic
     sequence_lengths = Counter(len(record["zone_sequence"]) for record in days)
     path_keys = ("total_length_km", "observed_total_length_km", "mean_walking_speed_kmh",
                  "tortuosity", "map_coverage_fraction", "abandoned_trip_count",
-                 "observed_true_path_ratio", "raw_rest_apparent_speed_kmh", "smoothed_rest_apparent_speed_kmh")
+                 "observed_true_path_ratio", "raw_rest_apparent_speed_kmh", "smoothed_rest_apparent_speed_kmh", "delayed_by_traffic_count")
     path_aggregates = {key: _distribution((record["path"].get(key) for record in days), count) for key in path_keys}
     walking_minutes = sum(record["path"]["walking_minutes"] for record in days)
     walking_distance = sum(record["path"]["walking_distance_km"] or 0.0 for record in days)
@@ -309,6 +311,10 @@ def build_stats_report(records: Iterable[dict[str, Any]], config: Config) -> dic
           targets["observed_true_path_ratio_max"], upper=targets["observed_true_path_ratio_max"])
     check("smoothed_rest_apparent_speed_kmh", gps_metrics["smoothed_rest_apparent_speed_kmh"],
           targets["smoothed_rest_speed_max_kmh"], upper=targets["smoothed_rest_speed_max_kmh"], upper_strict=True)
+    check("abandoned_trip_mean", path_aggregates["abandoned_trip_count"]["mean"], targets["abandoned_trip_mean_max"], upper=targets["abandoned_trip_mean_max"])
+    traffic_abandon_share = reason_counts["traffic_avoidance"] / sum(reason_counts.values()) if reason_counts else 0.
+    check("traffic_abandonment_share", traffic_abandon_share, targets["traffic_abandonment_share_max"], upper=targets["traffic_abandonment_share_max"])
+    check("waterhole_day_fraction", fractions["enter_water"], targets["waterhole_day_fraction"], lower=targets["waterhole_day_fraction"][0], upper=targets["waterhole_day_fraction"][1])
     entries_distribution = _distribution((record["zone_entry_count"] for record in days), count)
     low, high = targets["zone_entries_per_day"]
     check("zone_entries_per_day", entries_distribution["mean"], [low, high], lower=low, upper=high)

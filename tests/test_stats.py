@@ -115,7 +115,7 @@ def test_report_has_all_required_sections_and_all_seventeen_tokens():
                            "next_zone_target_balance", "correlations", "checks", "check_counts"}
     assert len(report["token_frequencies"]) == 17
     assert set(report["token_frequencies"]) == set(TOKENS)
-    assert set(report["day_fractions"]) == {"any_chase", "catch", "feast", "enter_road", "enter_hunt"}
+    assert set(report["day_fractions"]) == {"any_chase", "catch", "feast", "enter_road", "enter_hunt", "enter_water"}
     assert set(report["next_zone_target_balance"]["by_report_index"]) == {str(i) for i in range(1, 8)}
     assert set(report["next_zone_target_balance"]["overall"]["counts"]) == set(TARGET_CLASSES)
     assert report["next_zone_target_balance"]["overall"]["counts"]["END_OF_DAY"] == 1

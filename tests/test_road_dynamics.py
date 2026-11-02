@@ -14,6 +14,7 @@ from lionsim.validate import validate_day
 def controlled_simulation(*overrides):
     config = load_config(overrides=[
         "road_response.approach_probability=1",
+        "road_response.traffic_wait_enabled=false",
         "behaviour.goal_commitment=false",
         "behaviour.road_entry_traffic_decay=0",
         "behaviour.road_entry_probability=0",
@@ -231,9 +232,37 @@ def test_default_batch_has_mixed_responses_and_preserves_invariants():
     kinds = set()
     for index in range(1, 13):
         day = simulate_day(config, day_index=index, seed=42)
-        road = day.hidden_state.movement_intent.str.startswith("road_")
+        road = day.hidden_state.movement_intent.str.startswith("road_") | day.hidden_state.movement_intent.eq("traffic_wait")
         response_days += int(road.any())
         kinds.update(day.hidden_state.loc[road, "movement_intent"])
         assert validate_day(day, config)["valid"]
     assert 1 < response_days < 12
-    assert {"road_approach", "road_retreat"} <= kinds
+    assert "traffic_wait" in kinds
+
+
+def test_traffic_wait_preserves_destination_and_records_delay_not_abandonment():
+    sim = controlled_simulation('road_response.traffic_wait_enabled=true',
+                                'road_response.avoidance_probability=1',
+                                'road_response.traffic_delay_minutes_range=[5,5]')
+    sim.bars[4] = .1
+    goal = sim.goal
+    sim._consider_car_response(sim.minute * 60 + 10)
+    sim.minute += 2
+    assert sim._advance_road_response()
+    assert sim.mode == 'traffic_wait' and sim.goal == goal
+    assert sim._activity() == 'resting'
+    assert sim.delayed_by_traffic_this_minute
+    assert sim.abandoned_reason_this_minute is None
+    sim.minute += 5
+    sim._advance_road_response()
+    assert sim.mode == 'walking' and sim.goal == goal
+
+
+def test_default_traffic_delays_are_logged_without_traffic_abandonments():
+    delays = 0
+    for index in range(1,11):
+        day = simulate_day(load_config(), day_index=index, seed=42)
+        delays += int(day.hidden_state.delayed_by_traffic.sum())
+        reasons = set(day.hidden_state.abandoned_trip_reason.dropna())
+        assert not reasons & {'traffic_avoidance','traffic_curiosity'}
+    assert delays > 0

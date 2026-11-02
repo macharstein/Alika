@@ -173,3 +173,8 @@ in progress: S2 — default aversion waits 4–10 minutes with saved destination
 verify: /opt/anaconda3/bin/python3.12 -m pytest -x -q tests/test_road_dynamics.py tests/test_behaviour_scenarios.py tests/test_stats.py tests/test_oracle.py
 assumptions: waiting counts as quiet rest; only physiological or schedule interruptions abandon the preserved journey. No event tokens are added.
 next: measure 200-day S2 results, then implement evening road choices in S3.
+done: S2 traffic implementation — preserved-destination waits and separate delay counts implemented; aversion no longer logs a canceled trip. Optional retreat routing also retains its original destination. Water choice probability is explicitly raised to 0.85; actual daily arrivals remain stochastic.
+verify: /opt/anaconda3/bin/python3.12 -m pytest -x -q tests/test_road_dynamics.py tests/test_behaviour_scenarios.py tests/test_stats.py tests/test_oracle.py
+assumptions: temperature/fatigue/schedule interruptions may still cancel travel; any such interruption during a traffic wait logs the preserved goal. Schema unchanged within v4; simulator version 4.1.0 prevents cross-stage resume mixing.
+known problems: S2 target achievement is not yet measured.
+next: full S2 pytest and 200-day measurement before S3.

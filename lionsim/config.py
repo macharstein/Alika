@@ -397,6 +397,10 @@ def validate_config(data: dict[str, Any]) -> None:
     if data["learnability"]["chase"]["energy_weight"] + data["learnability"]["chase"]["mood_weight"] <= 0:
         raise ValueError("At least one chase energy/mood weight must be positive")
     interval("chase.probability_clip", 0, 1)
+    interval("road_response.traffic_delay_minutes_range", 1, 1440, integer=True)
+    bound("targets.abandoned_trip_mean_max", 0)
+    bound("targets.traffic_abandonment_share_max", 0, 1)
+    interval("targets.waterhole_day_fraction", 0, 1)
     for name in ("fatigue_interrupt_threshold", "fatigue_recovery_threshold", "heat_interrupt_threshold", "heat_recovery_threshold", "road_entry_probability"):
         bound(f"behaviour.{name}", 0, 1)
     if data["learnability"]["behaviour"]["fatigue_interrupt_threshold"] >= data["learnability"]["behaviour"]["fatigue_recovery_threshold"]:

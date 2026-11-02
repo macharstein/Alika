@@ -482,8 +482,15 @@
       "retreat_distance_km": "Desired bounded displacement away from the road during avoidance.",
       "retreat_max_minutes": "Maximum duration of an avoidance retreat.",
       "cooldown_minutes": "Minimum delay after a completed response before another may start.",
-      "boredom_relief_per_watch_hour": "Boredom reduction during a curiosity observation pause."
-    }
+      "boredom_relief_per_watch_hour": "Boredom reduction during a curiosity observation pause.",
+      "traffic_wait_enabled": "Use a stationary delay for aversion; false retains a retreat waypoint while preserving the same destination.",
+      "traffic_delay_minutes_range": "Uniform delay after an already-heard aversive car; resume the saved trip/activity afterward."
+    },
+    "traffic_wait_enabled": true,
+    "traffic_delay_minutes_range": [
+      4,
+      10
+    ]
   },
   "targets": {
     "zone_entries_per_day": [
@@ -518,7 +525,7 @@
         20.0
       ],
       "walking": [
-        1.0,
+        3.0,
         5.0
       ],
       "hunting": [
@@ -549,10 +556,19 @@
       "mean_walking_speed_kmh": "Mean measured patrol speed from true minute displacements.",
       "hours_per_behaviour": "Mean-hour diagnostic ranges; resting combines sleeping and quiet rest.",
       "observed_true_path_ratio_max": "Maximum pooled observed path length divided by true path length.",
-      "smoothed_rest_speed_max_kmh": "Strict maximum pooled apparent speed of sleeping/quiet-rest intervals after five-minute smoothing."
+      "smoothed_rest_speed_max_kmh": "Strict maximum pooled apparent speed of sleeping/quiet-rest intervals after five-minute smoothing.",
+      "abandoned_trip_mean_max": "Maximum mean real journey abandonments per day; traffic delays are excluded.",
+      "traffic_abandonment_share_max": "Maximum traffic_avoidance fraction of actual abandonments; zero if no abandonments.",
+      "waterhole_day_fraction": "Fraction of days containing a confirmed Waterhole entry."
     },
     "observed_true_path_ratio_max": 1.6,
-    "smoothed_rest_speed_max_kmh": 0.8
+    "smoothed_rest_speed_max_kmh": 0.8,
+    "abandoned_trip_mean_max": 1.0,
+    "traffic_abandonment_share_max": 0.25,
+    "waterhole_day_fraction": [
+      0.8,
+      0.88
+    ]
   },
   "statistics": {
     "coverage_grid_km": 0.5,
@@ -618,7 +634,7 @@
         "interrupted_rest_minutes": "Recovery rest following a safety interruption.",
         "afternoon_water_probability": "Probability of a committed afternoon water visit when no road visit was selected; improves observable heat/drinking and prevents staging turnbacks."
       },
-      "afternoon_water_probability": 0.65
+      "afternoon_water_probability": 0.85
     },
     "activity": {
       "groom_mean_minutes": 12.0,
