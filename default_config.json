@@ -740,6 +740,8 @@
     }
   },
   "learnability": {
+    "oracle_days": 100,
+    "oracle_rollouts": 100,
     "oracle_near_zero_nats": 0.1,
     "oracle_noise_relative_tolerance": 0.1,
     "laplace_alpha": 1.0,
@@ -748,6 +750,8 @@
     "mostly_noise_relative_tolerance": 0.03,
     "near_deterministic_ratio": 0.2,
     "_comments": {
+      "oracle_days": "Default number of independent original days in oracle mode; CLI --oracle-days takes precedence.",
+      "oracle_rollouts": "Default independent continuation samples per usable report; CLI --oracle-rollouts takes precedence.",
       "oracle_near_zero_nats": "Oracle loss at or below this absolute threshold is near zero; report the finite-rollout smoothing floor alongside it.",
       "oracle_noise_relative_tolerance": "Absolute oracle-to-L0 gap divided by L0 at or below this threshold is close to L0; compare identical held-out days.",
       "laplace_alpha": "Positive additive count smoothing for all nine classes.",

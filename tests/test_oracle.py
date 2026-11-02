@@ -127,3 +127,54 @@ def test_oracle_comparison_uses_same_holdout_and_reports_sampling_floor():
     empty = oracle_report([], {'status': 'insufficient_data', 'losses': dict.fromkeys(('L0','L1','L2','L3'))}, config)
     assert empty['status'] == 'insufficient_data'
     assert 'Need at least two' in render_oracle_markdown(empty)
+
+
+def test_oracle_cli_resume_matches_uninterrupted_run(tmp_path):
+    import json
+    from lionsim.run import build_parser, run
+    parser = build_parser()
+    options = ['--oracle', '--oracle-days', '3', '--oracle-rollouts', '2']
+    partial = run(parser.parse_args(options + ['--chunk-size', '1', '--out', str(tmp_path / 'partial')]))
+    manifest = json.loads((partial / 'run_manifest.json').read_text())
+    assert manifest['oracle'] and manifest['oracle_rollouts'] == 2
+    assert manifest['status'] == 'partial' and manifest['completed_days'] == 1
+    checkpoint = next((partial / 'checkpoints').glob('*.json'))
+    stamp = checkpoint.stat().st_mtime_ns
+    run(parser.parse_args(['--resume', str(partial), '--workers', '2']))
+    assert checkpoint.stat().st_mtime_ns == stamp
+    manifest = json.loads((partial / 'run_manifest.json').read_text())
+    assert manifest['status'] == 'complete' and manifest['completed_days'] == 3
+    assert not list(partial.rglob('gps*'))
+    assert not list(partial.rglob('*.png'))
+    full = run(parser.parse_args(options + ['--out', str(tmp_path / 'full')]))
+    for name in ('targets.csv', 'oracle_report.json', 'oracle_report.md', 'stats_report.json', 'stats_report.md'):
+        assert (partial / name).read_bytes() == (full / name).read_bytes()
+    oracle = json.loads((partial / 'oracle_report.json').read_text())
+    assert oracle['report_count'] == 21
+    assert oracle['test_days'] == [3] and oracle['test_rows'] == 7
+    assert '2026-01-03T08:00:00' in (partial / 'oracle_report.md').read_text()
+    assert 'Hidden-state oracle' in (partial / 'stats_report.md').read_text()
+    with pytest.raises(ValueError, match='Cannot change --oracle-rollouts'):
+        run(parser.parse_args(['--resume', str(partial), '--oracle-rollouts', '3']))
+    with pytest.raises(ValueError, match='Cannot change --oracle-days'):
+        run(parser.parse_args(['--resume', str(partial), '--oracle-days', '4']))
+
+
+def test_oracle_cli_defaults_overrides_keep_files_and_mode_guards(tmp_path):
+    import json
+    from lionsim.run import build_parser, run
+    parser = build_parser()
+    directory = run(parser.parse_args(['--oracle', '--keep-files', '--set', 'learnability.oracle_days=1',
+                                       '--set', 'learnability.oracle_rollouts=1', '--out', str(tmp_path)]))
+    manifest = json.loads((directory / 'run_manifest.json').read_text())
+    assert manifest['days'] == 1 and manifest['oracle_rollouts'] == 1
+    assert manifest['config']['learnability']['oracle_rollouts'] == 1
+    assert list(directory.rglob('gps*'))
+    assert not list(directory.rglob('*.png'))
+    assert json.loads((directory / 'oracle_report.json').read_text())['status'] == 'insufficient_data'
+    for options in (['--oracle-days', '2'], ['--oracle-rollouts', '1'], ['--oracle', '--days', '2']):
+        with pytest.raises(ValueError):
+            run(parser.parse_args(options + ['--out', str(tmp_path)]))
+    normal = run(parser.parse_args(['--stats-only', '--stats-days', '1', '--out', str(tmp_path)]))
+    with pytest.raises(ValueError, match='Cannot switch'):
+        run(parser.parse_args(['--resume', str(normal), '--oracle']))

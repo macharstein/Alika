@@ -60,3 +60,12 @@ verify: /opt/anaconda3/bin/python3.12 -m pytest -x -q tests/test_oracle.py
 assumptions: near-zero means <=0.1 nats; close to L0 means relative absolute gap <=0.1; both defaults are configurable. Reports expose the Laplace floor and whether the near-zero threshold is resolvable. Existing minute-tick timing and strictly-future target semantics are retained.
 known problems: small-rollout estimates have sampling uncertainty; scheduled wakes/durations are conditioned hidden state, while future traffic is resampled. Original statistical warnings remain.
 next: phase 8 — integrate oracle CLI, manifests and per-day checkpoint/resume, then group learnability settings.
+
+in progress: phase 8 CLI — wire oracle mode into existing atomic day checkpoints, aggregate reports and resume guards; bump version to 3.2.0 so runs cannot mix schemas. User has now authorized tasks 9–10 after tasks 7–8 are verified complete.
+verify: /opt/anaconda3/bin/python3.12 -m pytest -x -q tests/test_oracle.py tests/test_resume.py
+next: group learnability settings, audit task 9 coverage, then perform task 10 delivery without tuning warning percentages.
+done: phase 8 oracle CLI — nine oracle/resume tests passed, including chunked continuation with two workers versus uninterrupted output, preserved checkpoint timestamps, --keep-files, manifest defaults/overrides, changed-rollout rejection and mode guards. Version 3.2.0 prevents mixing old runs.
+verify: /opt/anaconda3/bin/python3.12 -m pytest -x -q tests/test_oracle.py tests/test_resume.py
+assumptions: oracle mode writes statistics and probabilities without images or minute tables unless --keep-files is passed; --oracle-days defines the first N independent days. Existing --chunk-size bounds work per invocation.
+known problems: percentage warnings unchanged; low-rollout pilots cannot resolve losses below their reported smoothing floor.
+next: group the learnability knobs under the canonical learnability config object while accepting old file/CLI paths.

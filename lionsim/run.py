@@ -75,7 +75,10 @@ def build_parser() -> argparse.ArgumentParser:
                         help="regenerate exactly one 1-based day; overrides --days")
     parser.add_argument("--stats-only", action="store_true", help="collect statistics without images or minute tables")
     parser.add_argument("--stats-days", type=_positive, default=None, help="statistics days (default: 200)")
-    parser.add_argument("--keep-files", action="store_true", help="retain daily JSON and minute tables in statistics mode")
+    parser.add_argument("--oracle", action="store_true", help="evaluate hidden-state rollout oracle and counting baselines")
+    parser.add_argument("--oracle-days", type=_positive, default=None, help="oracle days (default: learnability.oracle_days, 100)")
+    parser.add_argument("--oracle-rollouts", type=_positive, default=None, help="rollouts per usable report (default: learnability.oracle_rollouts, 100)")
+    parser.add_argument("--keep-files", action="store_true", help="retain daily JSON and minute tables in statistics/oracle mode")
     parser.add_argument("--resume", type=Path, metavar="RUN_DIR", help="resume/checkpoint an existing v3 run")
     parser.add_argument("--chunk-size", type=_positive, default=200, help="maximum new days per invocation (default: 200)")
     return parser
@@ -94,8 +97,16 @@ def _versions() -> dict[str, str | None]:
 def _run_day(job: dict[str, Any]) -> dict[str, Any]:
     """Publish all outputs before the per-day completion checkpoint."""
     config = Config(job["config"])
-    day = simulate_day(config, day_index=job["day_index"], seed=job["seed"],
-                       start_date=job["start_date"], seed_sequence=job["seed_sequence"])
+    oracle_rows = None
+    if job.get("oracle"):
+        from .oracle import evaluate_day
+
+        day, oracle_rows = evaluate_day(config, day_index=job["day_index"], seed=job["seed"],
+                                       start_date=job["start_date"], seed_sequence=job["seed_sequence"],
+                                       rollouts=job["oracle_rollouts"])
+    else:
+        day = simulate_day(config, day_index=job["day_index"], seed=job["seed"],
+                           start_date=job["start_date"], seed_sequence=job["seed_sequence"])
     reports = build_reports(day, config)
     validation = validate_day(day, config)
     written: list[dict[str, Any]] = []
@@ -113,6 +124,8 @@ def _run_day(job: dict[str, Any]) -> dict[str, Any]:
     record = {"day_index": day.day_index, "run_fingerprint": job["run_fingerprint"],
               "summary": summarize_day(day, reports, validation, config), "stats": stats,
               "targets": target_rows(day, reports), "files": written}
+    if oracle_rows is not None:
+        record["oracle"] = oracle_rows
     checkpoint = Path(job["run_directory"]) / "checkpoints" / f"day_{day.day_index:0{job['folder_width']}d}.json"
     write_json(checkpoint, record, pretty=False)
     return record
@@ -154,6 +167,14 @@ def _load_records(directory: Path, manifest: dict[str, Any]) -> dict[int, dict[s
             index = record["day_index"]
             if index not in expected or record["run_fingerprint"] != manifest["run_fingerprint"]:
                 raise ValueError("checkpoint does not belong to this run")
+            if manifest.get("oracle"):
+                rows = record["oracle"]
+                expected_reports = len(manifest["config"]["time"]["report_times"]) - 1
+                if (len(rows) != expected_reports
+                        or [row["report_index"] for row in rows] != list(range(1, expected_reports + 1))
+                        or any(row["day"] != index or row["rollouts"] != manifest["oracle_rollouts"]
+                               or sum(row["counts"].values()) != row["rollouts"] for row in rows)):
+                    raise ValueError("incomplete oracle checkpoint")
             for item in record["files"]:
                 artifact = directory / item["path"]
                 if not artifact.is_file() or artifact.stat().st_size != item["bytes"]:
@@ -165,7 +186,7 @@ def _load_records(directory: Path, manifest: dict[str, Any]) -> dict[int, dict[s
 
 
 def _write_aggregates(directory: Path, records: dict[int, dict[str, Any]], config: Config,
-                      pretty: bool, execution_error: str | None = None) -> dict[str, Any]:
+                      pretty: bool, execution_error: str | None = None, oracle: bool = False) -> dict[str, Any]:
     ordered = [records[index] for index in sorted(records)]
     accumulator = SummaryAccumulator(config)
     for record in ordered:
@@ -185,6 +206,14 @@ def _write_aggregates(directory: Path, records: dict[int, dict[str, Any]], confi
                 writer.writerows(record["targets"])
     report = build_stats_report([record["stats"] for record in ordered], config)
     report["baseline_ladder"] = baselines_from_csv(directory / "targets.csv", config)
+    if oracle:
+        from .oracle import oracle_report, render_oracle_markdown
+
+        evaluation = oracle_report([row for record in ordered for row in record["oracle"]],
+                                   report["baseline_ladder"], config)
+        write_json(directory / "oracle_report.json", evaluation, pretty=True)
+        write_text(directory / "oracle_report.md", render_oracle_markdown(evaluation))
+        report["oracle"] = {key: value for key, value in evaluation.items() if key != "rows"}
     write_json(directory / "stats_report.json", report, pretty=True)
     write_text(directory / "stats_report.md", render_stats_markdown(report))
     return validation
@@ -203,9 +232,13 @@ def run(args: argparse.Namespace) -> Path:
         for supplied, original, name in ((args.seed, manifest["seed"], "seed"),
                                         (args.start_date, manifest["start_date"], "start-date"),
                                         (args.days, manifest["days"], "days"),
-                                        (args.stats_days, manifest["days"], "stats-days")):
+                                        (args.stats_days, manifest["days"], "stats-days"),
+                                        (args.oracle_days, manifest["days"], "oracle-days"),
+                                        (args.oracle_rollouts, manifest.get("oracle_rollouts"), "oracle-rollouts")):
             if supplied is not None and supplied != original:
                 raise ValueError(f"Cannot change --{name} while resuming")
+        if (args.oracle or args.oracle_days is not None or args.oracle_rollouts is not None) and not manifest.get("oracle"):
+            raise ValueError("Cannot switch an existing run to oracle mode")
         if args.day_index is not None and manifest["day_indices"] != [args.day_index]:
             raise ValueError("Cannot change --day-index while resuming")
         if args.stats_only and not manifest["stats_only"]:
@@ -220,19 +253,27 @@ def run(args: argparse.Namespace) -> Path:
     else:
         if args.stats_days is not None and not args.stats_only:
             raise ValueError("--stats-days requires --stats-only")
+        if not args.oracle and (args.oracle_days is not None or args.oracle_rollouts is not None):
+            raise ValueError("--oracle-days and --oracle-rollouts require --oracle")
+        if args.oracle and (args.days is not None or args.stats_days is not None or args.day_index is not None):
+            raise ValueError("Oracle runs use --oracle-days, not --days, --stats-days or --day-index")
         config = load_config(args.config, args.overrides)
         seed, start_date = args.seed if args.seed is not None else 42, args.start_date or "2026-01-01"
         days = (args.stats_days or 200) if args.stats_only else (args.days or 1)
+        if args.oracle:
+            days = args.oracle_days or config["learnability"]["oracle_days"]
         indices = [args.day_index] if args.day_index is not None else list(range(1, days + 1))
         image_days = len(indices) if args.image_days is None else min(len(indices), args.image_days)
-        if args.no_images or args.stats_only:
+        if args.no_images or args.stats_only or args.oracle:
             image_days = 0
         directory = create_run_directory(args.out).resolve()
         manifest = {
             "config": config.to_dict(), "seed": seed, "versions": _versions(),
             "start_date": start_date, "days": len(indices), "day_indices": indices,
             "image_days": image_days, "stats_only": args.stats_only,
-            "keep_files": not args.stats_only or args.keep_files,
+            "keep_files": not (args.stats_only or args.oracle) or args.keep_files,
+            "oracle": args.oracle,
+            "oracle_rollouts": (args.oracle_rollouts or config["learnability"]["oracle_rollouts"]) if args.oracle else None,
             "started_at": datetime.now().astimezone().isoformat(timespec="seconds"),
             "runtime_seconds": 0.0, "status": "running", "completed_days": 0,
             "day_log_schema": "lionsim-v3", "vocabulary": list(TOKENS),
@@ -253,7 +294,8 @@ def run(args: argparse.Namespace) -> Path:
              "start_date": start_date, "seed_sequence": children[index - 1],
              "run_directory": str(directory), "folder_width": max(4, len(str(max(indices)))),
              "render": ordinals[index] < manifest["image_days"],
-             "keep_files": manifest["keep_files"], "run_fingerprint": manifest["run_fingerprint"]}
+             "keep_files": manifest["keep_files"], "run_fingerprint": manifest["run_fingerprint"],
+             "oracle": manifest.get("oracle", False), "oracle_rollouts": manifest.get("oracle_rollouts")}
             for index in pending)
     try:
         for record in _stream_jobs(jobs, min(args.workers, max(1, len(pending)))):
@@ -265,7 +307,7 @@ def run(args: argparse.Namespace) -> Path:
         # Include worker checkpoints committed just before an interrupted parent
         # or a result-delivery delay; checkpoint files are the source of truth.
         records = _load_records(directory, manifest)
-        validation = _write_aggregates(directory, records, config, pretty)
+        validation = _write_aggregates(directory, records, config, pretty, oracle=manifest.get("oracle", False))
         manifest["status"] = ("partial" if len(records) < len(indices) else
                               "complete" if validation["valid"] else "validation_failed")
         for warning in validation.get("warnings", []):
@@ -273,7 +315,7 @@ def run(args: argparse.Namespace) -> Path:
     except BaseException as error:
         manifest.update(status="failed", error=f"{type(error).__name__}: {error}")
         records = _load_records(directory, manifest)
-        _write_aggregates(directory, records, config, pretty, manifest["error"])
+        _write_aggregates(directory, records, config, pretty, manifest["error"], oracle=manifest.get("oracle", False))
         raise
     finally:
         manifest["completed_days"] = len(records)

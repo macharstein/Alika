@@ -443,6 +443,14 @@ def render_stats_markdown(report: dict[str, Any]) -> str:
                       "Absolute gaps: " + str(ladder["absolute_gaps_nats"]),
                       "Relative gaps: " + str(ladder["relative_gaps"]),
                       ladder["backoff_rule"], "Backoff row counts: " + str(ladder["backoff_rows"])]
+    if "oracle" in report:
+        oracle = report["oracle"]
+        lines += ["", "## Hidden-state oracle", "", oracle["interpretation"], "", oracle["finite_sample_note"]]
+        if oracle["status"] == "complete":
+            lines += ["", "| Model | Same held-out log loss (nats) |", "| --- | ---: |"]
+            lines += [f"| {name} | {value:.6f} |" for name, value in oracle["losses"].items()]
+            lines += ["", f"Smoothing floor: {oracle['smoothing_floor_nats']:.6f} nats."]
+        lines += ["", "See oracle_report.md and oracle_report.json for timestamped per-report probabilities."]
     return "\n".join(lines) + "\n"
 
 
