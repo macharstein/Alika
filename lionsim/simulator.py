@@ -115,6 +115,10 @@ class _DaySimulation:
         self.evening_staged = False
         self.shade_trip_started = False
         self.night_nap_count = 0
+        self.night_patrol_remaining: int | None = None
+        self.night_visited: set[str] = set()
+        self.night_water_pause = False
+        self.daytime_walking_minutes = 0
         self.nap_start_second = 0
         self.afternoon_visit_chosen = False
         self.evening_road_considered = False
@@ -214,7 +218,13 @@ class _DaySimulation:
             self.fatigue_latched = False
         if self.bars[2] <= self.behaviour["heat_recovery_threshold"]:
             self.heat_latched = False
-        if self.caught or self.mode in ("initial_sleep", "final_sleep", "eating", "midday_sleep", "fatigue_sleep", "catnap", "night_final_sleep"):
+        if self.caught or self.mode in ("initial_sleep", "final_sleep", "eating", "midday_sleep", "fatigue_sleep", "catnap", "night_final_sleep", "night_rest"):
+            return
+        if self._is_night() and self.night_patrol_remaining is None and self.mode == "resting":
+            if self.raw_zone in ("Den", "Plain"):
+                self._night_pause()
+            else:
+                self._choose_night_goal()
             return
         cutoff = self.offset(self.behaviours["hunt_end"])
         if self.minute >= cutoff and (self.mode in ("hunting", "fail_rest") or self.goal == "Hunting ground"):
@@ -224,6 +234,9 @@ class _DaySimulation:
         if self.mode in ("grooming", "drinking"):
             return
         if self.hungry_day and self._can_hunt() and not self.hunt_departed:
+            if (self.goal == "Waterhole" and self.mode in ("walking", "traffic_wait")
+                    and self.minute < self.offset(self.behaviours["hunt_start"]) + self.behaviour["water_trip_grace_minutes"]):
+                return
             self.hunt_departed = True
             self._commit_goal("Hunting ground", "evening_hunt_window")
             return
@@ -241,7 +254,7 @@ class _DaySimulation:
         # physiological interrupts are applied to other daytime patrol journeys.
         if self.mode != "walking" or self._is_night() or self.goal in ("Shade", "Hunting ground"):
             return
-        if self.bars[2] > self.behaviour["heat_interrupt_threshold"] and not self.heat_latched:
+        if self.goal != "Waterhole" and self.bars[2] > self.behaviour["heat_interrupt_threshold"] and not self.heat_latched:
             self.heat_latched = True
             self._commit_goal("Shade", "temperature")
         elif self.bars[1] < self.behaviour["fatigue_interrupt_threshold"] and not self.fatigue_latched:
@@ -324,6 +337,7 @@ class _DaySimulation:
                      + weights[2] * self.bars[3]) / sum(weights)
         condition = float(np.clip(condition + self.rng.normal(0, c["patrol_speed_noise_sd"]), 0, 1))
         low, high = c["patrol_speed_kmh_range"]
+        condition = c["patrol_cruise_fraction"] + (1 - c["patrol_cruise_fraction"]) * condition
         speed = low + (high - low) * condition
         if self.goal == "Hunting ground" and self._can_hunt():
             remaining = max(1, self.offset(self.behaviour["hunt_arrival_deadline"]) - self.minute)
@@ -518,10 +532,50 @@ class _DaySimulation:
                 return period
         raise ValueError("Goal period table does not cover this clock time")
 
+    def _initialize_night_patrol(self) -> None:
+        if self.night_patrol_remaining is None:
+            self.night_patrol_remaining = int(self.rng.choice([1, 2, 3], p=self.behaviour["night_patrol_entry_weights"]))
+
+    def _choose_night_goal(self) -> None:
+        self._initialize_night_patrol()
+        if self.night_patrol_remaining <= 0:
+            self._night_pause(terminal=True)
+            return
+        if self._try_evening_road():
+            return
+        candidates = [name for name in ("Plain", "Kopje", "Den", "Waterhole")
+                      if name != self.tracker.considered_zone and name != self.raw_zone]
+        scores = np.array([-self.behaviour["night_patrol_distance_penalty"] * self.zones.distance_to(name, *self.position)
+                           + (math.log(self.behaviour["night_repeat_zone_weight"]) if name in self.night_visited else 0)
+                           for name in candidates])
+        weights = np.exp(scores - scores.max())
+        self._commit_goal(str(self.rng.choice(candidates, p=weights / weights.sum())))
+
+    def _night_pause(self, terminal: bool = False) -> None:
+        self._initialize_night_patrol()
+        minimum = self.behaviour["night_nap_min_minutes"]
+        terminal = terminal or self.night_patrol_remaining <= 0
+        safe = self.raw_zone in ("Den", "Plain")
+        length = max(minimum, self.duration("catnap_minutes_range"))
+        if not safe or self.day_minutes - self.minute <= minimum or self.night_nap_count >= self.behaviour["night_nap_max_cycles"]:
+            self.mode = "night_rest"
+            self.until = self.day_minutes if terminal or self.night_nap_count >= self.behaviour["night_nap_max_cycles"] else min(self.day_minutes, self.minute + length)
+            return
+        self.nap_start_second = int(self.rng.integers(12, 60))
+        self.emit("FELL_ASLEEP", self.nap_start_second)
+        self.night_nap_count += 1
+        if terminal or self.night_nap_count >= self.behaviour["night_nap_max_cycles"] or self.day_minutes - self.minute < length + minimum:
+            self.mode, self.until = "night_final_sleep", self.day_minutes
+        else:
+            self.mode, self.until = "catnap", self.minute + length
+
     def choose_goal(self) -> None:
         """Draw a destination from the configured noisy, distance-aware logits."""
         if self.caught:
             self.goal, self.mode, self.arriving = "Feeding spot", "walking", False
+            return
+        if self._is_night():
+            self._choose_night_goal()
             return
         if self._try_evening_road():
             return
@@ -536,6 +590,9 @@ class _DaySimulation:
             if self.rng.random() < self.behaviour["afternoon_water_probability"]:
                 self._commit_goal("Waterhole")
                 return
+        if self.daytime_walking_minutes >= self.behaviour["daytime_travel_budget_minutes"] and self.raw_zone is not None and not self._can_hunt():
+            self.goal, self.mode, self.until = self.raw_zone, "resting", self.day_minutes
+            return
         period = self._period()
         priors = period.get("caught_priors", period["priors"]) if self.caught else period["priors"]
         if self._is_night():
@@ -591,6 +648,18 @@ class _DaySimulation:
 
     def arrive(self) -> None:
         self.arriving = False
+        if self._is_night() and not self.caught:
+            self._initialize_night_patrol()
+            self.night_patrol_remaining = max(0, self.night_patrol_remaining - 1)
+            self.night_visited.add(self.goal)
+            if self.goal == "Waterhole":
+                self.night_water_pause = True
+            elif self.goal in ("Plain", "Den"):
+                self.mode, self.until = "night_walk", self.minute + self.duration("night_walk_minutes_range")
+                return
+            else:
+                self._night_pause()
+                return
         if self.caught and self.goal == "Feeding spot":
             self.mode, self.until = "eating", self.minute + self.behaviours["eat_max_minutes"]
             self.emit("EAT_START")
@@ -662,17 +731,11 @@ class _DaySimulation:
             return
         if self.mode == "night_walk":
             if self.minute >= self.until:
-                if self.day_minutes - self.minute <= self.behaviour["night_nap_min_minutes"]:
-                    self.mode, self.until = "resting", self.day_minutes
-                    return
-                self.nap_start_second = int(self.rng.integers(12, 60))
-                self.emit("FELL_ASLEEP", self.nap_start_second)
-                self.night_nap_count += 1
-                length = max(self.behaviour["night_nap_min_minutes"], self.duration("catnap_minutes_range"))
-                if self.night_nap_count >= self.behaviour["night_nap_max_cycles"] or self.day_minutes - self.minute < length + self.behaviour["night_nap_min_minutes"]:
-                    self.mode, self.until = "night_final_sleep", self.day_minutes
-                else:
-                    self.mode, self.until = "catnap", self.minute + length
+                self._night_pause()
+            return
+        if self.mode == "night_rest":
+            if self.minute >= self.until:
+                self._choose_night_goal()
             return
         if self.mode == "hunting":
             if not self._can_hunt():
@@ -687,7 +750,11 @@ class _DaySimulation:
                     self.choose_goal()
             return
         if self.mode in ("grooming", "drinking", "resting") and self.minute >= self.until:
-            self.choose_goal()
+            if self.mode == "drinking" and self.night_water_pause:
+                self.night_water_pause = False
+                self._night_pause()
+            else:
+                self.choose_goal()
         if self.mode == "walking" and self.raw_zone == self.goal:
             # Settle inside the boundary until entry hysteresis has confirmed it.
             self.arriving = True
@@ -782,7 +849,7 @@ class _DaySimulation:
     def _activity(self) -> str:
         if self.mode in ("initial_sleep", "midday_sleep", "catnap", "final_sleep", "fatigue_sleep", "night_final_sleep"):
             return "sleeping"
-        if self.mode in ("resting", "fail_rest", "road_watch", "traffic_wait"):
+        if self.mode in ("resting", "fail_rest", "road_watch", "traffic_wait", "night_rest"):
             return "resting"
         if self.mode == "walking" and self.arriving:
             return "resting"
@@ -900,6 +967,8 @@ class _DaySimulation:
             abandoned_goals.append(self.abandoned_goal_this_minute)
             abandoned_reasons.append(self.abandoned_reason_this_minute)
             patrol_speeds.append(float(np.linalg.norm(self.position - true_positions[minute])) * 60 if behaviour == "walking" else None)
+            if behaviour == "walking" and not self._is_night():
+                self.daytime_walking_minutes += 1
             self._update_bars(behaviour, entered is not None)
             self.previous_zone = self.raw_zone
             self.next_minute = minute + 1

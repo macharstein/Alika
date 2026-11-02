@@ -207,7 +207,7 @@
     }
   },
   "goal": {
-    "distance_penalty_per_km": 0.3,
+    "distance_penalty_per_km": 0.8,
     "road_penalty_per_car": 0.4,
     "road_memory_minutes": 30,
     "hunt_unavailable_prior": -5.0,
@@ -349,13 +349,15 @@
       "patrol_heat_weight": "Contribution of heat discomfort to reduced patrol speed.",
       "patrol_boredom_weight": "Contribution of boredom to patrol speed.",
       "patrol_speed_noise_sd": "Minute speed variation as a fraction of the patrol speed range.",
-      "road_surface_speed_bonus_kmh": "Speed bonus on the Road, still clipped to configured patrol-speed bounds."
+      "road_surface_speed_bonus_kmh": "Speed bonus on the Road, still clipped to configured patrol-speed bounds.",
+      "patrol_cruise_fraction": "Reserve this fraction of the configured patrol speed range for cruising; remaining variation still reflects energy, heat and boredom."
     },
     "patrol_energy_weight": 0.55,
     "patrol_heat_weight": 0.3,
     "patrol_boredom_weight": 0.15,
     "patrol_speed_noise_sd": 0.1,
-    "road_surface_speed_bonus_kmh": 0.2
+    "road_surface_speed_bonus_kmh": 0.2,
+    "patrol_cruise_fraction": 0.35
   },
   "tourists": {
     "start": "16:00",
@@ -496,8 +498,8 @@
   },
   "targets": {
     "zone_entries_per_day": [
-      6.0,
-      12.0
+      8.0,
+      11.0
     ],
     "zone_entry_share": [
       0.03,
@@ -515,8 +517,8 @@
       0.1,
       0.18
     ],
-    "unique_sequence_fraction_min": 0.3,
-    "top_five_sequence_share_max": 0.5,
+    "unique_sequence_fraction_min": 0.5,
+    "top_five_sequence_share_max": 0.35,
     "mean_walking_speed_kmh": [
       2.0,
       4.0
@@ -565,7 +567,12 @@
       "road_entry_share": "Road entries as a fraction of all confirmed entries.",
       "road_tourist_correlation_max": "Maximum Pearson correlation between actual daily tourist count and daily road entry count.",
       "road_evening_fraction_min": "Minimum fraction of road entries with clock hour 19..23.",
-      "road_tourist_window_fraction_max": "Maximum fraction of road entries during the configured tourist window."
+      "road_tourist_window_fraction_max": "Maximum fraction of road entries during the configured tourist window.",
+      "events_per_day": "Mean daily count across the unchanged 17-token vocabulary.",
+      "non_feast_late_entry_fraction_min": "Minimum non-feast-day fraction with a confirmed zone entry strictly after 23:00.",
+      "feast_post_meal_entry_fraction_max": "Maximum feast-day fraction with a zone entry after EAT_END.",
+      "end_of_day_report_6_range": "END_OF_DAY fraction at report index 6.",
+      "end_of_day_report_7_range": "END_OF_DAY fraction at report index 7."
     },
     "observed_true_path_ratio_max": 1.6,
     "smoothed_rest_speed_max_kmh": 0.8,
@@ -581,7 +588,21 @@
     ],
     "road_tourist_correlation_max": -0.35,
     "road_evening_fraction_min": 0.6,
-    "road_tourist_window_fraction_max": 0.1
+    "road_tourist_window_fraction_max": 0.1,
+    "events_per_day": [
+      24.0,
+      32.0
+    ],
+    "non_feast_late_entry_fraction_min": 0.7,
+    "feast_post_meal_entry_fraction_max": 0.15,
+    "end_of_day_report_6_range": [
+      0.4,
+      0.6
+    ],
+    "end_of_day_report_7_range": [
+      0.6,
+      0.8
+    ]
   },
   "statistics": {
     "coverage_grid_km": 0.5,
@@ -618,7 +639,7 @@
       "road_entry_traffic_decay": 0.18,
       "road_entry_inset_km": 0.08,
       "night_nap_min_minutes": 25,
-      "night_nap_max_cycles": 3,
+      "night_nap_max_cycles": 4,
       "interrupted_rest_minutes": 30,
       "_comments": {
         "goal_commitment": "Keep destinations until arrival unless a recorded safety or schedule interrupt occurs.",
@@ -651,7 +672,12 @@
         "road_volume_decay": "Exponential road-goal penalty per observed car above the reference count.",
         "road_daytime_multiplier": "Relative road goal/entry odds outside the post-tourist evening window.",
         "road_evening_start": "Earliest favored evening road choice; must also be after tourist end.",
-        "road_evening_end": "Latest favored evening road-goal decision, exclusive; travel may finish later."
+        "road_evening_end": "Latest favored evening road-goal decision, exclusive; travel may finish later.",
+        "night_patrol_entry_weights": "Probabilities of planning 1, 2 or 3 night destinations on non-catch days; actual incidental crossings are also measured.",
+        "night_patrol_distance_penalty": "Per-km logit penalty for long night legs, favoring nearby territory.",
+        "night_repeat_zone_weight": "Relative weight for a previously visited night destination.",
+        "daytime_travel_budget_minutes": "After this much pre-night walking, finish current trips but decline new voluntary daytime wandering; water, shade and hunt schedules still apply.",
+        "water_trip_grace_minutes": "Maximum hunt-start grace for completing an already committed water journey; hunt cutoff remains unchanged."
       },
       "afternoon_water_probability": 0.85,
       "evening_road_probability": 0.9,
@@ -659,7 +685,16 @@
       "road_volume_decay": 0.18,
       "road_daytime_multiplier": 0.05,
       "road_evening_start": "19:00",
-      "road_evening_end": "23:00"
+      "road_evening_end": "23:00",
+      "night_patrol_entry_weights": [
+        0.1,
+        0.35,
+        0.55
+      ],
+      "night_patrol_distance_penalty": 0.8,
+      "night_repeat_zone_weight": 0.25,
+      "daytime_travel_budget_minutes": 120,
+      "water_trip_grace_minutes": 30
     },
     "activity": {
       "groom_mean_minutes": 12.0,
@@ -693,8 +728,8 @@
       "eat_stop_hunger": 0.1,
       "eat_max_minutes": 150,
       "catnap_minutes_range": [
-        20,
-        60
+        65,
+        115
       ],
       "night_walk_minutes_range": [
         2,

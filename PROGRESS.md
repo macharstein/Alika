@@ -219,3 +219,8 @@ in progress: S4 — finite 1–3-destination night plans, long enough pauses to 
 verify: /opt/anaconda3/bin/python3.12 -m pytest -x -q tests/test_behaviour_scenarios.py tests/test_road_dynamics.py tests/test_stats.py tests/test_oracle.py
 assumptions: 1–3 planned destinations may include incidental zone crossings; all actual entries are measured. A maximum four nap cycles does not require four naps. Daytime travel budget prevents new voluntary journeys, never cancels an underway trip.
 next: measure S4; explicitly document any remaining misses, then implement S5 latent/observable time links.
+done: S4 initial implementation — targeted night-patrol, catch-sleep, cutoff, water-trip, road, stats and oracle tests pass. Night plans choose 1/2/3 destinations with probabilities 0.10/0.35/0.55; pauses are 65–115 minutes and safe-zone naps are capped at four. Non-safe visit zones use quiet rest, never invalid sleep events.
+verify: /opt/anaconda3/bin/python3.12 -m pytest -x -q tests/test_behaviour_scenarios.py tests/test_road_dynamics.py tests/test_stats.py tests/test_oracle.py
+assumptions: daytime voluntary-travel budget=120 minutes; nearby-goal distance penalty 0.3→0.8; patrol cruise fraction=0.35 within the same 2–4 km/h range. Existing trips finish; shade/water/hunt schedules override the voluntary budget. Hot water-bound lions continue toward water; hunt-start grace for finishing water travel is at most 30 minutes. These explicit changes aim to reserve night walking time, not relax targets.
+known problems: combined S4 target achievement has not yet been measured.
+next: measure and fully verify S4, then S5 cross-time links.

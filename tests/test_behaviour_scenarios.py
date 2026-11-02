@@ -137,17 +137,17 @@ def test_committed_trip_survives_destination_redraws_until_a_logged_interrupt():
     sim.minute = sim.offset('08:00')
     sim.position = np.array([6.0, 6.0])
     sim.raw_zone = None
-    sim.mode, sim.goal = 'walking', 'Waterhole'
+    sim.mode, sim.goal = 'walking', 'Kopje'
     sim.bars[:] = [.5, .8, .5, .8, .5]
     for _ in range(10):
         sim._transitions()
-        assert sim.goal == 'Waterhole' and sim.mode == 'walking'
+        assert sim.goal == 'Kopje' and sim.mode == 'walking'
         assert sim.abandoned_goal_this_minute is None
         sim.minute += 1
     sim.bars[2] = 1
     sim._transitions()
     assert sim.goal == 'Shade'
-    assert sim.abandoned_goal_this_minute == 'Waterhole'
+    assert sim.abandoned_goal_this_minute == 'Kopje'
     assert sim.abandoned_reason_this_minute == 'temperature'
 
 
@@ -185,8 +185,8 @@ def test_night_catnaps_enforce_minimum_real_duration_and_maximum_cycles(cycles):
     end = datetime.fromisoformat(day.gps.iloc[-1]['t_iso'])
     sleeps = [e for e in day.events if e['token'] == 'FELL_ASLEEP' and _event_time(e) >= night_start]
     wakes = [e for e in day.events if e['token'] == 'WOKE_UP' and _event_time(e) >= night_start]
-    assert len(sleeps) == cycles
-    assert len(wakes) == cycles - 1
+    assert 1 <= len(sleeps) <= cycles
+    assert len(wakes) <= len(sleeps)
     minimum = config['learnability']['behaviour']['night_nap_min_minutes']
     for sleep in sleeps:
         wake_time = next((_event_time(w) for w in wakes if _event_time(w) > _event_time(sleep)), end)
@@ -203,5 +203,41 @@ def test_no_short_terminal_nap_when_only_minimum_ticks_remain():
     sim.minute = sim.day_minutes - config['learnability']['behaviour']['night_nap_min_minutes']
     sim.mode, sim.goal, sim.until = 'night_walk', 'Plain', sim.minute
     sim._transitions()
-    assert sim.mode == 'resting'
+    assert sim.mode == 'night_rest'
     assert not any(e['token'] == 'FELL_ASLEEP' for e in sim.events)
+
+
+def test_night_patrols_add_late_entries_without_breaking_catch_sleep_or_cutoff():
+    late_non_feast = non_feast = 0
+    for index in range(1, 41):
+        day = simulate_day(load_config(), day_index=index, seed=42)
+        assert validate_day(day, load_config())['valid']
+        entries = [e for e in day.events if e['token'].startswith('ENTER_')]
+        cutoff = datetime.fromisoformat(f'{day.date}T22:00:00')
+        late = datetime.fromisoformat(f'{day.date}T23:00:00')
+        assert not any(e['token'] in ('ENTER_HUNT','CHASE_START') and _event_time(e) >= cutoff for e in day.events)
+        ends = [e for e in day.events if e['token']=='EAT_END']
+        if ends:
+            assert not any(_event_time(e) > _event_time(ends[0]) for e in entries)
+        else:
+            non_feast += 1
+            late_non_feast += any(_event_time(e) > late for e in entries)
+        sleeps = [e for e in day.events if e['token']=='FELL_ASLEEP' and _event_time(e) >= cutoff]
+        assert len(sleeps) <= 4
+    assert non_feast > 10
+    assert late_non_feast / non_feast > .5
+
+
+def test_water_trip_is_not_diverted_from_one_cooling_destination_to_another():
+    import numpy as np
+    from lionsim.simulator import _DaySimulation
+    sim = _DaySimulation(load_config(), 1, 42, '2026-01-01', np.random.SeedSequence(42))
+    sim.minute = sim.offset('16:30')
+    sim.midday_slept = True
+    sim.position = np.array([6., 6.])
+    sim.raw_zone = None
+    sim.mode, sim.goal = 'walking', 'Waterhole'
+    sim.bars[:] = [.5, .8, 1., .8, .5]
+    sim._scheduled_interrupts()
+    assert sim.goal == 'Waterhole'
+    assert sim.abandoned_reason_this_minute is None

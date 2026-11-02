@@ -398,6 +398,19 @@ def validate_config(data: dict[str, Any]) -> None:
         raise ValueError("At least one chase energy/mood weight must be positive")
     interval("chase.probability_clip", 0, 1)
     interval("road_response.traffic_delay_minutes_range", 1, 1440, integer=True)
+    bound("movement.patrol_cruise_fraction", 0, 1)
+    weights = data["learnability"]["behaviour"]["night_patrol_entry_weights"]
+    if len(weights) != 3 or any(w < 0 for w in weights) or not math.isclose(sum(weights), 1):
+        raise ValueError("night_patrol_entry_weights must be three nonnegative probabilities summing to one")
+    bound("behaviour.night_patrol_distance_penalty", 0)
+    bound("behaviour.night_repeat_zone_weight", positive=True)
+    bound("behaviour.daytime_travel_budget_minutes", 0, 1440)
+    bound("behaviour.water_trip_grace_minutes", 0, 90)
+    interval("targets.events_per_day", 0)
+    for name in ("non_feast_late_entry_fraction_min", "feast_post_meal_entry_fraction_max"):
+        bound(f"targets.{name}", 0, 1)
+    for name in ("end_of_day_report_6_range", "end_of_day_report_7_range"):
+        interval(f"targets.{name}", 0, 1)
     bound("movement.road_surface_speed_bonus_kmh", 0)
     for name in ("evening_road_probability", "road_daytime_multiplier"):
         bound(f"behaviour.{name}", 0, 1)
