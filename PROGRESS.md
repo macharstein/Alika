@@ -1,6 +1,6 @@
-# Completed tasks 1–6
+# Completed tasks 1–10
 
-Scope: `docs/UPDATE_SPEC.md` tasks 1–5, including its cross-cutting resume and atomic-write requirements. Task 6 is now completed as requested; task 7 oracle remains unimplemented.
+Scope: `docs/UPDATE_SPEC.md` tasks 1–10, including cross-cutting resume and atomic-write requirements. Tasks 7–8 were completed and verified, then tasks 9–10 were completed under the latest user instruction.
 
 - [x] 17-token event schema, internal traffic context, restored daily reports/latents
 - [x] Seven usable next-zone targets and run-level targets.csv
@@ -8,6 +8,9 @@ Scope: `docs/UPDATE_SPEC.md` tasks 1–5, including its cross-cutting resume and
 - [x] Statistical metrics, target checks and JSON/Markdown reports
 - [x] Atomic output and per-day checkpoint/resume with 200-day execution chunks
 - [x] Tests and final 200-day statistics check
+- [x] Smoothed counting ladder and snapshot/resume oracle
+- [x] Canonical learnability configuration, legacy aliases and resumable oracle CLI
+- [x] Full acceptance coverage, timing edge-case fixes and measured README delivery
 
 Existing text-free PNGs, per-day SeedSequence reproducibility, and image generation for every selected day are preserved. Parameter choices and observed target failures will be recorded in README.md after measurement.
 
@@ -130,3 +133,14 @@ results: 200-day run: 19 PASS, 3 WARN, 0 FAIL; road days 6.5%, resting 15.754167
 assumptions: no behavior/control values or target ranges changed to obtain passes; canonical grouping and evaluation defaults do not tune trajectories. Oracle pilot is not the full 100-day default workload.
 known problems: three statistical warnings and L3's 2.60% regression versus L2 remain measured limitations. README.pdf and performance_check.json remain untouched.
 next: run final full pytest, commit completion, then stop with tasks 1–10 complete.
+
+in progress: phase 10 final verification — run the complete pytest suite after documentation/report delivery; inspect final working-tree status and commit phase completion.
+verify: /opt/anaconda3/bin/python3.12 -m pytest -q
+next: tasks 1–10 complete after final verification; stop and report the remaining measured warnings.
+
+done: phase 10 final verification — full pytest: 170 passed in 33.17s. Tasks 1–10 are complete; tested increments and final results are committed. No new ML dependencies.
+verify: /opt/anaconda3/bin/python3.12 -m pytest -q
+results: outputs/run_20261102_105804/stats_report.md (200 days; 19 PASS, 3 WARN, 0 FAIL); outputs/oracle_verified/run_20261102_105804/oracle_report.md (resumed 20-day pilot, 100 rollouts/report, balanced). README contains the complete target table and measured limitations.
+assumptions: canonical configuration paths and finite-rollout interpretation thresholds are documented; fixes enforce actual nap duration and preserve observed boundary entries without tuning percentages.
+known problems: road days 6.5%, resting 15.754h and walking 6.272h remain outside reference ranges; L3 is 2.60% worse than L2 on the 200-day holdout. Historical README.pdf/performance_check.json remain untouched and untracked.
+next: tasks 1–10 complete; no further phase scheduled.
