@@ -237,3 +237,15 @@ verify: /opt/anaconda3/bin/python3.12 -m pytest -x -q tests/test_behaviour_scena
 done: S4 adjustment — targeted behavior/road/oracle checks passed with the documented four knob changes; no reference ranges changed. Night patrols remain causal and bounded, and older checkpoint versions cannot be mixed with v4.3.1.
 verify: /opt/anaconda3/bin/python3.12 -m pytest -x -q tests/test_behaviour_scenarios.py tests/test_road_dynamics.py tests/test_oracle.py
 next: complete S4 full verification, then S5 morning scouting, hunger-linked waking and prey-linked hunt timing.
+in progress: final S4 verification on adjusted defaults.
+verify: /opt/anaconda3/bin/python3.12 -m pytest -q
+verify: /opt/anaconda3/bin/python3.12 -m lionsim.run --stats-only --stats-days 200 --seed 42 --out outputs/phase2_s4_verified
+next: S5 implementation, followed by measured correlations and headline CV improvement.
+done: S4 complete — adjusted-default full pytest: 178 passed in 34.36s. Fresh 200-day run at outputs/phase2_s4_verified/run_20261102_195807 completes without hard validation errors; actual warnings remain in its report. Both pre-adjustment and adjusted runs are retained for comparison.
+verify: /opt/anaconda3/bin/python3.12 -m pytest -q
+verify: /opt/anaconda3/bin/python3.12 -m lionsim.run --stats-only --stats-days 200 --seed 42 --out outputs/phase2_s4_verified
+next: S5 cross-time links and final S1–S5 documentation, not S6 large runs.
+in progress: S5 — prey-linked morning Kopje scouting dwell (20–95m plus 8m noise), followed by Plain staging; hunger shifts waking earlier up to 30m with wake SD reduced 30→20m and the same 05:00–07:00 clip; low prey delays hunt departure up to 45m, high prey starts at 18:30. Add measured correlations and >=3% headline L3 improvement check. Existing heat coefficients remain unchanged.
+verify: /opt/anaconda3/bin/python3.12 -m pytest -x -q tests/test_cross_time.py tests/test_behaviour_scenarios.py tests/test_oracle.py tests/test_stats.py tests/test_baselines.py
+assumptions: first Kopje-to-next-entry gap is measured where a later entry exists, including travel; missing gaps stay null. The 22:00 cutoff is unchanged. Scouting stays observable through pauses and timing, not new tokens or exposed hidden latents.
+next: measure S5 on 200 days, record all targets and any misses, update README, full pytest and commit completion.
