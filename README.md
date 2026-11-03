@@ -6,13 +6,14 @@ every three hours. This is a configurable stochastic simulator for inspecting sy
 data, not an empirically calibrated model of lion behaviour. There is no machine
 learning, training code, or external service dependency.
 
-Current distribution: **4.4.1**, implementing `docs/UPDATE_SPEC_2.md` S1–S5.
+Current package: **4.5.0**, retaining the 4.4.1 simulation distribution.
+S1–S5 implement the behavior changes; S6 adds evaluation and explicit stats-mode images.
 The manifest `schema_version` is **lionsim-v4**; the compact daily JSON shape
 remains v3. **Old seeds produce different data** because the model and GPS noise
 changed. Reproducibility requires the same version and effective configuration;
 resume refuses other versions. The previous phase's measurements below are
 historical. Current settings, changed knobs and results are in the final section.
-S6's large oracle/500-day runs have not been performed.
+S6 evaluation is in progress; see PROGRESS.md for checkpoint locations.
 
 ## Setup and first run
 
@@ -49,14 +50,14 @@ report boundaries, output serialization, and worker-count independence.
 | `--config PATH` | Optional partial or complete JSON configuration |
 | `--set dotted.key=value` | Repeatable overrides, applied after the config file |
 | `--start-date YYYY-MM-DD` | `2026-01-01`; date of original day 1 |
-| `--image-days K` | Explicitly limit rendering to the first K selected days; default is **every day** |
+| `--image-days K` | Render the first K selected days; default is **every normal day**, none in stats/oracle mode |
 | `--no-images` | Disable all report images and contact sheets; overrides image-days |
 | `--workers W` | `1`; independent worker processes |
 | `--day-index I` | Regenerate exactly original day I, **1-based**; overrides days |
 | `--stats-only` / `--stats-days N` | Statistics without daily files; default 200 days |
 | `--oracle` / `--oracle-days N` | Hidden-state oracle plus baselines; default 100 days |
 | `--oracle-rollouts R` | Independent continuations per usable report; default 100 |
-| `--keep-files` | Keep daily JSON and minute tables in stats/oracle mode; no images |
+| `--keep-files` | Keep daily JSON and minute tables in stats/oracle mode; images separately require --image-days |
 | `--chunk-size N` | At most 200 new days per invocation by default |
 | `--resume RUN_DIR` | Continue the saved run, skipping completed day checkpoints |
 
@@ -139,7 +140,8 @@ Groups are `time`, `map`, `randomness`, `bars`, `goal`, `movement`,
 | `activity` | Activity durations, `hunt_start`, `hunt_end` and `catnap_minutes_range` |
 | `chase` | Catch probability clipping/factors and chase mechanics |
 | `laplace_alpha`, `train_fraction`, `l3_min_cell_count` | Counting evaluation and backoff |
-| `oracle_days`, `oracle_rollouts`, `oracle_near_zero_nats`, `oracle_noise_relative_tolerance` | Oracle workload and interpretation |
+| `oracle_days`, `oracle_rollouts` | Oracle workload |
+| `oracle_near_zero_nats`, `oracle_noise_relative_tolerance` | Historical thresholds; only the near-zero smoothing-resolution diagnostic remains active |
 
 Bar noise, heading noise and GPS noise/dropouts remain under `randomness`.
 Older JSON/CLI paths (`behaviour.*`, `behaviours.*`, `chase.*`, and the three
@@ -523,14 +525,17 @@ baselines. `oracle_report.json` stores timestamped counts, class probabilities,
 actual original targets and log loss. `oracle_report.md` shows the comparison
 and each report's time, target and probability in human-readable tables.
 
-The main oracle/L0–L3 comparison uses the same out-of-fold evaluated day IDs
-and mean-across-fold weighting. All-day row-weighted oracle loss is also shown
-separately. This preserves the existing oracle tool; S6-specific experiments
-and its additional decision thresholds are still pending. With fewer than two completed days, comparison
-is explicitly unavailable. Default interpretations are: oracle loss <=0.1 nats
-means **oracle near zero: too deterministic**; otherwise an absolute gap to L0
-within 10% of L0 means **oracle close to L0: too noisy**; otherwise **balanced**.
-These thresholds are configurable diagnostics, not calibration guarantees.
+The oracle/L0–L3 comparison reports headline indices 1–5 and all reports using
+the same out-of-fold days and mean-across-fold weighting, with fold standard
+deviations. The all-day row-weighted oracle loss is also shown separately.
+With fewer than two completed days the comparison is explicitly unavailable.
+S6 checks `targets.oracle_l0_ratio_range` (0.25–0.50) and
+`targets.oracle_l2_improvement_min` (10%) separately for both scopes. An oracle
+above L2 is labeled **too noisy**; a ratio below 0.25 is labeled **too deterministic**
+and proposes increasing `learnability.softmax_temperature` before remeasurement.
+The proposal does not change parameters. These diagnostics describe this generator,
+not empirical calibration guarantees. The old absolute near-zero/near-L0 rules
+are superseded; the absolute near-zero setting still describes smoothing resolution.
 
 Finite rollout counts and smoothing limit the result. Even unanimous 100-rollout
 predictions with alpha=1 have loss `-log(101/109) = 0.076227` nats. Reports expose
@@ -635,4 +640,4 @@ were widened, and no extra events were generated merely to reach a count.
 
 [Final statistics](outputs/phase2_s5_verified/run_20261102_200914/stats_report.md)
 and [JSON report](outputs/phase2_s5_verified/run_20261102_200914/stats_report.json).
-S6’s larger oracle/final runs remain pending; this delivery stops at S5.
+This is the S1–S5 reference measurement. S6 evaluation is tracked in PROGRESS.md.

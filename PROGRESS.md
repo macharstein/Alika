@@ -305,3 +305,18 @@ verify: /opt/anaconda3/bin/python3.12 -m pytest -x -q tests/test_resume.py tests
 assumptions: --no-images still overrides an explicit image limit; image selection is immutable on resume.
 known problems: S5 calibration warnings are unchanged.
 next: first 20 days of the 100-day × 100-rollout oracle, then four resumptions.
+in progress: S6 oracle experiment — 100 independent days, 100 rollouts for each of seven usable reports, seed 42, four workers, five invocations of at most 20 days. No model tuning; reports use the S6 ratio/headroom checks in both scopes.
+verify: /opt/anaconda3/bin/python3.12 -m lionsim.run --oracle --oracle-days 100 --oracle-rollouts 100 --seed 42 --workers 4 --chunk-size 20 --out outputs/phase2_s6_oracle
+next: record the output directory and resume after each completed 20-day chunk.
+done: S6 oracle chunk 1 — completed 20/100 days in outputs/phase2_s6_oracle/run_20261102_202029. Continuing session inspected the uncommitted experiment log and retained it; no partial source edits exist.
+in progress: S6 oracle chunk 2 — resume days 21–40 using existing checkpoints, with unchanged configuration and 100 rollouts/report.
+verify: /opt/anaconda3/bin/python3.12 -m lionsim.run --resume outputs/phase2_s6_oracle/run_20261102_202029 --workers 4 --chunk-size 20
+next: resume the remaining oracle chunks before the final 500-day statistics run.
+in progress: S6 documentation — update the CLI image defaults and oracle interpretation to match the tested reporting contract while the experiment runs. Keep S1–S5 results labeled as the historical 200-day measurement.
+verify: /opt/anaconda3/bin/python3.12 -m pytest -x -q tests/test_oracle.py
+next: complete all oracle chunks and record final results before running 500 days.
+done: S6 oracle chunks 1–2 and documentation — 40/100 days checkpointed; README now matches explicit image selection and S6 scope/interpretation. Oracle regression suite: 10 passed.
+verify: /opt/anaconda3/bin/python3.12 -m pytest -x -q tests/test_oracle.py
+assumptions: partial oracle results are provisional; no behavior or target tuning.
+known problems: early oracle/L0 ratios are below 0.25; full 100-day result is pending.
+next: S6 oracle chunk 3, days 41–60.
