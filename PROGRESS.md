@@ -346,3 +346,17 @@ known problems: Matplotlib emitted sandbox font-cache warnings while rendering; 
 next: resume statistics chunks 2–5 and inspect the first-three-day images.
 verify: /opt/anaconda3/bin/python3.12 -m pytest -x -q tests/test_oracle.py tests/test_resume.py (13 passed in 14.14s)
 assumptions: font cache warnings are environmental; completed PNGs are still checked as artifacts. No rerun or cache-location change is needed if they are intact.
+in progress: S6 final statistics chunk 2 — resume days 101–200; saved image selection remains days 1–3 only.
+verify: /opt/anaconda3/bin/python3.12 -m lionsim.run --resume outputs/phase2_s6_final/run_20261103_085841 --workers 4 --chunk-size 100
+next: statistics chunks 3–5, then final tests and delivery.
+done: S6 statistics chunk 2 — 200/500 days checkpointed. All 27 PNGs decode; the day-1 contact sheet was visually checked and contains only zones, paths and endpoints. No corrupt images resulted from font-cache warnings.
+in progress: S6 statistics chunk 3 — resume days 201–300.
+verify: /opt/anaconda3/bin/python3.12 -m lionsim.run --resume outputs/phase2_s6_final/run_20261103_085841 --workers 4 --chunk-size 100
+next: remaining 200 statistics days, final artifact audit and full pytest.
+done: S6 statistics chunk 3 — 300/500 days checkpointed; hard validation remains valid.
+in progress: S6 statistics chunk 4 — resume days 301–400.
+verify: /opt/anaconda3/bin/python3.12 -m lionsim.run --resume outputs/phase2_s6_final/run_20261103_085841 --workers 4 --chunk-size 100
+next: final 100 statistics days, aggregate audit and full pytest.
+verify: /opt/anaconda3/bin/python3.12 -m pytest -x -q tests/test_stats.py tests/test_resume.py (13 passed in 1.62s)
+assumptions: earlier partial reports are replaced atomically after each chunk; only the completed 500-day report will be used for delivery.
+known problems: walking remains above five hours; final target statuses await all 500 days.
