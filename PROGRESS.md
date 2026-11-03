@@ -1,4 +1,4 @@
-# Phases 1–2 complete; phase 3 S8.1 complete
+# Phases 1–2 complete; phase 3 S8.1–S8.2 complete
 
 Scope: phase-one `docs/UPDATE_SPEC.md` tasks 1–10 are complete. Under `docs/UPDATE_SPEC_2.md`, S1–S5 are implemented and S6 evaluation is complete, including checkpoint/resume safety. Final 500-day statistics have eight calibration warnings; both oracle/L0 ratio checks warn. S7 regression audit is complete; all 189 tests pass. No calibration experiment has been applied.
 
@@ -435,3 +435,11 @@ verify: /opt/anaconda3/bin/python3.12 -m pytest -x -q tests/test_features_path.p
 assumptions: valid unavailable metrics serialize as JSON null / blank CSV fields, distinct from absent checkpoint keys. The final report remains excluded. No path features enter L0–L3; L4 belongs to S8.3.
 known problems: no failing tests; observed trip boundaries are approximations to hidden committed trips and must be identified as such in documentation. S8.3 calibration remains unperformed.
 next: final feature documentation, full suite and S8.2 completion checkpoint.
+in progress: S8.2 final documentation/acceptance — document feature formulas/units, observed trip segmentation, trailing-window boundaries, nulls and version compatibility. Run the full suite, including inherited image/event/reproducibility and baseline checks; do not implement L4 or run S8.3 calibration.
+verify: /opt/anaconda3/bin/python3.12 -m pytest -q
+next: record final results, commit S8.2 completion, and stop before S8.3.
+done: phase 3 S8.2 — full pytest: 224 passed in 56.13s. Package 5.1.0/schema v5 exports ten observed-path features to targets.csv, with causal smoothing, observable completed-trip detection, explicit null semantics and atomic checkpoint recovery. README, docs/PATH_FEATURES.md and movement documentation explain the interface, boundary approximation and export compatibility.
+verify: /opt/anaconda3/bin/python3.12 -m pytest -q
+assumptions: the completed-trip feature is an observable inter-zone segment, deliberately independent of hidden trip labels. Numeric path features use only smoothed observed coordinates at/before report time. Exact comparison against completed S8.1 verified all previous defaults, simulator/style logic and report/event/PNG modules unchanged; only five features_path settings were added. S8.3 must distinguish observable segmentation from ground-truth trips when evaluating correlations.
+known problems: no test failures or partial source edits. S8.3 population correlations, L4, guardrails and S8.4 figures remain unimplemented/unmeasured; no calibration claims or retuning. Historical README.pdf/performance_check.json remain untracked and untouched.
+next: S8.3 — path-shape correlations, L4 counting baseline and guarded evaluation; S8.1–S8.2 are complete.

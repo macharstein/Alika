@@ -20,6 +20,8 @@ measurements of the new movement distribution. See [movement-style details](docs
 L4/calibration and example figures (S8.3–S8.4) are not implemented. Version 5.1.0
 changes feature export only; trajectories match 5.0.0. Resume requires the same
 package version, including for older v5 runs without these columns.
+See [path-feature definitions and causality](docs/PATH_FEATURES.md).
+Current full suite: **224 tests passed**. S8.3 remains the next task.
 
 ## Setup and first run
 

@@ -1,8 +1,8 @@
 # Phase 3 S8.1: movement style
 
-Package **5.0.0**, manifest schema **lionsim-v5**. The accepted phase-two commit
+Introduced in package **5.0.0**, manifest schema **lionsim-v5**; package 5.1.0 retains this movement distribution. The accepted phase-two commit
 `3de4f5a` is tagged **v4.5.0**. S8.1 adds trip-dependent walking style and its
-tests; S8.2 path features, S8.3 L4/calibration and S8.4 figures are not implemented.
+tests. S8.2 is now documented in [path features](PATH_FEATURES.md); S8.3 L4/calibration and S8.4 figures remain unimplemented.
 Existing phase-two settings are unchanged. New paths change event timings and
 sequences naturally; no event-state-machine rules or day-level latent sampling
 were retuned. The old phase-two statistics are not measurements of v5.

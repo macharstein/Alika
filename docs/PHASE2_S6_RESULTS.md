@@ -159,4 +159,4 @@ python -m pytest -q
 
 Full verification: **185 tests passed in 37.96s**. Artifact audit confirmed all 600 checkpoints, 70,000 continuations, exact target agreement between oracle and statistics days, unchanged S5 targets for days 1–200, and 27 decodable PNGs. The day-1 contact sheet was visually checked for text-free zones and paths. Matplotlib emitted nonfatal sandbox font-cache warnings; all images were generated successfully.
 
-Existing tests cover exact oracle continuation, day-disjoint folds, headline weighting, interpolation, image-limit/resume repair, fixed-seed behavior and event invariants. The subsequent S7 audit is documented in [the regression coverage map](PHASE2_TEST_COVERAGE.md); it changes tests only, so these S6 measurements remain current.
+Existing tests cover exact oracle continuation, day-disjoint folds, headline weighting, interpolation, image-limit/resume repair, fixed-seed behavior and event invariants. The subsequent S7 audit is documented in [the regression coverage map](PHASE2_TEST_COVERAGE.md); it changes tests only, so these S6 measurements remain valid for the accepted v4.5.0 baseline, not the later v5 movement distribution.
