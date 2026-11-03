@@ -673,4 +673,19 @@ without that option these modes remain image-free. Images are checked and
 repaired through ordinary `--resume`. S6 adds only the two evaluation thresholds
 `targets.oracle_l0_ratio_range=[0.25,0.50]` and
 `targets.oracle_l2_improvement_min=0.10`; it changes no behavior parameters.
-S7 remains the next separate task.
+S7 regression coverage is documented in [the test audit](docs/PHASE2_TEST_COVERAGE.md).
+
+
+## Phase 2 S7 regression audit
+
+S1–S7 are complete. Full pytest: **189 passed in 36.42s**.
+All nine S7 requirements are mapped to named tests in the
+[coverage audit](docs/PHASE2_TEST_COVERAGE.md). The audit adds exact next-day
+05:00 boundary cases and strengthens feast-night, four-nap-limit, per-fold
+interpolation and same-seed traffic/report checks. Fixed-seed behavior tests
+retain loose bounds; deterministic contracts retain exact assertions.
+
+No simulator code, configuration settings or model parameters changed in S7.
+The S6 calibration and oracle warnings remain unresolved; passing regression
+tests establishes the implemented contracts, not that every statistical target
+has been met.

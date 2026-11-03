@@ -1,6 +1,6 @@
-# Phase 1 complete; phase 2 S1–S6 complete
+# Phase 1 complete; phase 2 S1–S7 complete
 
-Scope: phase-one `docs/UPDATE_SPEC.md` tasks 1–10 are complete. Under `docs/UPDATE_SPEC_2.md`, S1–S5 are implemented and S6 evaluation is complete, including checkpoint/resume safety. Final 500-day statistics have eight calibration warnings; both oracle/L0 ratio checks warn. S7 remains the next separate task.
+Scope: phase-one `docs/UPDATE_SPEC.md` tasks 1–10 are complete. Under `docs/UPDATE_SPEC_2.md`, S1–S5 are implemented and S6 evaluation is complete, including checkpoint/resume safety. Final 500-day statistics have eight calibration warnings; both oracle/L0 ratio checks warn. S7 regression audit is complete; all 189 tests pass. No calibration experiment has been applied.
 
 - [x] 17-token event schema, internal traffic context, restored daily reports/latents
 - [x] Seven usable next-zone targets and run-level targets.csv
@@ -384,3 +384,11 @@ verify: /opt/anaconda3/bin/python3.12 -m pytest -x -q tests/test_behaviour_scena
 assumptions: 05:00 belongs to the next simulation day for targets, and report 8 stays unlabeled. Behavior checks retain existing fixed seeds and loose rate bounds; no exact stochastic outputs are pinned.
 known problems: no test failures or runtime changes; the eight S6 calibration warnings and two oracle ratio warnings remain.
 next: document all nine S7 requirements against named tests, run full pytest, and commit completion.
+in progress: S7 final audit/documentation — map each requested regression to its existing or strengthened test, explain deterministic versus statistical assertions, and run the full suite. No new config settings, ML dependencies, model changes or large evaluation reruns are needed for this test-only phase.
+verify: /opt/anaconda3/bin/python3.12 -m pytest -q
+next: record the full-suite result and commit phase 2 completion; stop without starting a calibration experiment.
+done: phase 2 S7 — all nine requested areas are covered and documented in docs/PHASE2_TEST_COVERAGE.md. Full pytest: 189 passed in 36.42s. Documentation links and 16 named test references were verified. The focused regression changes were committed separately; this final checkpoint records the complete audit and phase status.
+verify: /opt/anaconda3/bin/python3.12 -m pytest -q
+assumptions: existing S1–S6 tests satisfy requirements where they already exercise the intended behavior; S7 strengthens gaps instead of adding redundant batches. No runtime changes, new settings, dependencies, schema/version changes or calibration tuning were made, so S6 measurements remain current.
+known problems: the eight 500-day statistical warnings and two oracle/L0 ratio warnings remain documented in docs/PHASE2_S6_RESULTS.md. Historical README.pdf/performance_check.json remain untracked and untouched. No test failures or partial edits remain.
+next: Phase 2 S1–S7 complete; await a new task before changing calibration parameters.
