@@ -460,6 +460,17 @@ def add_headline_check(report: dict[str, Any], config: Config) -> None:
                              "observed": improvement, "expected": target,
                              "message": "Relative improvement of mean CV headline L3 over L2; no forced ordering."})
     report["check_counts"][status] += 1
+    improvement = None
+    if ladder['status'] == 'complete':
+        l3, l4 = (ladder['headline'][name]['mean'] for name in ('L3', 'L4'))
+        if l3 is not None and l4 is not None and l3 > 0:
+            improvement = (l3 - l4) / l3
+    target = config['targets']['headline_l4_improvement_min']
+    status = 'FAIL' if improvement is None else 'PASS' if improvement >= target else 'WARN'
+    report['checks'].append({'name': 'headline_l4_relative_improvement', 'status': status,
+                             'observed': improvement, 'expected': target,
+                             'message': 'Fixed-bin L4 relative improvement over L3 on identical headline day folds.'})
+    report['check_counts'][status] += 1
 
 
 def _display(value: Any) -> str:
@@ -535,12 +546,12 @@ def render_stats_markdown(report: dict[str, Any]) -> str:
         ladder = report["baseline_ladder"]
         lines += ["", "## Baseline ladder", "", ladder["interpretation"], ""]
         if ladder["status"] == "complete":
-            lines += ["| Scope | L0 mean ± std | L1 mean ± std | L2 mean ± std | L3 mean ± std |",
-                      "| --- | ---: | ---: | ---: | ---: |"]
+            lines += ["| Scope | L0 mean ± std | L1 mean ± std | L2 mean ± std | L3 mean ± std | L4 mean ± std |",
+                      "| --- | ---: | ---: | ---: | ---: | ---: |"]
             for scope, values in [("Headline", ladder["headline"]), ("All reports", ladder["all_reports"]), *ladder["by_report_index"].items()]:
                 lines.append(f"| {scope} | " + " | ".join(
                     "n/a" if values[name]["mean"] is None else f"{values[name]['mean']:.6f} ± {values[name]['std']:.6f}"
-                    for name in ("L0", "L1", "L2", "L3")) + " |")
+                    for name in ("L0", "L1", "L2", "L3", "L4")) + " |")
             lines += ["", ladder["split_rule"], ladder["backoff_rule"],
                       f"Effective folds: {ladder['cv_folds']}; headline reports: {ladder['headline_reports']}.",
                       f"Target entropy over evaluated rows: {ladder['target_entropy_nats']:.6f} nats.",
@@ -549,16 +560,23 @@ def render_stats_markdown(report: dict[str, Any]) -> str:
                       "", "Per-fold headline L3−L2 and standard error of paired day losses (diagnostic only):", "",
                       "| Fold | L3−L2 nats | Paired day SE |", "| --- | ---: | ---: |"]
             lines += [f"| {f['fold']} | {_display(f['headline_l3_minus_l2_nats'])} | {_display(f['paired_day_standard_error_nats'])} |" for f in ladder["folds"]]
+            lines += ["", "L4 uses fixed missing/low/high straightness and speed bins, and missing/no/yes detour bins.",
+                      f"L4 zero-training-cell fraction: {ladder['l4_zero_training_fraction']:.4f}.",
+                      "", "| Path cue diagnostic | Headline mean ± std | Improvement over L3 |",
+                      "| --- | ---: | ---: |"]
+            for cue, values in ladder['path_cue_diagnostics'].items():
+                lines.append(f"| {cue} | {_display(values['mean'])} ± {_display(values['std'])} | {_display(values['relative_improvement_over_l3'])} |")
+            lines += ["", "Diagnostics use the same folds, fixed bins and k; no cue is selected or tuned using these losses."]
     if "oracle" in report:
         oracle = report["oracle"]
         lines += ["", "## Hidden-state oracle", "", oracle["interpretation"], "", oracle["finite_sample_note"]]
         if oracle["status"] == "complete":
-            lines += ["", "| Scope | L0 | L1 | L2 | L3 | Oracle |",
-                      "| --- | ---: | ---: | ---: | ---: | ---: |"]
+            lines += ["", "| Scope | L0 | L1 | L2 | L3 | L4 | Oracle |",
+                      "| --- | ---: | ---: | ---: | ---: | ---: | ---: |"]
             for scope, values in oracle['comparisons'].items():
                 lines.append('| ' + scope + ' | ' + ' | '.join(
                     f"{values[name]['mean']:.6f} ± {values[name]['std']:.6f}"
-                    for name in ('L0', 'L1', 'L2', 'L3', 'oracle')) + ' |')
+                    for name in ('L0', 'L1', 'L2', 'L3', 'L4', 'oracle')) + ' |')
             lines += ["", f"Smoothing floor: {oracle['smoothing_floor_nats']:.6f} nats."]
         lines += ["", "See oracle_report.md and oracle_report.json for timestamped per-report probabilities."]
     return "\n".join(lines) + "\n"
@@ -570,6 +588,19 @@ def _cue_bins(row: dict[str, Any], config: Config) -> tuple[str, ...]:
                  'early' if int(shade) < config['learnability']['shade_hour_cut'] else 'late')
     return (shade_bin, *(str(min(2, max(0, int(row[name])))) for name in
                          ('drinks_so_far', 'chase_attempts_so_far', 'catch_so_far')))
+
+
+def _path_cue_bins(row: dict[str, Any], config: Config) -> tuple[str, ...]:
+    result = []
+    for column, cut in (("last_trip_straightness", config['learnability']['l4_straightness_cut']),
+                        ("last_3h_mean_speed_kmh", config['learnability']['l4_speed_cut_kmh']),
+                        ("last_trip_max_perpendicular_distance_km", config['features_path']['detour_threshold_km'])):
+        raw = row.get(column)
+        value = _finite(raw) if raw not in (None, '') else None
+        result.append('missing' if value is None else 'low' if value < cut else 'high')
+    # Exactly three possible states per cue, including absent trip information.
+    result[-1] = {'missing': 'missing', 'low': 'no', 'high': 'yes'}[result[-1]]
+    return tuple(result)
 
 
 def baseline_ladder(rows: Iterable[dict[str, Any]], config: Config) -> dict[str, Any]:
@@ -586,7 +617,8 @@ def baseline_ladder(rows: Iterable[dict[str, Any]], config: Config) -> dict[str,
     if any(any(key not in r or r[key] == '' for key in required) for r in rows):
         raise ValueError('Baseline evaluation requires observable history cue columns')
     days = sorted({int(r['day']) for r in rows})
-    names = ('L0', 'L1', 'L2', 'L3')
+    names = ('L0', 'L1', 'L2', 'L3', 'L4')
+    cue_names = ('straightness', 'speed', 'detour', 'no_path_control')
     if len(days) < 2:
         return {'status': 'insufficient_data', 'interpretation': 'Need at least two days for day-disjoint cross-validation.',
                 'losses': dict.fromkeys(names), 'classes': classes}
@@ -596,7 +628,10 @@ def baseline_ladder(rows: Iterable[dict[str, Any]], config: Config) -> dict[str,
     def keys(row):
         bucket = (str(int(row['report_index'])),)
         state = bucket + tuple('' if row[k] is None else str(row[k]) for k in ('current_zone', 'last_event'))
-        return [(), bucket, state, state + _cue_bins(row, config)]
+        history = state + _cue_bins(row, config)
+        path = _path_cue_bins(row, config)
+        return [(), bucket, state, history, history + path,
+                *(history + (cue,) for cue in path), history]
 
     def mean_losses(records):
         return {name: float(np.mean([r['losses'][name] for r in records])) if records else None for name in names}
@@ -608,7 +643,7 @@ def baseline_ladder(rows: Iterable[dict[str, Any]], config: Config) -> dict[str,
         train_days = sorted(set(days) - set(test_days))
         training = [r for r in rows if int(r['day']) in set(train_days)]
         testing = [r for r in rows if int(r['day']) in set(test_days)]
-        tables: list[dict[tuple[str, ...], Counter[str]]] = [{} for _ in names]
+        tables: list[dict[tuple[str, ...], Counter[str]]] = [{} for _ in range(len(names) + len(cue_names))]
         for row in training:
             for level, key in enumerate(keys(row)):
                 tables[level].setdefault(key, Counter())[row['next_zone_target']] += 1
@@ -622,23 +657,39 @@ def baseline_ladder(rows: Iterable[dict[str, Any]], config: Config) -> dict[str,
                     backoffs[f'L{level}'] += 1
                 else:
                     probabilities.append(np.array([(counts[target] + alpha) / (sum(counts.values()) + alpha * len(classes)) for target in classes]))
-            counts = tables[3].get(cell_keys[3], Counter())
-            total = sum(counts.values())
-            probabilities.append((np.array([counts[target] for target in classes]) + strength * probabilities[2]) / (total + strength))
+            totals = []
+            for level in range(3, len(tables)):
+                counts = tables[level].get(cell_keys[level], Counter())
+                total = sum(counts.values())
+                prior = probabilities[2] if level == 3 else probabilities[3]
+                k = strength if level == 3 else options['l4_interpolation_k']
+                probabilities.append((np.array([counts[target] for target in classes]) + k * prior) / (total + k))
+                totals.append(total)
             target_index = classes.index(row['next_zone_target'])
             fold_rows.append({'day': int(row['day']), 'report_index': int(row['report_index']),
-                              'fold': fold_index + 1, 'l3_zero_cell': total == 0,
+                              'fold': fold_index + 1, 'l3_zero_cell': totals[0] == 0,
+                              'l4_zero_cell': totals[1] == 0,
+                              'cue_losses': {name: -math.log(probabilities[i+5][target_index]) for i, name in enumerate(cue_names)},
                               'losses': {name: -math.log(probabilities[i][target_index]) for i, name in enumerate(names)}})
         predictions.extend(fold_rows)
         paired = [float(np.mean([r['losses']['L3'] - r['losses']['L2'] for r in fold_rows
                                  if r['day'] == day and r['report_index'] in headline]))
                   for day in test_days if any(r['day'] == day and r['report_index'] in headline for r in fold_rows)]
+        paired_l4 = [float(np.mean([r['losses']['L4'] - r['losses']['L3'] for r in fold_rows
+                                    if r['day'] == day and r['report_index'] in headline]))
+                     for day in test_days if any(r['day'] == day and r['report_index'] in headline for r in fold_rows)]
+        cue_headline = {name: float(np.mean([r['cue_losses'][name] for r in fold_rows if r['report_index'] in headline]))
+                        if paired_l4 else None for name in cue_names}
         folds.append({'fold': fold_index + 1, 'train_days': train_days, 'test_days': test_days,
                       'test_rows': len(fold_rows), 'training_rows': len(training),
                       'all_reports': mean_losses(fold_rows),
                       'headline': mean_losses([r for r in fold_rows if r['report_index'] in headline]),
                       'by_report_index': {str(index): mean_losses([r for r in fold_rows if r['report_index'] == index])
                                           for index in range(1, len(config['time']['report_times']))},
+                      'path_cue_headline_losses': cue_headline,
+                      'headline_l4_minus_l3_nats': float(np.mean(paired_l4)) if paired_l4 else None,
+                      'l4_paired_day_standard_error_nats': float(np.std(paired_l4, ddof=1) / math.sqrt(len(paired_l4))) if len(paired_l4) > 1 else None,
+                      'l4_zero_training_fraction': sum(r['l4_zero_cell'] for r in fold_rows) / len(fold_rows),
                       'l3_zero_training_fraction': sum(r['l3_zero_cell'] for r in fold_rows) / len(fold_rows),
                       'headline_l3_minus_l2_nats': float(np.mean(paired)) if paired else None,
                       'paired_day_standard_error_nats': float(np.std(paired, ddof=1) / math.sqrt(len(paired))) if len(paired) > 1 else None})
@@ -654,14 +705,24 @@ def baseline_ladder(rows: Iterable[dict[str, Any]], config: Config) -> dict[str,
     all_reports = summary(lambda f: f['all_reports'])
     head = summary(lambda f: f['headline'])
     losses = {name: all_reports[name]['mean'] for name in names}
-    absolute = {f'L{i}-L{i+1}': losses[f'L{i}'] - losses[f'L{i+1}'] for i in range(3)}
+    absolute = {f'L{i}-L{i+1}': losses[f'L{i}'] - losses[f'L{i+1}'] for i in range(4)}
     relative = {key: value / losses[f'L{i}'] for i, (key, value) in enumerate(absolute.items())}
     spread = (max(losses[n] for n in names[:3]) - min(losses[n] for n in names[:3])) / losses['L0']
     interpretation = ('mostly noise' if spread <= options['mostly_noise_relative_tolerance'] else
                       'nearly deterministic' if losses['L2'] < options['near_deterministic_ratio'] * losses['L0'] else 'learnable')
     frequencies = Counter(r['next_zone_target'] for r in rows)
     entropy = -sum(n / len(rows) * math.log(n / len(rows)) for n in frequencies.values())
+    cue_results = {}
+    for name in cue_names:
+        values = [f['path_cue_headline_losses'][name] for f in folds if f['path_cue_headline_losses'][name] is not None]
+        mean = float(np.mean(values)) if values else None
+        cue_results[name] = {'mean': mean, 'std': float(np.std(values)) if values else None,
+                             'relative_improvement_over_l3': (head['L3']['mean'] - mean) / head['L3']['mean']
+                             if mean is not None and head['L3']['mean'] else None}
     return {'status': 'complete', 'classes': classes, 'losses': losses,
+            'path_cue_diagnostics': cue_results,
+            'l4_interpolation_k': options['l4_interpolation_k'],
+            'l4_zero_training_fraction': sum(r['l4_zero_cell'] for r in predictions) / len(predictions),
             'all_reports': all_reports, 'headline': head, 'headline_reports': sorted(headline),
             'by_report_index': {str(index): summary(lambda f, index=index: f['by_report_index'][str(index)])
                                 for index in range(1, len(config['time']['report_times']))},
@@ -671,7 +732,7 @@ def baseline_ladder(rows: Iterable[dict[str, Any]], config: Config) -> dict[str,
             'l3_zero_training_fraction': sum(r['l3_zero_cell'] for r in predictions) / len(predictions),
             'backoff_rows': dict(backoffs),
             'split_rule': 'Sorted day IDs assigned round-robin to folds. Every day is held out once; no reports from a test day enter its training counts.',
-            'backoff_rule': 'Unseen L1 -> L0; unseen L2 -> L1; L3 interpolates cell counts with k times its L2 probabilities, including zero cells.',
+            'backoff_rule': 'Unseen L1 -> L0; unseen L2 -> L1; L3 interpolates cell counts with k times its L2 probabilities, including zero cells. L4 interpolates fixed path-cue counts with k times L3; missing values have explicit bins. Single-cue and no-path control losses are diagnostics, not model-selection results.',
             'units': 'Natural-log multiclass log loss, mean and population standard deviation across day folds; all-reports and headline scopes are separate.'}
 
 def baselines_from_csv(path: Any, config: Config) -> dict[str, Any]:

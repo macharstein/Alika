@@ -341,8 +341,10 @@
       "window_minutes": "Elapsed history for the rolling report-window path features.",
       "grid_cell_km": "Map-origin-aligned square cell width; covered area is occupied cells times cell area.",
       "departure_margin_km": "Observed departure must exceed this distance outside the last entered zone.",
-      "departure_confirmation_minutes": "Require this many consecutive minute fixes beyond the departure margin before accepting a trip start."
-    }
+      "departure_confirmation_minutes": "Require this many consecutive minute fixes beyond the departure margin before accepting a trip start.",
+      "detour_threshold_km": "Observed chord-deviation threshold for detour diagnostics and missing/no/yes L4 cue."
+    },
+    "detour_threshold_km": 0.4
   },
   "movement_style": {
     "boredom_goal_urgency": 0.2,
@@ -642,7 +644,8 @@
       "heat_shade_entry_correlation_max": "Maximum Pearson correlation of daily heat with shade entry time.",
       "headline_l3_improvement_min": "Minimum relative improvement of mean cross-validated headline L3 over headline L2.",
       "oracle_l0_ratio_range": "Oracle/L0 loss range, checked separately for headline and all reports on identical CV days.",
-      "oracle_l2_improvement_min": "Minimum relative oracle improvement over L2 in both headline and all-report comparisons."
+      "oracle_l2_improvement_min": "Minimum relative oracle improvement over L2 in both headline and all-report comparisons.",
+      "headline_l4_improvement_min": "Minimum relative headline CV improvement of L4 over L3."
     },
     "observed_true_path_ratio_max": 1.6,
     "smoothed_rest_speed_max_kmh": 0.8,
@@ -682,7 +685,8 @@
       0.25,
       0.5
     ],
-    "oracle_l2_improvement_min": 0.1
+    "oracle_l2_improvement_min": 0.1,
+    "headline_l4_improvement_min": 0.02
   },
   "statistics": {
     "coverage_grid_km": 0.5,
@@ -950,7 +954,10 @@
       "cv_folds": "Deterministic interleaved folds of whole days; use fewer folds only when fewer days exist.",
       "headline_reports": "Report indices contributing to headline losses; all usable reports are also evaluated.",
       "l3_interpolation_k": "Positive L2 prior pseudo-count in (cell class count + k*p_L2)/(cell total + k).",
-      "shade_hour_cut": "Three shade-history bins: not_yet, observed before this hour, observed at/after this hour."
+      "shade_hour_cut": "Three shade-history bins: not_yet, observed before this hour, observed at/after this hour.",
+      "l4_interpolation_k": "L3 prior pseudo-count for path-cue cells; fixed before evaluation.",
+      "l4_straightness_cut": "Three bins: missing, below this fixed observed straightness, at/above it.",
+      "l4_speed_cut_kmh": "Three bins: missing, below this fixed recent-window speed, at/above it."
     },
     "cv_folds": 5,
     "headline_reports": [
@@ -961,6 +968,9 @@
       5
     ],
     "l3_interpolation_k": 5.0,
-    "shade_hour_cut": 11
+    "shade_hour_cut": 11,
+    "l4_interpolation_k": 5.0,
+    "l4_straightness_cut": 0.9,
+    "l4_speed_cut_kmh": 1.0
   }
 }

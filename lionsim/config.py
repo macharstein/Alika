@@ -499,6 +499,11 @@ def validate_config(data: dict[str, Any]) -> None:
     bound("learnability.l3_min_cell_count", 1)
     bound("learnability.cv_folds", 2)
     bound("learnability.l3_interpolation_k", positive=True)
+    bound("learnability.l4_interpolation_k", positive=True)
+    bound("learnability.l4_straightness_cut", 0, 1)
+    bound("learnability.l4_speed_cut_kmh", positive=True)
+    bound("features_path.detour_threshold_km", positive=True)
+    bound("targets.headline_l4_improvement_min", 0, 1)
     bound("learnability.shade_hour_cut", 0, 23)
     headline = data["learnability"]["headline_reports"]
     if len(headline) != len(set(headline)) or any(i < 1 or i > 7 for i in headline):

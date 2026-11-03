@@ -95,3 +95,50 @@ def test_200_day_baseline_ladder_is_finite_and_ordered_with_tolerance(tmp_path):
     assert losses['L1']+0.03>=losses['L2']
     assert len(result['folds'])==5 and len(result['test_days'])==200
     assert all(len(f['train_days'])==160 and len(f['test_days'])==40 for f in result['folds'])
+
+
+def path_rows():
+    rows = toy_rows()
+    for row in rows:
+        direct = row['day'] % 2 == 0
+        row.update(next_zone_target='ENTER_DEN' if direct else 'ENTER_PLAIN',
+                   last_trip_straightness=.98 if direct else .5,
+                   last_3h_mean_speed_kmh=None, last_trip_max_perpendicular_distance_km=None)
+    return rows
+
+
+def test_l4_learns_path_cue_on_same_folds_and_reports_fixed_ablations():
+    result = baseline_ladder(path_rows(), load_config())
+    assert result['headline']['L4']['mean'] < result['headline']['L3']['mean']
+    assert result['path_cue_diagnostics']['straightness']['mean'] < result['path_cue_diagnostics']['speed']['mean']
+    assert 'no_path_control' in result['path_cue_diagnostics']
+    for fold in result['folds']:
+        assert not set(fold['train_days']) & set(fold['test_days'])
+        assert math.isfinite(fold['headline']['L4'])
+    changed = deepcopy(path_rows())
+    for row in changed:
+        row.update(urgency=999, boredom=-999, x_true_km=1e9, future_target='ENTER_ROAD')
+    assert baseline_ladder(changed, load_config()) == result
+    assert baseline_ladder(reversed(path_rows()), load_config()) == result
+
+
+def test_l4_large_prior_equals_l3_in_each_fold_and_report():
+    result = baseline_ladder(path_rows(), load_config(overrides=['learnability.l4_interpolation_k=1e12']))
+    for fold in result['folds']:
+        for values in (fold['headline'], fold['all_reports'], *fold['by_report_index'].values()):
+            if values['L3'] is not None:
+                assert values['L4'] == pytest.approx(values['L3'], abs=1e-9)
+
+
+def test_l4_zero_training_cell_is_exact_l3_and_bins_are_fixed():
+    from lionsim.stats import _path_cue_bins
+    config = load_config()
+    assert _path_cue_bins({}, config) == ('missing', 'missing', 'missing')
+    assert _path_cue_bins({'last_trip_straightness':.9, 'last_3h_mean_speed_kmh':1.,
+                           'last_trip_max_perpendicular_distance_km':.4}, config) == ('high','high','yes')
+    rows = path_rows()
+    for row in rows:
+        row['current_zone'] = str(row['day'])
+    result = baseline_ladder(rows, config)
+    assert result['l4_zero_training_fraction'] == 1
+    assert result['losses']['L4'] == result['losses']['L3']

@@ -199,11 +199,11 @@ def render_oracle_markdown(report: dict[str, Any]) -> str:
              report['finite_sample_note'], '', f"All-day oracle loss: {report['all_days_loss_nats']} nats."]
     if report['status'] == 'complete':
         lines += ['', f"Same held-out days: {report['test_days']}; {report['test_rows']} report targets.", '',
-                  '| Scope | L0 | L1 | L2 | L3 | Oracle |',
-                  '| --- | ---: | ---: | ---: | ---: | ---: |']
+                  '| Scope | L0 | L1 | L2 | L3 | L4 | Oracle |',
+                  '| --- | ---: | ---: | ---: | ---: | ---: | ---: |']
         for scope, values in report['comparisons'].items():
             cells = [f"{values[name]['mean']:.6f} ± {values[name]['std']:.6f}"
-                     for name in ('L0', 'L1', 'L2', 'L3', 'oracle')]
+                     for name in ('L0', 'L1', 'L2', 'L3', 'L4', 'oracle')]
             lines.append('| ' + scope + ' | ' + ' | '.join(cells) + ' |')
         lines += ['', 'Mean ± population standard deviation across identical day folds.', '',
                   '| Check | Status | Observed | Expected |', '| --- | --- | ---: | --- |']
