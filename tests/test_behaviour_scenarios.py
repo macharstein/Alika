@@ -175,7 +175,7 @@ def test_full_day_trip_changes_have_reasons_and_validator_rejects_missing_reason
     assert any('no logged reason' in error for error in validation['errors'])
 
 
-@pytest.mark.parametrize('cycles', [1, 2, 3])
+@pytest.mark.parametrize('cycles', [1, 2, 3, 4])
 def test_night_catnaps_enforce_minimum_real_duration_and_maximum_cycles(cycles):
     config = _hunting_config('chase.probability_clip=[0,0]',
                              'learnability.activity.catnap_minutes_range=[1,1]',
@@ -208,7 +208,7 @@ def test_no_short_terminal_nap_when_only_minimum_ticks_remain():
 
 
 def test_night_patrols_add_late_entries_without_breaking_catch_sleep_or_cutoff():
-    late_non_feast = non_feast = 0
+    late_non_feast = non_feast = feast = 0
     for index in range(1, 41):
         day = simulate_day(load_config(), day_index=index, seed=42)
         assert validate_day(day, load_config())['valid']
@@ -218,6 +218,7 @@ def test_night_patrols_add_late_entries_without_breaking_catch_sleep_or_cutoff()
         assert not any(e['token'] in ('ENTER_HUNT','CHASE_START') and _event_time(e) >= cutoff for e in day.events)
         ends = [e for e in day.events if e['token']=='EAT_END']
         if ends:
+            feast += 1
             assert not any(_event_time(e) > _event_time(ends[0]) for e in entries)
         else:
             non_feast += 1
@@ -225,6 +226,7 @@ def test_night_patrols_add_late_entries_without_breaking_catch_sleep_or_cutoff()
         sleeps = [e for e in day.events if e['token']=='FELL_ASLEEP' and _event_time(e) >= cutoff]
         assert len(sleeps) <= 4
     assert non_feast > 10
+    assert feast > 0  # The no-post-feast-entry assertion must actually be exercised.
     assert late_non_feast / non_feast > .5
 
 

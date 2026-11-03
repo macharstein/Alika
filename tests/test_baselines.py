@@ -69,6 +69,10 @@ def test_large_prior_approaches_l2_and_headline_excludes_late_reports():
         rows.append({**rows[0], 'day':day, 'report_index':7, 'next_zone_target':'END_OF_DAY'})
     result=baseline_ladder(rows,load_config(overrides=['learnability.l3_interpolation_k=1000000000000']))
     assert result['losses']['L3']==pytest.approx(result['losses']['L2'],abs=1e-9)
+    for fold in result['folds']:
+        for values in (fold['headline'], fold['all_reports'], *fold['by_report_index'].values()):
+            if values['L2'] is not None:
+                assert values['L3'] == pytest.approx(values['L2'], abs=1e-9)
     assert result['headline']['L0']['mean'] != result['all_reports']['L0']['mean']
     assert set(result['by_report_index'])==set(map(str,range(1,8)))
     assert result['by_report_index']['3']['L0']['mean'] is None

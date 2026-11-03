@@ -39,12 +39,15 @@ def assert_same_day(left, right):
     assert left.seed_info == right.seed_info
     assert left.latents == right.latents
     assert left.events == right.events
+    assert left.traffic_times == right.traffic_times
     pd.testing.assert_frame_equal(left.gps, right.gps)
     pd.testing.assert_frame_equal(left.hidden_state, right.hidden_state)
 
 
 def test_same_seed_is_identical(config, day):
-    assert_same_day(day, simulate_day(config, seed=42))
+    repeated = simulate_day(config, seed=42)
+    assert_same_day(day, repeated)
+    assert build_reports(day, config) == build_reports(repeated, config)
     different = simulate_day(config, seed=43)
     assert not different.gps.equals(day.gps)
 

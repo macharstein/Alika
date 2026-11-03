@@ -153,3 +153,25 @@ def test_next_day_entry_cannot_be_used_as_a_same_day_target(simulated_day):
     reports = build_reports(day, config)
     assert all(r["next_zone_target"] == END_OF_DAY for r in reports[:-1])
     assert all(r["new_events"] == [] for r in reports)
+
+
+@pytest.mark.parametrize("seconds_from_end", [-1, 0, 1])
+def test_final_morning_entry_is_inside_day_only_before_0500(simulated_day, seconds_from_end):
+    config, original = simulated_day
+    day = copy.copy(original)
+    end = datetime(2026, 1, 2, 5)
+    day.events = [
+        make_event(datetime(2026, 1, 1, 6), "WOKE_UP", "Den"),
+        make_event(datetime(2026, 1, 2, 4, 40), "GROOM", "Den"),
+        make_event(end + timedelta(seconds=seconds_from_end), "ENTER_PLAIN", "Plain"),
+    ]
+    reports = build_reports(day, config)
+    expected = "ENTER_PLAIN" if seconds_from_end < 0 else END_OF_DAY
+    assert all(r["next_zone_target"] == expected for r in reports[:-1])
+    if seconds_from_end < 0:
+        assert reports[-2]["time_to_next_zone_min"] == pytest.approx(180 - 1 / 60)
+    else:
+        assert all(r["time_to_next_zone_min"] is None for r in reports[:-1])
+    assert "next_zone_target" not in reports[-1]
+    assert "time_to_next_zone_min" not in reports[-1]
+    assert len(target_rows(day, reports)) == 7
