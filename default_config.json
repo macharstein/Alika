@@ -330,6 +330,55 @@
       "periods": "24-hour exhaustive clock windows and logit priors; high=2, medium=1, low=0, none=-5."
     }
   },
+  "movement_style": {
+    "boredom_goal_urgency": 0.2,
+    "attraction_intercept": 0.6,
+    "attraction_urgency_weight": 0.8,
+    "turn_intercept": 1.0,
+    "turn_boredom_weight": 0.8,
+    "turn_urgency_weight": 0.5,
+    "turn_multiplier_range": [
+      0.5,
+      2.0
+    ],
+    "low_mood_threshold": 0.4,
+    "low_mood_turn_increment": 0.2,
+    "speed_intercept": 0.85,
+    "speed_urgency_weight": 0.3,
+    "detour_boredom_threshold": 0.5,
+    "detour_probability_scale": 0.7,
+    "detour_count_range": [
+      1,
+      2
+    ],
+    "detour_offset_km_range": [
+      0.4,
+      1.0
+    ],
+    "zone_exclusion_margin_km": 0.05,
+    "waypoint_sampling_attempts": 32,
+    "waypoint_arrival_tolerance_km": 0.05,
+    "_comments": {
+      "boredom_goal_urgency": "Urgency for Plain, Kopje and Road goals.",
+      "attraction_intercept": "Trip attraction multiplier intercept; base is 1 - movement.heading_persistence.",
+      "attraction_urgency_weight": "Trip attraction multiplier per unit urgency.",
+      "turn_intercept": "Turning-noise multiplier before clipping; base is randomness.walk_heading_sd_degrees.",
+      "turn_boredom_weight": "Increase in turning-noise multiplier per unit starting boredom.",
+      "turn_urgency_weight": "Decrease in turning-noise multiplier per unit starting urgency.",
+      "turn_multiplier_range": "Clipping range before adding the low-mood increment.",
+      "low_mood_threshold": "Starting mood below this threshold adds the low-mood turn increment.",
+      "low_mood_turn_increment": "Additive increment to the clipped turn multiplier on low-mood trips.",
+      "speed_intercept": "Trip speed multiplier intercept; existing patrol speed bounds still apply.",
+      "speed_urgency_weight": "Increase in trip speed multiplier per unit urgency.",
+      "detour_boredom_threshold": "Only starting boredom above this value can trigger a detour.",
+      "detour_probability_scale": "Per-trip detour probability = scale * (boredom - threshold), clipped to [0,1].",
+      "detour_count_range": "Inclusive uniform number of intermediate waypoints when a detour is selected.",
+      "detour_offset_km_range": "Sideways waypoint distance from the trip-start to goal chord.",
+      "zone_exclusion_margin_km": "Prefer waypoints outside unrelated zones plus this margin; source and goal zones are exempt.",
+      "waypoint_sampling_attempts": "Bounded placement attempts per waypoint; try both sides before falling back to an in-map point.",
+      "waypoint_arrival_tolerance_km": "Consume an intermediate waypoint within this radius; never teleport to it."
+    }
+  },
   "movement": {
     "patrol_speed_kmh_range": [
       2.0,

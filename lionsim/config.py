@@ -362,6 +362,19 @@ def validate_config(data: dict[str, Any]) -> None:
         raise ValueError("Midday wake mean must fall within ordered midday_wake_clip bounds")
     if minute_offset(data["learnability"]["activity"]["hunt_start"], start) >= minute_offset(data["learnability"]["activity"]["hunt_end"], start):
         raise ValueError("behaviours.hunt_start must precede hunt_end in the simulated day")
+    for name in ("boredom_goal_urgency", "low_mood_threshold", "detour_boredom_threshold"):
+        bound(f"movement_style.{name}", 0, 1)
+    for name in ("attraction_intercept", "turn_intercept", "speed_intercept"):
+        bound(f"movement_style.{name}", positive=True)
+    for name in ("attraction_urgency_weight", "turn_boredom_weight", "turn_urgency_weight",
+                 "low_mood_turn_increment", "speed_urgency_weight", "detour_probability_scale",
+                 "zone_exclusion_margin_km"):
+        bound(f"movement_style.{name}", 0)
+    interval("movement_style.turn_multiplier_range", positive=True)
+    interval("movement_style.detour_offset_km_range", positive=True)
+    interval("movement_style.detour_count_range", 1, 2, integer=True)
+    bound("movement_style.waypoint_sampling_attempts", 2)
+    bound("movement_style.waypoint_arrival_tolerance_km", positive=True)
     interval("movement.patrol_speed_kmh_range", positive=True)
     bound("movement.stalk_speed_kmh", positive=True)
     bound("movement.heading_persistence", 0, 1)
