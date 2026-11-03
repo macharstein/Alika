@@ -64,6 +64,17 @@ def test_detours_are_probabilistic_and_zero_length_trip_is_defined():
     assert not s.waypoints and s.planned_straightness is None
 
 
+def test_urgency_suppresses_discretionary_detours_without_changing_bounds():
+    options = ['movement_style.detour_probability_scale=2',
+               'movement_style.detour_urgency_weight=1']
+    relaxed = [style(boredom=1, urgency=.1, seed=i, overrides=options) for i in range(40)]
+    urgent = [style(boredom=1, urgency=1, seed=i, overrides=options) for i in range(40)]
+    assert sum(bool(s.waypoints) for s in relaxed) >= 25
+    assert not any(s.waypoints for s in urgent)
+    with pytest.raises(ValueError):
+        load_config(overrides=['movement_style.detour_urgency_weight=1.1'])
+
+
 @pytest.mark.parametrize('override', ['movement_style.detour_count_range=[0,2]',
     'movement_style.detour_offset_km_range=[1,0.4]', 'movement_style.speed_intercept=0',
     'movement_style.low_mood_threshold=1.1', 'movement_style.waypoint_sampling_attempts=1'])

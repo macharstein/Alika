@@ -1,0 +1,10 @@
+{
+  "movement_style": {
+    "attraction_intercept": 0.15,
+    "attraction_urgency_weight": 2.3,
+    "detour_urgency_weight": 1.0,
+    "speed_intercept": 1.05,
+    "speed_urgency_weight": 0.4,
+    "detour_probability_scale": 2.0
+  }
+}

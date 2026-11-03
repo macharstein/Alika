@@ -37,7 +37,8 @@ def plan_style(config: Config, zones: ZoneMap, goal: str, bars: np.ndarray,
     waypoints = []
     chord = float(np.linalg.norm(target - start))
     probability = float(np.clip(c['detour_probability_scale'] *
-                                (boredom - c['detour_boredom_threshold']), 0, 1))
+                                (boredom - c['detour_boredom_threshold']) *
+                                (1 - c['detour_urgency_weight'] * urgency), 0, 1))
     if chord > 0 and probability > 0 and rng.random() < probability:
         count = int(rng.integers(c['detour_count_range'][0], c['detour_count_range'][1] + 1))
         normal = np.array([-(target - start)[1], (target - start)[0]]) / chord

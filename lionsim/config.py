@@ -379,6 +379,7 @@ def validate_config(data: dict[str, Any]) -> None:
     interval("movement_style.detour_count_range", 1, 2, integer=True)
     bound("movement_style.waypoint_sampling_attempts", 2)
     bound("movement_style.waypoint_arrival_tolerance_km", positive=True)
+    bound("movement_style.detour_urgency_weight", 0, 1)
     interval("movement.patrol_speed_kmh_range", positive=True)
     bound("movement.stalk_speed_kmh", positive=True)
     bound("movement.heading_persistence", 0, 1)
