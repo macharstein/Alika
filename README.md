@@ -13,7 +13,8 @@ remains v3. **Old seeds produce different data** because the model and GPS noise
 changed. Reproducibility requires the same version and effective configuration;
 resume refuses other versions. The previous phase's measurements below are
 historical. Current settings, changed knobs and results are in the final section.
-S6 evaluation is in progress; see PROGRESS.md for checkpoint locations.
+S6 is complete: 100-day oracle and 500-day statistics, with text-free images only
+for days 1–3. [Final evaluation and all changed knobs](docs/PHASE2_S6_RESULTS.md).
 
 ## Setup and first run
 
@@ -621,7 +622,7 @@ and [probability/count details](outputs/oracle_verified/run_20261102_105804/orac
 Final acceptance command: `python -m pytest -q`. Results and exact local
 interpreter commands are recorded in `PROGRESS.md`.
 
-## Current phase-two delivery: S1–S5
+## Phase-two S1–S5 reference measurement
 
 The implemented distribution is **4.4.1**, with schema **lionsim-v4**.
 All 182 tests pass. The final 200-day seed-42 run has **33 PASS, 7 WARN, 0 FAIL**;
@@ -640,4 +641,36 @@ were widened, and no extra events were generated merely to reach a count.
 
 [Final statistics](outputs/phase2_s5_verified/run_20261102_200914/stats_report.md)
 and [JSON report](outputs/phase2_s5_verified/run_20261102_200914/stats_report.json).
-This is the S1–S5 reference measurement. S6 evaluation is tracked in PROGRESS.md.
+This is the S1–S5 reference measurement; the larger S6 evaluation follows.
+
+
+## Phase 2 S6 final evaluation
+
+Package **4.5.0** preserves the S5 trajectories. The 100-day oracle used 100
+rollouts per report in five 20-day chunks; the final 500-day statistics used
+five 100-day chunks. All days pass hard event validation. Exactly **27 text-free
+PNGs** cover days 1–3, with no minute files or images for later days.
+
+Full pytest: **185 passed**. Final statistics: **32 PASS, 8 WARN, 0 FAIL**. Headline L3 improves over L2 by
+**7.42%**. Remaining warnings are entries/day (7.392), events/day (18.198),
+Den/Road entry shares (2.81%/1.68%), sequence uniqueness (30.8%),
+traffic–Road correlation (−0.3438), report-6 END_OF_DAY share (37%), and walking
+(5.759 h/day). The uniqueness fraction depends on sample size.
+
+On its matched 100-day evaluation, oracle headline loss is **0.440580 nats**,
+**45.83% below L2**. Oracle/L0 is **0.2452 headline, 0.2209 overall**, both below
+the requested 0.25–0.50 range: **too deterministic** by the S6 criterion.
+A proposed next calibration experiment is to increase
+`learnability.softmax_temperature` and remeasure; no such tuning was applied.
+
+[Full target checks, per-report losses, oracle comparison, all changed knobs and
+reproduction commands](docs/PHASE2_S6_RESULTS.md).
+[500-day statistics](outputs/phase2_s6_final/run_20261103_085841/stats_report.md).
+[100-day oracle](outputs/phase2_s6_oracle/run_20261102_202029/oracle_report.md).
+
+Explicit `--image-days 3` now enables those images in stats/oracle mode;
+without that option these modes remain image-free. Images are checked and
+repaired through ordinary `--resume`. S6 adds only the two evaluation thresholds
+`targets.oracle_l0_ratio_range=[0.25,0.50]` and
+`targets.oracle_l2_improvement_min=0.10`; it changes no behavior parameters.
+S7 remains the next separate task.

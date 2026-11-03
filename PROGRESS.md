@@ -1,6 +1,6 @@
-# Phase 1 complete; phase 2 S1–S5 implemented
+# Phase 1 complete; phase 2 S1–S6 complete
 
-Scope: phase-one `docs/UPDATE_SPEC.md` tasks 1–10 are complete. Under `docs/UPDATE_SPEC_2.md`, S1–S5 are implemented and verified, including checkpoint/resume safety; seven statistical calibration warnings remain. S6 and S7 as separate phases have not been started.
+Scope: phase-one `docs/UPDATE_SPEC.md` tasks 1–10 are complete. Under `docs/UPDATE_SPEC_2.md`, S1–S5 are implemented and S6 evaluation is complete, including checkpoint/resume safety. Final 500-day statistics have eight calibration warnings; both oracle/L0 ratio checks warn. S7 remains the next separate task.
 
 - [x] 17-token event schema, internal traffic context, restored daily reports/latents
 - [x] Seven usable next-zone targets and run-level targets.csv
@@ -360,3 +360,17 @@ next: final 100 statistics days, aggregate audit and full pytest.
 verify: /opt/anaconda3/bin/python3.12 -m pytest -x -q tests/test_stats.py tests/test_resume.py (13 passed in 1.62s)
 assumptions: earlier partial reports are replaced atomically after each chunk; only the completed 500-day report will be used for delivery.
 known problems: walking remains above five hours; final target statuses await all 500 days.
+done: S6 statistics chunk 4 — 400/500 days checkpointed with valid hard invariants.
+in progress: S6 statistics chunk 5 — complete days 401–500, audit checkpoint artifacts and unchanged targets, then record final loss/target tables and every changed knob.
+verify: /opt/anaconda3/bin/python3.12 -m lionsim.run --resume outputs/phase2_s6_final/run_20261103_085841 --workers 4 --chunk-size 100
+next: final artifact verification, full pytest and S6 results documentation.
+done: S6 final statistics — completed 500/500 days in five resumable chunks. Artifact audit verified all 600 checkpoints, 70,000 oracle continuations, matching 100-day oracle/statistics targets, exact S5 target equality for the first 200 days, all hard invariants, no minute files, and exactly 27 PNGs.
+in progress: S6 delivery — publish final 500-day PASS/WARN/FAIL and per-report tables, separate 100-day oracle comparison, all S1–S5 knob changes and the two new S6 evaluation targets. Run the complete pytest suite before final commit.
+verify: /opt/anaconda3/bin/python3.12 -m pytest -q
+next: record final test result, commit S6 completion, then stop before S7.
+done: S6 final delivery — full pytest: 185 passed in 37.96s. Completed the 100-day × 100-rollout oracle in 20-day chunks and 500-day statistics in 100-day chunks; all hard invariants pass. The final tables, full knob history, oracle interpretation, exact reproduction commands and image audit are in docs/PHASE2_S6_RESULTS.md and linked from README.md.
+verify: /opt/anaconda3/bin/python3.12 -m pytest -q
+results: outputs/phase2_s6_final/run_20261103_085841/stats_report.md — 32 PASS, 8 WARN, 0 FAIL; headline L3=0.618180 versus L2=0.667712, a 7.418% improvement. Exactly 27 text-free PNGs cover only days 1–3. Oracle results: outputs/phase2_s6_oracle/run_20261102_202029/oracle_report.md — headline 0.440580 nats, overall 0.412754; both L2-headroom checks PASS, both oracle/L0 ratio checks WARN.
+assumptions: no behavioral or noise parameters were changed in S6; the two added target defaults implement the requested oracle bounds. Softmax-temperature adjustment is only a proposed future experiment. Same-seed target equality with S5 was verified across the first 200 days. S7 remains a separate audit, not implicitly completed by this delivery.
+known problems: 500-day warnings are entries/day 7.392, events/day 18.198, Den share 2.8139%, Road share 1.6775%, uniqueness 30.8%, traffic/Road correlation -0.3438, report-6 END_OF_DAY 37%, and walking 5.759367h. Oracle/L0 ratios 0.245177 and 0.220944 imply too deterministic under the requested criterion. Nonfatal sandbox font-cache warnings did not damage images. Historical README.pdf/performance_check.json remain untouched.
+next: S7 — audit the requested fixed-seed regression coverage; S6 is complete and calibration warnings remain.

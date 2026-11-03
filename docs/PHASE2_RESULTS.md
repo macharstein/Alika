@@ -166,4 +166,6 @@ Remaining warnings are genuine: entry/event density and sequence diversity are l
 
 ## Boundary of this delivery
 
-S1–S5 implementation and their relevant tests are complete. S6’s 100-day × 100-rollout oracle, new oracle targets and 500-day final run with first-three-day images have **not** been run or claimed complete. S7 has not been taken as a separate phase; relevant regressions were included with each increment.
+This section records the boundary of the earlier S1–S5 delivery. S6 is now complete; see [the subsequent S6 evaluation](PHASE2_S6_RESULTS.md).
+
+At the time of this 200-day measurement, S1–S5 implementation and their relevant tests were complete. S6’s 100-day × 100-rollout oracle, new oracle targets and 500-day final run with first-three-day images had **not** been run or claimed complete. S7 has not been taken as a separate phase; relevant regressions were included with each increment.
