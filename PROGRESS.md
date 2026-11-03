@@ -320,3 +320,15 @@ verify: /opt/anaconda3/bin/python3.12 -m pytest -x -q tests/test_oracle.py
 assumptions: partial oracle results are provisional; no behavior or target tuning.
 known problems: early oracle/L0 ratios are below 0.25; full 100-day result is pending.
 next: S6 oracle chunk 3, days 41–60.
+in progress: S6 oracle chunk 3 — resume days 41–60 from the saved run.
+verify: /opt/anaconda3/bin/python3.12 -m lionsim.run --resume outputs/phase2_s6_oracle/run_20261102_202029 --workers 4 --chunk-size 20
+next: finish the final two oracle chunks, then 500-day statistics.
+done: S6 oracle chunk 3 — 60/100 days checkpointed; no model changes or failed hard invariants.
+in progress: S6 oracle chunk 4 — resume days 61–80 with the same configuration.
+verify: /opt/anaconda3/bin/python3.12 -m lionsim.run --resume outputs/phase2_s6_oracle/run_20261102_202029 --workers 4 --chunk-size 20
+next: last 20-day oracle chunk, then final statistics.
+done: S6 oracle chunks 3–4 — 80/100 days checkpointed; 10 oracle tests passed after resumption. No model changes; hard validation remains valid.
+verify: /opt/anaconda3/bin/python3.12 -m pytest -x -q tests/test_oracle.py
+assumptions: all 100 days will be compared on identical folds before final interpretation.
+known problems: provisional oracle ratio warnings remain.
+next: final oracle chunk, days 81–100.
