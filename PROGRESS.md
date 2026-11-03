@@ -332,3 +332,17 @@ verify: /opt/anaconda3/bin/python3.12 -m pytest -x -q tests/test_oracle.py
 assumptions: all 100 days will be compared on identical folds before final interpretation.
 known problems: provisional oracle ratio warnings remain.
 next: final oracle chunk, days 81–100.
+in progress: S6 oracle chunk 5 — complete days 81–100, then inspect both oracle loss scopes and target checks.
+verify: /opt/anaconda3/bin/python3.12 -m lionsim.run --resume outputs/phase2_s6_oracle/run_20261102_202029 --workers 4 --chunk-size 20
+next: start final 500-day stats run in 100-day chunks with --image-days 3.
+done: S6 oracle experiment — all 100/100 days completed with 100 rollouts/report and valid hard invariants. First 80 days' target rows were also compared exactly with the prior S5 run; reporting/output changes preserve the simulation distribution.
+assumptions: the oracle conditions on hidden drives and commitments, whereas counting baselines use observable history; comparisons use the same 100 days/folds within each scope.
+known problems: both oracle/L0 ratios are below 0.25, so the requested diagnosis is too deterministic. Both oracle improvements over L2 pass. Proposed experiment: increase learnability.softmax_temperature, then remeasure; not applied in S6.
+in progress: S6 final statistics chunk 1 — 500 days total, chunks of 100, seed 42, PNGs only on days 1–3, no minute tables.
+verify: /opt/anaconda3/bin/python3.12 -m lionsim.run --stats-only --stats-days 500 --seed 42 --workers 4 --chunk-size 100 --image-days 3 --out outputs/phase2_s6_final
+next: record the final-run directory and resume four more 100-day chunks.
+done: S6 final statistics chunk 1 — 100/500 days saved in outputs/phase2_s6_final/run_20261103_085841. Oracle final losses: headline 0.440580 versus L0 1.796986/L2 0.813254; all reports 0.412754 versus L0 1.868136/L2 0.873345. Ratios 0.245177/0.220944 WARN; L2 improvements 45.825%/52.739% PASS.
+known problems: Matplotlib emitted sandbox font-cache warnings while rendering; generation completed successfully. PNG count and visual inspection will verify output before delivery. Model calibration warnings remain.
+next: resume statistics chunks 2–5 and inspect the first-three-day images.
+verify: /opt/anaconda3/bin/python3.12 -m pytest -x -q tests/test_oracle.py tests/test_resume.py (13 passed in 14.14s)
+assumptions: font cache warnings are environmental; completed PNGs are still checked as artifacts. No rerun or cache-location change is needed if they are intact.
