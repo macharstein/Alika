@@ -142,3 +142,34 @@ def test_l4_zero_training_cell_is_exact_l3_and_bins_are_fixed():
     result = baseline_ladder(rows, config)
     assert result['l4_zero_training_fraction'] == 1
     assert result['losses']['L4'] == result['losses']['L3']
+
+
+def test_l4_training_tertiles_exclude_heldout_days_and_target_labels():
+    from lionsim.stats import _fit_path_cuts, _path_cue_bins
+    rows = path_rows()
+    for row in rows:
+        row['last_trip_straightness'] = row['day'] / 30
+        row['last_3h_mean_speed_kmh'] = row['day'] / 10
+    config = load_config(overrides=['learnability.l4_binning=training_tertiles'])
+    result = baseline_ladder(rows, config)
+    fold = result['folds'][0]
+    training = [r for r in rows if r['day'] in fold['train_days']]
+    assert fold['path_bin_cutpoints'] == _fit_path_cuts(training)
+    changed = deepcopy(rows)
+    for row in changed:
+        row['next_zone_target'] = 'ENTER_ROAD'
+        if row['day'] in fold['test_days']:
+            row['last_trip_straightness'] = -10000
+            row['last_3h_mean_speed_kmh'] = 10000
+    assert baseline_ladder(changed, config)['folds'][0]['path_bin_cutpoints'] == fold['path_bin_cutpoints']
+    bins = {_path_cue_bins(r, config, fold['path_bin_cutpoints'])[0] for r in training}
+    assert bins == {'low', 'middle', 'high'}
+    missing = {**rows[0], 'last_trip_straightness': None}
+    assert _path_cue_bins(missing, config, fold['path_bin_cutpoints'])[0] == 'missing'
+    csv_missing = {**rows[0], 'last_trip_straightness': '', 'last_3h_mean_speed_kmh': ''}
+    assert _fit_path_cuts([csv_missing]) == {'1': {}}
+    huge = load_config(overrides=['learnability.l4_binning=training_tertiles', 'learnability.l4_interpolation_k=1e12'])
+    for f in baseline_ladder(rows, huge)['folds']:
+        assert f['headline']['L4'] == pytest.approx(f['headline']['L3'], abs=1e-9)
+    with pytest.raises(ValueError, match='l4_binning'):
+        load_config(overrides=['learnability.l4_binning=unknown'])

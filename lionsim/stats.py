@@ -572,13 +572,13 @@ def render_stats_markdown(report: dict[str, Any]) -> str:
                       "", "Per-fold headline L3−L2 and standard error of paired day losses (diagnostic only):", "",
                       "| Fold | L3−L2 nats | Paired day SE |", "| --- | ---: | ---: |"]
             lines += [f"| {f['fold']} | {_display(f['headline_l3_minus_l2_nats'])} | {_display(f['paired_day_standard_error_nats'])} |" for f in ladder["folds"]]
-            lines += ["", "L4 uses fixed missing/low/high straightness and speed bins, and missing/no/yes detour bins.",
+            lines += ["", f"L4 binning: {ladder['path_binning']}. Training tertiles, when enabled, use three numeric bins plus missingness; fitted cutpoints are recorded per fold. Detour uses missing/no/yes.",
                       f"L4 zero-training-cell fraction: {ladder['l4_zero_training_fraction']:.4f}.",
                       "", "| Path cue diagnostic | Headline mean ± std | Improvement over L3 |",
                       "| --- | ---: | ---: |"]
             for cue, values in ladder['path_cue_diagnostics'].items():
                 lines.append(f"| {cue} | {_display(values['mean'])} ± {_display(values['std'])} | {_display(values['relative_improvement_over_l3'])} |")
-            lines += ["", "Diagnostics use the same folds, fixed bins and k; no cue is selected or tuned using these losses."]
+            lines += ["", "Diagnostics use the same folds, binning method and k; no cue is selected or tuned using these losses."]
     if "oracle" in report:
         oracle = report["oracle"]
         lines += ["", "## Hidden-state oracle", "", oracle["interpretation"], "", oracle["finite_sample_note"]]
@@ -602,15 +602,34 @@ def _cue_bins(row: dict[str, Any], config: Config) -> tuple[str, ...]:
                          ('drinks_so_far', 'chase_attempts_so_far', 'catch_so_far')))
 
 
-def _path_cue_bins(row: dict[str, Any], config: Config) -> tuple[str, ...]:
+def _fit_path_cuts(training: list[dict[str, Any]]) -> dict[str, dict[str, list[float]]]:
+    """Per-report observed tertiles fitted without targets or held-out rows."""
+    cuts = {}
+    for index in sorted({int(row['report_index']) for row in training}):
+        cuts[str(index)] = {}
+        for column in ('last_trip_straightness', 'last_3h_mean_speed_kmh'):
+            values = [_finite(row.get(column)) for row in training
+                      if int(row['report_index']) == index and row.get(column) not in (None, '')]
+            values = [v for v in values if v is not None]
+            if values:
+                cuts[str(index)][column] = np.quantile(values, [1 / 3, 2 / 3]).tolist()
+    return cuts
+
+
+def _path_cue_bins(row: dict[str, Any], config: Config,
+                   cuts: dict[str, dict[str, list[float]]] | None = None) -> tuple[str, ...]:
     result = []
     for column, cut in (("last_trip_straightness", config['learnability']['l4_straightness_cut']),
                         ("last_3h_mean_speed_kmh", config['learnability']['l4_speed_cut_kmh']),
                         ("last_trip_max_perpendicular_distance_km", config['features_path']['detour_threshold_km'])):
         raw = row.get(column)
         value = _finite(raw) if raw not in (None, '') else None
-        result.append('missing' if value is None else 'low' if value < cut else 'high')
-    # Exactly three possible states per cue, including absent trip information.
+        fitted = cuts.get(str(int(row['report_index'])), {}).get(column) if cuts is not None else None
+        if value is not None and fitted is not None:
+            result.append(('low', 'middle', 'high')[int(np.searchsorted(fitted, value, side='right'))])
+        else:
+            result.append('missing' if value is None else 'low' if value < cut else 'high')
+    # Detour is binary; absent geometry remains explicit in either binning mode.
     result[-1] = {'missing': 'missing', 'low': 'no', 'high': 'yes'}[result[-1]]
     return tuple(result)
 
@@ -636,12 +655,13 @@ def baseline_ladder(rows: Iterable[dict[str, Any]], config: Config) -> dict[str,
                 'losses': dict.fromkeys(names), 'classes': classes}
     count = min(options['cv_folds'], len(days))
     headline = set(options['headline_reports'])
+    path_cuts = None
 
     def keys(row):
         bucket = (str(int(row['report_index'])),)
         state = bucket + tuple('' if row[k] is None else str(row[k]) for k in ('current_zone', 'last_event'))
         history = state + _cue_bins(row, config)
-        path = _path_cue_bins(row, config)
+        path = _path_cue_bins(row, config, path_cuts)
         return [(), bucket, state, history, history + path,
                 *(history + (cue,) for cue in path), history]
 
@@ -655,6 +675,7 @@ def baseline_ladder(rows: Iterable[dict[str, Any]], config: Config) -> dict[str,
         train_days = sorted(set(days) - set(test_days))
         training = [r for r in rows if int(r['day']) in set(train_days)]
         testing = [r for r in rows if int(r['day']) in set(test_days)]
+        path_cuts = _fit_path_cuts(training) if options['l4_binning'] == 'training_tertiles' else None
         tables: list[dict[tuple[str, ...], Counter[str]]] = [{} for _ in range(len(names) + len(cue_names))]
         for row in training:
             for level, key in enumerate(keys(row)):
@@ -693,6 +714,7 @@ def baseline_ladder(rows: Iterable[dict[str, Any]], config: Config) -> dict[str,
         cue_headline = {name: float(np.mean([r['cue_losses'][name] for r in fold_rows if r['report_index'] in headline]))
                         if paired_l4 else None for name in cue_names}
         folds.append({'fold': fold_index + 1, 'train_days': train_days, 'test_days': test_days,
+                      'path_bin_cutpoints': path_cuts,
                       'test_rows': len(fold_rows), 'training_rows': len(training),
                       'all_reports': mean_losses(fold_rows),
                       'headline': mean_losses([r for r in fold_rows if r['report_index'] in headline]),
@@ -732,6 +754,7 @@ def baseline_ladder(rows: Iterable[dict[str, Any]], config: Config) -> dict[str,
                              'relative_improvement_over_l3': (head['L3']['mean'] - mean) / head['L3']['mean']
                              if mean is not None and head['L3']['mean'] else None}
     return {'status': 'complete', 'classes': classes, 'losses': losses,
+            'path_binning': options['l4_binning'],
             'path_cue_diagnostics': cue_results,
             'l4_interpolation_k': options['l4_interpolation_k'],
             'l4_zero_training_fraction': sum(r['l4_zero_cell'] for r in predictions) / len(predictions),
@@ -744,7 +767,7 @@ def baseline_ladder(rows: Iterable[dict[str, Any]], config: Config) -> dict[str,
             'l3_zero_training_fraction': sum(r['l3_zero_cell'] for r in predictions) / len(predictions),
             'backoff_rows': dict(backoffs),
             'split_rule': 'Sorted day IDs assigned round-robin to folds. Every day is held out once; no reports from a test day enter its training counts.',
-            'backoff_rule': 'Unseen L1 -> L0; unseen L2 -> L1; L3 interpolates cell counts with k times its L2 probabilities, including zero cells. L4 interpolates fixed path-cue counts with k times L3; missing values have explicit bins. Single-cue and no-path control losses are diagnostics, not model-selection results.',
+            'backoff_rule': 'Unseen L1 -> L0; unseen L2 -> L1; L3 interpolates cell counts with k times its L2 probabilities, including zero cells. L4 interpolates path-cue counts with k times L3; missing values have explicit bins. Single-cue and no-path control losses are diagnostics, not model-selection results.',
             'units': 'Natural-log multiclass log loss, mean and population standard deviation across day folds; all-reports and headline scopes are separate.'}
 
 def baselines_from_csv(path: Any, config: Config) -> dict[str, Any]:

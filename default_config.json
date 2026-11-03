@@ -969,6 +969,7 @@
       "headline_reports": "Report indices contributing to headline losses; all usable reports are also evaluated.",
       "l3_interpolation_k": "Positive L2 prior pseudo-count in (cell class count + k*p_L2)/(cell total + k).",
       "shade_hour_cut": "Three shade-history bins: not_yet, observed before this hour, observed at/after this hour.",
+      "l4_binning": "fixed uses historical missing/low/high cues; training_tertiles fits three numeric bins per report on training days only, with separate missingness; detour remains missing/no/yes.",
       "l4_interpolation_k": "L3 prior pseudo-count for path-cue cells; fixed before evaluation.",
       "l4_straightness_cut": "Three bins: missing, below this fixed observed straightness, at/above it.",
       "l4_speed_cut_kmh": "Three bins: missing, below this fixed recent-window speed, at/above it."
@@ -984,6 +985,7 @@
     "l3_interpolation_k": 5.0,
     "shade_hour_cut": 11,
     "l4_interpolation_k": 5.0,
+    "l4_binning": "fixed",
     "l4_straightness_cut": 0.9,
     "l4_speed_cut_kmh": 1.0
   }

@@ -501,6 +501,8 @@ def validate_config(data: dict[str, Any]) -> None:
     bound("learnability.cv_folds", 2)
     bound("learnability.l3_interpolation_k", positive=True)
     bound("learnability.l4_interpolation_k", positive=True)
+    if data['learnability']['l4_binning'] not in ('fixed', 'training_tertiles'):
+        raise ValueError('learnability.l4_binning must be fixed or training_tertiles')
     bound("learnability.l4_straightness_cut", 0, 1)
     bound("learnability.l4_speed_cut_kmh", positive=True)
     bound("features_path.detour_threshold_km", positive=True)
