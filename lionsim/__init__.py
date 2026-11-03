@@ -1,5 +1,5 @@
 """Synthetic, independent single-lion GPS days. No machine learning components."""
 
-__version__ = "4.5.0"
+__version__ = "5.0.0"
 
-SCHEMA_VERSION = "lionsim-v4"
+SCHEMA_VERSION = "lionsim-v5"

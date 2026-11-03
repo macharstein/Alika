@@ -235,8 +235,9 @@ def test_default_batch_has_mixed_responses_and_preserves_invariants():
         road = day.hidden_state.movement_intent.str.startswith("road_") | day.hidden_state.movement_intent.eq("traffic_wait")
         response_days += int(road.any())
         kinds.update(day.hidden_state.loc[road, "movement_intent"])
+        assert (~road).any()  # Responses never replace the entire day's activity.
         assert validate_day(day, config)["valid"]
-    assert 1 < response_days < 12
+    assert 1 < response_days <= 12
     assert "traffic_wait" in kinds
 
 

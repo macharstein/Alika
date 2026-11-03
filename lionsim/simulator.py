@@ -16,6 +16,7 @@ import numpy as np
 import pandas as pd
 
 from .config import Config
+from .movement_style import plan_style
 from .events import ZONE_TOKENS, append_event, sort_events
 from .zones import HysteresisTracker, ZoneMap
 
@@ -196,7 +197,69 @@ class _DaySimulation:
             "patrol_speeds": patrol_speeds,
         }
         self.history["traffic_delays"] = []
+        self.history["trip_rows"] = []
+        self.trip: dict[str, Any] | None = None
+        self.trip_count = 0
         self.next_minute = 0
+
+    def _finish_trip(self, status: str) -> None:
+        if self.trip is not None:
+            rows = self.history["trip_rows"]
+            if rows and rows[-1].get("trip_id") == self.trip["id"]:
+                rows[-1]["trip_status"] = status
+                rows[-1]["trip_end_minute"] = self.minute
+            self.trip = None
+
+    def _sync_trip(self) -> None:
+        """Departure freezes style; temporary traffic responses retain it."""
+        continuing = self.mode in ("walking", "traffic_wait", "road_approach", "road_retreat", "road_watch")
+        if self.trip is not None and (self.trip["goal"] != self.goal or not continuing):
+            self._finish_trip("interrupted")
+        if self.trip is None and self.mode == "walking" and self.raw_zone != self.goal:
+            target = self._travel_target().copy()
+            self.trip_count += 1
+            self.trip = {"id": self.trip_count, "goal": self.goal,
+                         "start": self.position.copy(), "target": target,
+                         "start_minute": self.minute, "distance": 0., "waypoint_index": 0,
+                         "style": plan_style(self.config, self.zones, self.goal, self.bars,
+                                             self.position, target, self.rng)}
+
+    def _move_trip(self) -> None:
+        if self.trip is None:
+            self._move(self._travel_target(), self._patrol_speed(), self.randomness["walk_heading_sd_degrees"])
+            return
+        trip = self.trip
+        style = trip["style"]
+        tolerance = self.c["movement_style"]["waypoint_arrival_tolerance_km"]
+        while trip["waypoint_index"] < len(style.waypoints):
+            waypoint = style.waypoints[trip["waypoint_index"]]
+            if float(np.linalg.norm(waypoint - self.position)) > tolerance:
+                break
+            trip["waypoint_index"] += 1
+        intermediate = trip["waypoint_index"] < len(style.waypoints)
+        target = style.waypoints[trip["waypoint_index"]] if intermediate else trip["target"]
+        speed = float(np.clip(self._patrol_speed() * style.speed_multiplier,
+                              *self.movement["patrol_speed_kmh_range"]))
+        self._move(target, speed, style.turn_sd_degrees,
+                   max_step_km=float(np.linalg.norm(target - self.position)) if intermediate else None,
+                   goal_attraction=style.goal_attraction)
+
+    def _record_trip_step(self, before: np.ndarray) -> None:
+        row: dict[str, Any] = {}
+        if self.trip is not None:
+            trip, style = self.trip, self.trip["style"]
+            trip["distance"] += float(np.linalg.norm(self.position - before))
+            chord = float(np.linalg.norm(self.position - trip["start"]))
+            row = {"trip_id": trip["id"], "trip_goal": trip["goal"],
+                   "trip_start_minute": trip["start_minute"], "trip_end_minute": None,
+                   "trip_urgency": style.urgency, "trip_boredom": style.boredom, "trip_mood": style.mood,
+                   "trip_detour_count": len(style.waypoints),
+                   "trip_planned_straightness": style.planned_straightness,
+                   "trip_realized_straightness": min(1., chord / trip["distance"]) if trip["distance"] > 0 else None,
+                   "trip_goal_attraction": style.goal_attraction, "trip_turn_sd_degrees": style.turn_sd_degrees,
+                   "trip_speed_multiplier": style.speed_multiplier,
+                   "trip_path_length_km": trip["distance"], "trip_status": "in_progress"}
+        self.history["trip_rows"].append(row)
 
     def _record_abandoned_trip(self, reason: str) -> None:
         """Record an interrupted journey once, at the minute of the decision."""
@@ -663,6 +726,7 @@ class _DaySimulation:
                 append_event(self.events, self.start, elapsed, "GROOM", self.raw_zone)
 
     def arrive(self) -> None:
+        self._finish_trip("arrived" if self.trip is not None and self.trip["goal"] == self.goal else "interrupted")
         self.arriving = False
         if self._is_night() and not self.caught:
             self._initialize_night_patrol()
@@ -794,11 +858,16 @@ class _DaySimulation:
                 self.arrive()
 
     def _move(self, target: np.ndarray, speed: float, heading_sd: float, confine: str | None = None,
-              max_step_km: float | None = None) -> None:
+              max_step_km: float | None = None, goal_attraction: float | None = None) -> None:
         bearing = math.atan2(target[1] - self.position[1], target[0] - self.position[0])
         requested = bearing + float(self.rng.normal(0, math.radians(heading_sd)))
         persistence = self.movement["heading_persistence"]
-        self.heading += (1 - persistence) * _angle_difference(requested, self.heading)
+        turn = (1 - persistence) * _angle_difference(requested, self.heading)
+        if goal_attraction is not None:
+            # Change attraction toward the goal without also amplifying noise
+            # on urgent trips. Retain the legacy scale of heading perturbations.
+            turn += (goal_attraction - (1 - persistence)) * _angle_difference(bearing, self.heading)
+        self.heading += turn
         length = speed / 60
         if max_step_km is not None:
             length = min(length, max(0.0, max_step_km))
@@ -960,6 +1029,7 @@ class _DaySimulation:
                 self.emit(ZONE_TOKENS[entered], int(self.rng.integers(0, 10)), entered)
                 self.bars[3] += self.bar_config["boredom_per_entry"]
             self._transitions()
+            self._sync_trip()
             behaviour = self._activity()
             # Cars retain their independently drawn seconds and affect mood only nearby.
             while self.car_pointer < len(self.car_seconds) and self.car_seconds[self.car_pointer] // 60 == minute:
@@ -977,7 +1047,7 @@ class _DaySimulation:
                                  (self.start + timedelta(seconds=self.road_trigger_second)).isoformat(timespec="seconds"))
             road_distances.append(self._road_distance())
             if self.mode == "walking" and not self.arriving:
-                self._move(self._travel_target(), self._patrol_speed(), self.randomness["walk_heading_sd_degrees"])
+                self._move_trip()
             elif self.mode == "walking":
                 self._settle_inside()
             elif self.mode in ("road_approach", "road_retreat"):
@@ -995,6 +1065,7 @@ class _DaySimulation:
                     self._move(target, speed, self.randomness["stalk_heading_sd_degrees"] if self.mode == "hunting" else self.randomness["walk_heading_sd_degrees"], confine=confined)
             else:
                 self._jitter()
+            self._record_trip_step(true_positions[minute])
             self.history["traffic_delays"].append(self.delayed_by_traffic_this_minute)
             abandoned_goals.append(self.abandoned_goal_this_minute)
             abandoned_reasons.append(self.abandoned_reason_this_minute)
@@ -1005,6 +1076,9 @@ class _DaySimulation:
             self.previous_zone = self.raw_zone
             self.next_minute = minute + 1
         true_positions[stop_minute] = self.position
+        if stop_minute == self.day_minutes:
+            self.minute = stop_minute
+            self._finish_trip("day_end")
 
     def run(self) -> DayResult:
         self.advance_to(self.day_minutes)
@@ -1045,6 +1119,15 @@ class _DaySimulation:
         hidden["abandoned_goal"] = abandoned_goals
         hidden["abandoned_trip_reason"] = abandoned_reasons
         hidden["actual_patrol_speed_kmh"] = patrol_speeds
+        trip_columns = ["trip_id", "trip_goal", "trip_start_minute", "trip_end_minute",
+                        "trip_urgency", "trip_boredom", "trip_mood", "trip_detour_count",
+                        "trip_planned_straightness", "trip_realized_straightness",
+                        "trip_goal_attraction", "trip_turn_sd_degrees", "trip_speed_multiplier",
+                        "trip_path_length_km", "trip_status"]
+        trip_frame = pd.DataFrame(self.history["trip_rows"], columns=trip_columns)
+        for column in ("trip_id", "trip_start_minute", "trip_end_minute", "trip_detour_count"):
+            trip_frame[column] = trip_frame[column].astype("Int64")
+        hidden = pd.concat([hidden, trip_frame], axis=1)
         entropy = self.sequence.entropy
         if isinstance(entropy, np.ndarray):
             entropy = entropy.tolist()

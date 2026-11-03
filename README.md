@@ -6,15 +6,18 @@ every three hours. This is a configurable stochastic simulator for inspecting sy
 data, not an empirically calibrated model of lion behaviour. There is no machine
 learning, training code, or external service dependency.
 
-Current package: **4.5.0**, retaining the 4.4.1 simulation distribution.
-S1–S5 implement the behavior changes; S6 adds evaluation and explicit stats-mode images.
-The manifest `schema_version` is **lionsim-v4**; the compact daily JSON shape
-remains v3. **Old seeds produce different data** because the model and GPS noise
-changed. Reproducibility requires the same version and effective configuration;
-resume refuses other versions. The previous phase's measurements below are
-historical. Current settings, changed knobs and results are in the final section.
-S6 is complete: 100-day oracle and 500-day statistics, with text-free images only
-for days 1–3. [Final evaluation and all changed knobs](docs/PHASE2_S6_RESULTS.md).
+Current package: **5.0.0**, manifest schema **lionsim-v5**. Phase 3 currently
+implements **S8.1 only**: trip-start urgency, boredom and mood set walking style
+and optional detours, with diagnostics in hidden-state files. The accepted
+phase-two baseline is tagged **v4.5.0** at commit `3de4f5a`.
+
+**Old seeds produce different data** with the new movement style. Reproducibility
+requires the same package version and effective configuration; older manifests
+cannot resume into v5. Tokens, report schedule, day-level latent sampling, hunt
+cutoff, stalking/chase logic and PNG styling remain unchanged. No phase-two
+parameters were retuned. Phase-two measurements below are historical, not
+measurements of the new movement distribution. See [movement-style details](docs/MOVEMENT_STYLE.md).
+Path features, L4/calibration and example figures (S8.2–S8.4) are not implemented.
 
 ## Setup and first run
 
