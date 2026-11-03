@@ -348,8 +348,8 @@
   },
   "movement_style": {
     "boredom_goal_urgency": 0.2,
-    "attraction_intercept": 0.6,
-    "attraction_urgency_weight": 0.8,
+    "attraction_intercept": 0.25,
+    "attraction_urgency_weight": 2.0,
     "turn_intercept": 1.0,
     "turn_boredom_weight": 0.8,
     "turn_urgency_weight": 0.5,
@@ -360,17 +360,17 @@
     "low_mood_threshold": 0.4,
     "low_mood_turn_increment": 0.2,
     "speed_intercept": 0.85,
-    "speed_urgency_weight": 0.3,
+    "speed_urgency_weight": 0.4,
     "detour_boredom_threshold": 0.5,
-    "detour_probability_scale": 0.7,
-    "detour_urgency_weight": 0.0,
-    "departure_alignment_weight": 0.0,
+    "detour_probability_scale": 2.0,
+    "detour_urgency_weight": 1.0,
+    "departure_alignment_weight": 1.0,
     "detour_count_range": [
       1,
       2
     ],
     "detour_offset_km_range": [
-      0.4,
+      0.6,
       1.0
     ],
     "zone_exclusion_margin_km": 0.05,
@@ -986,8 +986,8 @@
     ],
     "l3_interpolation_k": 5.0,
     "shade_hour_cut": 11,
-    "l4_interpolation_k": 5.0,
-    "l4_binning": "fixed",
+    "l4_interpolation_k": 20.0,
+    "l4_binning": "training_tertiles",
     "l4_straightness_cut": 0.9,
     "l4_speed_cut_kmh": 1.0
   }

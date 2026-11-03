@@ -17,7 +17,12 @@ from lionsim.trip_statistics import summarize_trips
 
 @pytest.fixture
 def source(tmp_path):
-    config = load_config(overrides=['images.size_px=120'])
+    # These explicit example IDs belong to the original movement distribution.
+    config = load_config(overrides=['images.size_px=120',
+        'movement_style.attraction_intercept=0.6', 'movement_style.attraction_urgency_weight=0.8',
+        'movement_style.speed_intercept=0.85', 'movement_style.speed_urgency_weight=0.3',
+        'movement_style.detour_probability_scale=0.7', 'movement_style.detour_urgency_weight=0',
+        'movement_style.departure_alignment_weight=0', 'movement_style.detour_offset_km_range=[0.4,1.0]'])
     manifest = {'config': config.to_dict(), 'versions': {'lionsim': __version__},
                 'schema_version': SCHEMA_VERSION, 'day_indices': [254, 318],
                 'seed': 42, 'start_date': '2026-01-01'}

@@ -26,15 +26,15 @@ def test_goal_urgency_and_exact_style_formulas(goal):
     u = {'Den': .3, 'Shade': .6, 'Waterhole': .6, 'Hunting ground': .8,
          'Feeding spot': .8, 'Plain': .2, 'Kopje': .2, 'Road': .2}[goal]
     assert s.urgency == pytest.approx(u)
-    assert s.goal_attraction == pytest.approx(.4 * (.6 + .8 * u))
+    assert s.goal_attraction == pytest.approx(.4 * (.25 + 2.0 * u))
     assert s.turn_sd_degrees == pytest.approx(25 * (1 + .8 * .7 - .5 * u))
-    assert s.speed_multiplier == pytest.approx(.85 + .3 * u)
+    assert s.speed_multiplier == pytest.approx(.85 + .4 * u)
     bars[4] = .39
     assert plan().turn_sd_degrees == pytest.approx(s.turn_sd_degrees + 25 * .2)
 
 
 def test_detour_plan_bounds_and_zone_exclusions():
-    config = load_config(overrides=['movement_style.detour_probability_scale=2'])
+    config = load_config(overrides=['movement_style.detour_probability_scale=2', 'movement_style.detour_urgency_weight=0'])
     zones = ZoneMap(config)
     points = [([.05,.05],[9.95,.05]), ([.05,9.95],[9.95,9.95]),
               ([.05,.05],[.05,9.95]), ([9.95,.05],[9.95,9.95]), ([2.,5.],[7.,5.])]
@@ -47,7 +47,7 @@ def test_detour_plan_bounds_and_zone_exclusions():
             assert 0 <= point[0] <= zones.width and 0 <= point[1] <= zones.height
             direction = target - start
             distance = abs(direction[0]*(point-start)[1] - direction[1]*(point-start)[0]) / np.linalg.norm(direction)
-            assert .4 <= distance <= 1.
+            assert config['movement_style']['detour_offset_km_range'][0] <= distance <= 1.
             if seed == 4:  # Open corridor: exclusions are feasible.
                 assert all(zones.distance_to(name, *point) > .05 for name in zones.names
                            if name not in (zones.lookup(*start), 'Waterhole'))
@@ -55,7 +55,10 @@ def test_detour_plan_bounds_and_zone_exclusions():
 
 
 def test_detours_are_probabilistic_and_zero_length_trip_is_defined():
-    samples = [style(boredom=1, seed=i) for i in range(100)]
+    # Explicit original probability law; urgency suppression has its own test.
+    samples = [style(boredom=1, seed=i, overrides=[
+        'movement_style.detour_probability_scale=0.7',
+        'movement_style.detour_urgency_weight=0']) for i in range(100)]
     assert .15 < sum(bool(s.waypoints) for s in samples) / len(samples) < .55
     assert all(not style(boredom=.5, seed=i).waypoints for i in range(10))
     config = load_config()
@@ -140,7 +143,7 @@ def test_expected_path_length_ratio_rises_with_boredom_and_falls_with_urgency():
 
 
 def test_trip_style_survives_bar_changes_and_traffic_wait_then_interrupts():
-    sim = controlled_trip(overrides=['movement_style.detour_probability_scale=2'], boredom=1)
+    sim = controlled_trip(overrides=['movement_style.detour_probability_scale=2', 'movement_style.detour_urgency_weight=0'], boredom=1)
     original = sim.trip
     frozen = original['style']
     before = sim.position.copy()
@@ -166,7 +169,7 @@ def test_trip_style_survives_bar_changes_and_traffic_wait_then_interrupts():
 
 def test_trip_snapshot_has_independent_waypoints_and_exact_continuation():
     from lionsim.simulator import _DaySimulation
-    sim = controlled_trip(boredom=1, overrides=['movement_style.detour_probability_scale=2'])
+    sim = controlled_trip(boredom=1, overrides=['movement_style.detour_probability_scale=2', 'movement_style.detour_urgency_weight=0'])
     assert sim.trip['style'].waypoints
     saved = sim.snapshot()
     resumed = _DaySimulation.resume(saved)
@@ -263,7 +266,7 @@ def test_style_coefficients_do_not_change_stalking_or_chase(action):
 def test_style_changes_preserve_daily_latents_traffic_and_report_schedule():
     from lionsim.simulator import simulate_day
     from lionsim.reports import build_reports
-    configs = [load_config(), load_config(overrides=['movement_style.detour_probability_scale=2'])]
+    configs = [load_config(), load_config(overrides=['movement_style.detour_probability_scale=2', 'movement_style.detour_urgency_weight=0'])]
     days = [simulate_day(config, seed=42) for config in configs]
     assert days[0].latents == days[1].latents
     assert days[0].traffic_times == days[1].traffic_times

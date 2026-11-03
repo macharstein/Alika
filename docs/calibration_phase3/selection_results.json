@@ -1862,5 +1862,1403 @@
         "message": "Fixed-bin L4 relative improvement over L3 on identical headline day folds."
       }
     ]
+  },
+  "D_seed137": {
+    "run": "outputs/phase3_calibration_137/D/run_20261103_220518",
+    "days": 100,
+    "checks": [
+      {
+        "name": "observed_true_path_ratio",
+        "status": "PASS",
+        "observed": 1.503737408217712,
+        "expected": 1.6,
+        "message": "Within the configured reference range."
+      },
+      {
+        "name": "smoothed_rest_apparent_speed_kmh",
+        "status": "PASS",
+        "observed": 0.1832012783258029,
+        "expected": 0.8,
+        "message": "Within the configured reference range."
+      },
+      {
+        "name": "abandoned_trip_mean",
+        "status": "PASS",
+        "observed": 0.56,
+        "expected": 1.0,
+        "message": "Within the configured reference range."
+      },
+      {
+        "name": "traffic_abandonment_share",
+        "status": "PASS",
+        "observed": 0.0,
+        "expected": 0.25,
+        "message": "Within the configured reference range."
+      },
+      {
+        "name": "waterhole_day_fraction",
+        "status": "PASS",
+        "observed": 0.81,
+        "expected": [
+          0.8,
+          0.88
+        ],
+        "message": "Within the configured reference range."
+      },
+      {
+        "name": "zone_entries_per_day",
+        "status": "WARN",
+        "observed": 7.25,
+        "expected": [
+          8.0,
+          11.0
+        ],
+        "message": "Outside the configured reference range."
+      },
+      {
+        "name": "zone_entry_share.Den",
+        "status": "WARN",
+        "observed": 0.027586206896551724,
+        "expected": [
+          0.03,
+          0.35
+        ],
+        "message": "Outside the configured reference range."
+      },
+      {
+        "name": "zone_entry_share.Shade",
+        "status": "PASS",
+        "observed": 0.16551724137931034,
+        "expected": [
+          0.03,
+          0.35
+        ],
+        "message": "Within the configured reference range."
+      },
+      {
+        "name": "zone_entry_share.Kopje",
+        "status": "PASS",
+        "observed": 0.19310344827586207,
+        "expected": [
+          0.03,
+          0.35
+        ],
+        "message": "Within the configured reference range."
+      },
+      {
+        "name": "zone_entry_share.Waterhole",
+        "status": "PASS",
+        "observed": 0.14206896551724138,
+        "expected": [
+          0.03,
+          0.35
+        ],
+        "message": "Within the configured reference range."
+      },
+      {
+        "name": "zone_entry_share.Hunting ground",
+        "status": "PASS",
+        "observed": 0.09517241379310344,
+        "expected": [
+          0.03,
+          0.35
+        ],
+        "message": "Within the configured reference range."
+      },
+      {
+        "name": "zone_entry_share.Feeding spot",
+        "status": "PASS",
+        "observed": 0.04551724137931035,
+        "expected": [
+          0.03,
+          0.35
+        ],
+        "message": "Within the configured reference range."
+      },
+      {
+        "name": "zone_entry_share.Plain",
+        "status": "PASS",
+        "observed": 0.31724137931034485,
+        "expected": [
+          0.03,
+          0.35
+        ],
+        "message": "Within the configured reference range."
+      },
+      {
+        "name": "zone_entry_share.Road",
+        "status": "WARN",
+        "observed": 0.013793103448275862,
+        "expected": [
+          0.02,
+          0.05
+        ],
+        "message": "Outside the configured reference range."
+      },
+      {
+        "name": "hunt_attempt_day_fraction",
+        "status": "PASS",
+        "observed": 0.64,
+        "expected": [
+          0.5,
+          0.7
+        ],
+        "message": "Within the configured reference range."
+      },
+      {
+        "name": "catch_day_fraction",
+        "status": "PASS",
+        "observed": 0.3,
+        "expected": [
+          0.2,
+          0.4
+        ],
+        "message": "Within the configured reference range."
+      },
+      {
+        "name": "road_entry_day_fraction",
+        "status": "PASS",
+        "observed": 0.1,
+        "expected": [
+          0.1,
+          0.18
+        ],
+        "message": "Within the configured reference range."
+      },
+      {
+        "name": "unique_sequence_fraction",
+        "status": "PASS",
+        "observed": 0.54,
+        "expected": {
+          "minimum_inclusive": 0.5
+        },
+        "message": "Within the configured reference range."
+      },
+      {
+        "name": "top_five_sequence_share",
+        "status": "WARN",
+        "observed": 0.38,
+        "expected": {
+          "maximum_inclusive": 0.35
+        },
+        "message": "Outside the configured reference range."
+      },
+      {
+        "name": "mean_walking_speed_kmh",
+        "status": "PASS",
+        "observed": 3.4870183859895376,
+        "expected": [
+          2.0,
+          4.0
+        ],
+        "message": "Within the configured reference range."
+      },
+      {
+        "name": "road_evening_fraction",
+        "status": "PASS",
+        "observed": 1.0,
+        "expected": 0.6,
+        "message": "Within the configured reference range."
+      },
+      {
+        "name": "road_tourist_window_fraction",
+        "status": "PASS",
+        "observed": 0.0,
+        "expected": 0.1,
+        "message": "Within the configured reference range."
+      },
+      {
+        "name": "road_tourist_correlation",
+        "status": "PASS",
+        "observed": -0.35104852005030335,
+        "expected": -0.35,
+        "message": "Within the configured reference range."
+      },
+      {
+        "name": "events_per_day",
+        "status": "WARN",
+        "observed": 18.37,
+        "expected": [
+          24.0,
+          32.0
+        ],
+        "message": "Outside the configured reference range."
+      },
+      {
+        "name": "non_feast_late_entry_fraction",
+        "status": "PASS",
+        "observed": 0.9857142857142858,
+        "expected": 0.7,
+        "message": "Within the configured reference range."
+      },
+      {
+        "name": "feast_post_meal_entry_fraction",
+        "status": "PASS",
+        "observed": 0.0,
+        "expected": 0.15,
+        "message": "Within the configured reference range."
+      },
+      {
+        "name": "end_of_day_report_6",
+        "status": "WARN",
+        "observed": 0.31,
+        "expected": [
+          0.4,
+          0.6
+        ],
+        "message": "Outside the configured reference range."
+      },
+      {
+        "name": "end_of_day_report_7",
+        "status": "WARN",
+        "observed": 0.55,
+        "expected": [
+          0.6,
+          0.8
+        ],
+        "message": "Outside the configured reference range."
+      },
+      {
+        "name": "prey_density_vs_kopje_dwell",
+        "status": "PASS",
+        "observed": 0.81970327787437,
+        "expected": 0.4,
+        "message": "Within the configured reference range."
+      },
+      {
+        "name": "prey_density_vs_first_chase_time",
+        "status": "PASS",
+        "observed": -0.5960809443501166,
+        "expected": -0.3,
+        "message": "Within the configured reference range."
+      },
+      {
+        "name": "start_hunger_vs_wake_time",
+        "status": "PASS",
+        "observed": -0.42688587861318117,
+        "expected": -0.3,
+        "message": "Within the configured reference range."
+      },
+      {
+        "name": "heat_vs_shade_entry_time",
+        "status": "PASS",
+        "observed": -0.8027202179458738,
+        "expected": -0.4,
+        "message": "Within the configured reference range."
+      },
+      {
+        "name": "hours_per_behaviour.resting",
+        "status": "PASS",
+        "observed": 16.114,
+        "expected": [
+          16.0,
+          20.0
+        ],
+        "message": "Within the configured reference range."
+      },
+      {
+        "name": "hours_per_behaviour.walking",
+        "status": "WARN",
+        "observed": 6.073166666666666,
+        "expected": [
+          3.0,
+          5.0
+        ],
+        "message": "Outside the configured reference range."
+      },
+      {
+        "name": "hours_per_behaviour.hunting",
+        "status": "PASS",
+        "observed": 0.7548333333333334,
+        "expected": [
+          0.2,
+          3.0
+        ],
+        "message": "Within the configured reference range."
+      },
+      {
+        "name": "hours_per_behaviour.grooming",
+        "status": "PASS",
+        "observed": 0.3985,
+        "expected": [
+          0.1,
+          2.5
+        ],
+        "message": "Within the configured reference range."
+      },
+      {
+        "name": "hours_per_behaviour.eating",
+        "status": "PASS",
+        "observed": 0.469,
+        "expected": [
+          0.0,
+          1.5
+        ],
+        "message": "Within the configured reference range."
+      },
+      {
+        "name": "hours_per_behaviour.drinking",
+        "status": "PASS",
+        "observed": 0.1905,
+        "expected": [
+          0.0,
+          1.0
+        ],
+        "message": "Within the configured reference range."
+      },
+      {
+        "name": "event_invariants",
+        "status": "PASS",
+        "observed": 0,
+        "expected": 0,
+        "message": "100/100 days checked; 0 days failed hard validation."
+      },
+      {
+        "name": "trip_boredom_straightness",
+        "observed": -0.36383735158753344,
+        "expected": {
+          "min": null,
+          "max": -0.35
+        },
+        "status": "PASS",
+        "message": "Phase-three trip target; paired counts in trip_movement."
+      },
+      {
+        "name": "trip_urgency_straightness",
+        "observed": 0.15918863403125944,
+        "expected": {
+          "min": 0.3,
+          "max": null
+        },
+        "status": "WARN",
+        "message": "Phase-three trip target; paired counts in trip_movement."
+      },
+      {
+        "name": "trip_urgency_speed",
+        "observed": 0.23863191286553206,
+        "expected": {
+          "min": 0.25,
+          "max": null
+        },
+        "status": "WARN",
+        "message": "Phase-three trip target; paired counts in trip_movement."
+      },
+      {
+        "name": "trip_observed_true_straightness",
+        "observed": 0.9431287331204541,
+        "expected": {
+          "min": 0.85,
+          "max": null
+        },
+        "status": "PASS",
+        "message": "Phase-three trip target; paired counts in trip_movement."
+      },
+      {
+        "name": "trip_detour_fraction",
+        "observed": 0.09494451294697903,
+        "expected": {
+          "min": 0.1,
+          "max": 0.3
+        },
+        "status": "WARN",
+        "message": "Phase-three trip target; paired counts in trip_movement."
+      },
+      {
+        "name": "guardrail_walking_hours",
+        "observed": 6.073166666666666,
+        "expected": {
+          "min": null,
+          "max": 6.0
+        },
+        "status": "FAIL",
+        "message": "Hard phase-three guardrail."
+      },
+      {
+        "name": "guardrail_zone_entries",
+        "observed": 7.25,
+        "expected": {
+          "min": 7.0,
+          "max": null
+        },
+        "status": "PASS",
+        "message": "Hard phase-three guardrail."
+      },
+      {
+        "name": "guardrail_walking_speed",
+        "observed": 3.4870183859895376,
+        "expected": {
+          "min": null,
+          "max": 4.0
+        },
+        "status": "PASS",
+        "message": "Hard phase-three guardrail."
+      },
+      {
+        "name": "guardrail_abandoned_trips",
+        "observed": 0.56,
+        "expected": {
+          "min": null,
+          "max": 1.0
+        },
+        "status": "PASS",
+        "message": "Hard phase-three guardrail."
+      },
+      {
+        "name": "guardrail_event_rules",
+        "observed": 1,
+        "expected": {
+          "min": 1,
+          "max": null
+        },
+        "status": "PASS",
+        "message": "Hard phase-three guardrail."
+      },
+      {
+        "name": "headline_l3_relative_improvement",
+        "status": "PASS",
+        "observed": 0.10406103041904999,
+        "expected": 0.03,
+        "message": "Relative improvement of mean CV headline L3 over L2; no forced ordering."
+      },
+      {
+        "name": "headline_l4_relative_improvement",
+        "status": "WARN",
+        "observed": -0.02250789386397508,
+        "expected": 0.02,
+        "message": "Fixed-bin L4 relative improvement over L3 on identical headline day folds."
+      }
+    ]
+  },
+  "E_seed137": {
+    "run": "outputs/phase3_calibration_137/E/run_20261103_221037",
+    "days": 100,
+    "checks": [
+      {
+        "name": "observed_true_path_ratio",
+        "status": "PASS",
+        "observed": 1.52288661141544,
+        "expected": 1.6,
+        "message": "Within the configured reference range."
+      },
+      {
+        "name": "smoothed_rest_apparent_speed_kmh",
+        "status": "PASS",
+        "observed": 0.1835906822510866,
+        "expected": 0.8,
+        "message": "Within the configured reference range."
+      },
+      {
+        "name": "abandoned_trip_mean",
+        "status": "PASS",
+        "observed": 0.57,
+        "expected": 1.0,
+        "message": "Within the configured reference range."
+      },
+      {
+        "name": "traffic_abandonment_share",
+        "status": "PASS",
+        "observed": 0.0,
+        "expected": 0.25,
+        "message": "Within the configured reference range."
+      },
+      {
+        "name": "waterhole_day_fraction",
+        "status": "PASS",
+        "observed": 0.81,
+        "expected": [
+          0.8,
+          0.88
+        ],
+        "message": "Within the configured reference range."
+      },
+      {
+        "name": "zone_entries_per_day",
+        "status": "WARN",
+        "observed": 7.13,
+        "expected": [
+          8.0,
+          11.0
+        ],
+        "message": "Outside the configured reference range."
+      },
+      {
+        "name": "zone_entry_share.Den",
+        "status": "WARN",
+        "observed": 0.016830294530154277,
+        "expected": [
+          0.03,
+          0.35
+        ],
+        "message": "Outside the configured reference range."
+      },
+      {
+        "name": "zone_entry_share.Shade",
+        "status": "PASS",
+        "observed": 0.1697054698457223,
+        "expected": [
+          0.03,
+          0.35
+        ],
+        "message": "Within the configured reference range."
+      },
+      {
+        "name": "zone_entry_share.Kopje",
+        "status": "PASS",
+        "observed": 0.1935483870967742,
+        "expected": [
+          0.03,
+          0.35
+        ],
+        "message": "Within the configured reference range."
+      },
+      {
+        "name": "zone_entry_share.Waterhole",
+        "status": "PASS",
+        "observed": 0.14446002805049088,
+        "expected": [
+          0.03,
+          0.35
+        ],
+        "message": "Within the configured reference range."
+      },
+      {
+        "name": "zone_entry_share.Hunting ground",
+        "status": "PASS",
+        "observed": 0.09256661991584852,
+        "expected": [
+          0.03,
+          0.35
+        ],
+        "message": "Within the configured reference range."
+      },
+      {
+        "name": "zone_entry_share.Feeding spot",
+        "status": "PASS",
+        "observed": 0.05049088359046283,
+        "expected": [
+          0.03,
+          0.35
+        ],
+        "message": "Within the configured reference range."
+      },
+      {
+        "name": "zone_entry_share.Plain",
+        "status": "PASS",
+        "observed": 0.31977559607293127,
+        "expected": [
+          0.03,
+          0.35
+        ],
+        "message": "Within the configured reference range."
+      },
+      {
+        "name": "zone_entry_share.Road",
+        "status": "WARN",
+        "observed": 0.012622720897615708,
+        "expected": [
+          0.02,
+          0.05
+        ],
+        "message": "Outside the configured reference range."
+      },
+      {
+        "name": "hunt_attempt_day_fraction",
+        "status": "PASS",
+        "observed": 0.64,
+        "expected": [
+          0.5,
+          0.7
+        ],
+        "message": "Within the configured reference range."
+      },
+      {
+        "name": "catch_day_fraction",
+        "status": "PASS",
+        "observed": 0.34,
+        "expected": [
+          0.2,
+          0.4
+        ],
+        "message": "Within the configured reference range."
+      },
+      {
+        "name": "road_entry_day_fraction",
+        "status": "WARN",
+        "observed": 0.09,
+        "expected": [
+          0.1,
+          0.18
+        ],
+        "message": "Outside the configured reference range."
+      },
+      {
+        "name": "unique_sequence_fraction",
+        "status": "WARN",
+        "observed": 0.49,
+        "expected": {
+          "minimum_inclusive": 0.5
+        },
+        "message": "Outside the configured reference range."
+      },
+      {
+        "name": "top_five_sequence_share",
+        "status": "WARN",
+        "observed": 0.39,
+        "expected": {
+          "maximum_inclusive": 0.35
+        },
+        "message": "Outside the configured reference range."
+      },
+      {
+        "name": "mean_walking_speed_kmh",
+        "status": "PASS",
+        "observed": 3.4922286858182114,
+        "expected": [
+          2.0,
+          4.0
+        ],
+        "message": "Within the configured reference range."
+      },
+      {
+        "name": "road_evening_fraction",
+        "status": "PASS",
+        "observed": 1.0,
+        "expected": 0.6,
+        "message": "Within the configured reference range."
+      },
+      {
+        "name": "road_tourist_window_fraction",
+        "status": "PASS",
+        "observed": 0.0,
+        "expected": 0.1,
+        "message": "Within the configured reference range."
+      },
+      {
+        "name": "road_tourist_correlation",
+        "status": "PASS",
+        "observed": -0.3759167642928401,
+        "expected": -0.35,
+        "message": "Within the configured reference range."
+      },
+      {
+        "name": "events_per_day",
+        "status": "WARN",
+        "observed": 18.38,
+        "expected": [
+          24.0,
+          32.0
+        ],
+        "message": "Outside the configured reference range."
+      },
+      {
+        "name": "non_feast_late_entry_fraction",
+        "status": "PASS",
+        "observed": 0.9393939393939394,
+        "expected": 0.7,
+        "message": "Within the configured reference range."
+      },
+      {
+        "name": "feast_post_meal_entry_fraction",
+        "status": "PASS",
+        "observed": 0.0,
+        "expected": 0.15,
+        "message": "Within the configured reference range."
+      },
+      {
+        "name": "end_of_day_report_6",
+        "status": "WARN",
+        "observed": 0.38,
+        "expected": [
+          0.4,
+          0.6
+        ],
+        "message": "Outside the configured reference range."
+      },
+      {
+        "name": "end_of_day_report_7",
+        "status": "PASS",
+        "observed": 0.62,
+        "expected": [
+          0.6,
+          0.8
+        ],
+        "message": "Within the configured reference range."
+      },
+      {
+        "name": "prey_density_vs_kopje_dwell",
+        "status": "PASS",
+        "observed": 0.8204404185730017,
+        "expected": 0.4,
+        "message": "Within the configured reference range."
+      },
+      {
+        "name": "prey_density_vs_first_chase_time",
+        "status": "PASS",
+        "observed": -0.5800215761279356,
+        "expected": -0.3,
+        "message": "Within the configured reference range."
+      },
+      {
+        "name": "start_hunger_vs_wake_time",
+        "status": "PASS",
+        "observed": -0.42688587861318117,
+        "expected": -0.3,
+        "message": "Within the configured reference range."
+      },
+      {
+        "name": "heat_vs_shade_entry_time",
+        "status": "PASS",
+        "observed": -0.8011622541573026,
+        "expected": -0.4,
+        "message": "Within the configured reference range."
+      },
+      {
+        "name": "hours_per_behaviour.resting",
+        "status": "PASS",
+        "observed": 16.315,
+        "expected": [
+          16.0,
+          20.0
+        ],
+        "message": "Within the configured reference range."
+      },
+      {
+        "name": "hours_per_behaviour.walking",
+        "status": "WARN",
+        "observed": 5.9065,
+        "expected": [
+          3.0,
+          5.0
+        ],
+        "message": "Outside the configured reference range."
+      },
+      {
+        "name": "hours_per_behaviour.hunting",
+        "status": "PASS",
+        "observed": 0.6806666666666666,
+        "expected": [
+          0.2,
+          3.0
+        ],
+        "message": "Within the configured reference range."
+      },
+      {
+        "name": "hours_per_behaviour.grooming",
+        "status": "PASS",
+        "observed": 0.3888333333333333,
+        "expected": [
+          0.1,
+          2.5
+        ],
+        "message": "Within the configured reference range."
+      },
+      {
+        "name": "hours_per_behaviour.eating",
+        "status": "PASS",
+        "observed": 0.49566666666666664,
+        "expected": [
+          0.0,
+          1.5
+        ],
+        "message": "Within the configured reference range."
+      },
+      {
+        "name": "hours_per_behaviour.drinking",
+        "status": "PASS",
+        "observed": 0.21333333333333335,
+        "expected": [
+          0.0,
+          1.0
+        ],
+        "message": "Within the configured reference range."
+      },
+      {
+        "name": "event_invariants",
+        "status": "PASS",
+        "observed": 0,
+        "expected": 0,
+        "message": "100/100 days checked; 0 days failed hard validation."
+      },
+      {
+        "name": "trip_boredom_straightness",
+        "observed": -0.37035611917578776,
+        "expected": {
+          "min": null,
+          "max": -0.35
+        },
+        "status": "PASS",
+        "message": "Phase-three trip target; paired counts in trip_movement."
+      },
+      {
+        "name": "trip_urgency_straightness",
+        "observed": 0.1385258576213705,
+        "expected": {
+          "min": 0.3,
+          "max": null
+        },
+        "status": "WARN",
+        "message": "Phase-three trip target; paired counts in trip_movement."
+      },
+      {
+        "name": "trip_urgency_speed",
+        "observed": 0.31767221252196465,
+        "expected": {
+          "min": 0.25,
+          "max": null
+        },
+        "status": "PASS",
+        "message": "Phase-three trip target; paired counts in trip_movement."
+      },
+      {
+        "name": "trip_observed_true_straightness",
+        "observed": 0.9321986507491372,
+        "expected": {
+          "min": 0.85,
+          "max": null
+        },
+        "status": "PASS",
+        "message": "Phase-three trip target; paired counts in trip_movement."
+      },
+      {
+        "name": "trip_detour_fraction",
+        "observed": 0.10037641154328733,
+        "expected": {
+          "min": 0.1,
+          "max": 0.3
+        },
+        "status": "PASS",
+        "message": "Phase-three trip target; paired counts in trip_movement."
+      },
+      {
+        "name": "guardrail_walking_hours",
+        "observed": 5.9065,
+        "expected": {
+          "min": null,
+          "max": 6.0
+        },
+        "status": "PASS",
+        "message": "Hard phase-three guardrail."
+      },
+      {
+        "name": "guardrail_zone_entries",
+        "observed": 7.13,
+        "expected": {
+          "min": 7.0,
+          "max": null
+        },
+        "status": "PASS",
+        "message": "Hard phase-three guardrail."
+      },
+      {
+        "name": "guardrail_walking_speed",
+        "observed": 3.4922286858182114,
+        "expected": {
+          "min": null,
+          "max": 4.0
+        },
+        "status": "PASS",
+        "message": "Hard phase-three guardrail."
+      },
+      {
+        "name": "guardrail_abandoned_trips",
+        "observed": 0.57,
+        "expected": {
+          "min": null,
+          "max": 1.0
+        },
+        "status": "PASS",
+        "message": "Hard phase-three guardrail."
+      },
+      {
+        "name": "guardrail_event_rules",
+        "observed": 1,
+        "expected": {
+          "min": 1,
+          "max": null
+        },
+        "status": "PASS",
+        "message": "Hard phase-three guardrail."
+      },
+      {
+        "name": "headline_l3_relative_improvement",
+        "status": "PASS",
+        "observed": 0.10211429433218555,
+        "expected": 0.03,
+        "message": "Relative improvement of mean CV headline L3 over L2; no forced ordering."
+      },
+      {
+        "name": "headline_l4_relative_improvement",
+        "status": "WARN",
+        "observed": -0.010176958122194438,
+        "expected": 0.02,
+        "message": "Fixed-bin L4 relative improvement over L3 on identical headline day folds."
+      }
+    ]
+  },
+  "E_seed271": {
+    "run": "outputs/phase3_calibration_271/E/run_20261103_221037",
+    "days": 100,
+    "checks": [
+      {
+        "name": "observed_true_path_ratio",
+        "status": "PASS",
+        "observed": 1.5215282425933037,
+        "expected": 1.6,
+        "message": "Within the configured reference range."
+      },
+      {
+        "name": "smoothed_rest_apparent_speed_kmh",
+        "status": "PASS",
+        "observed": 0.1837605163859528,
+        "expected": 0.8,
+        "message": "Within the configured reference range."
+      },
+      {
+        "name": "abandoned_trip_mean",
+        "status": "PASS",
+        "observed": 0.59,
+        "expected": 1.0,
+        "message": "Within the configured reference range."
+      },
+      {
+        "name": "traffic_abandonment_share",
+        "status": "PASS",
+        "observed": 0.0,
+        "expected": 0.25,
+        "message": "Within the configured reference range."
+      },
+      {
+        "name": "waterhole_day_fraction",
+        "status": "WARN",
+        "observed": 0.79,
+        "expected": [
+          0.8,
+          0.88
+        ],
+        "message": "Outside the configured reference range."
+      },
+      {
+        "name": "zone_entries_per_day",
+        "status": "WARN",
+        "observed": 7.3,
+        "expected": [
+          8.0,
+          11.0
+        ],
+        "message": "Outside the configured reference range."
+      },
+      {
+        "name": "zone_entry_share.Den",
+        "status": "WARN",
+        "observed": 0.0273972602739726,
+        "expected": [
+          0.03,
+          0.35
+        ],
+        "message": "Outside the configured reference range."
+      },
+      {
+        "name": "zone_entry_share.Shade",
+        "status": "PASS",
+        "observed": 0.1547945205479452,
+        "expected": [
+          0.03,
+          0.35
+        ],
+        "message": "Within the configured reference range."
+      },
+      {
+        "name": "zone_entry_share.Kopje",
+        "status": "PASS",
+        "observed": 0.1958904109589041,
+        "expected": [
+          0.03,
+          0.35
+        ],
+        "message": "Within the configured reference range."
+      },
+      {
+        "name": "zone_entry_share.Waterhole",
+        "status": "PASS",
+        "observed": 0.13287671232876713,
+        "expected": [
+          0.03,
+          0.35
+        ],
+        "message": "Within the configured reference range."
+      },
+      {
+        "name": "zone_entry_share.Hunting ground",
+        "status": "PASS",
+        "observed": 0.10684931506849316,
+        "expected": [
+          0.03,
+          0.35
+        ],
+        "message": "Within the configured reference range."
+      },
+      {
+        "name": "zone_entry_share.Feeding spot",
+        "status": "PASS",
+        "observed": 0.04657534246575343,
+        "expected": [
+          0.03,
+          0.35
+        ],
+        "message": "Within the configured reference range."
+      },
+      {
+        "name": "zone_entry_share.Plain",
+        "status": "PASS",
+        "observed": 0.3232876712328767,
+        "expected": [
+          0.03,
+          0.35
+        ],
+        "message": "Within the configured reference range."
+      },
+      {
+        "name": "zone_entry_share.Road",
+        "status": "WARN",
+        "observed": 0.012328767123287671,
+        "expected": [
+          0.02,
+          0.05
+        ],
+        "message": "Outside the configured reference range."
+      },
+      {
+        "name": "hunt_attempt_day_fraction",
+        "status": "WARN",
+        "observed": 0.76,
+        "expected": [
+          0.5,
+          0.7
+        ],
+        "message": "Outside the configured reference range."
+      },
+      {
+        "name": "catch_day_fraction",
+        "status": "PASS",
+        "observed": 0.34,
+        "expected": [
+          0.2,
+          0.4
+        ],
+        "message": "Within the configured reference range."
+      },
+      {
+        "name": "road_entry_day_fraction",
+        "status": "WARN",
+        "observed": 0.09,
+        "expected": [
+          0.1,
+          0.18
+        ],
+        "message": "Outside the configured reference range."
+      },
+      {
+        "name": "unique_sequence_fraction",
+        "status": "PASS",
+        "observed": 0.58,
+        "expected": {
+          "minimum_inclusive": 0.5
+        },
+        "message": "Within the configured reference range."
+      },
+      {
+        "name": "top_five_sequence_share",
+        "status": "WARN",
+        "observed": 0.37,
+        "expected": {
+          "maximum_inclusive": 0.35
+        },
+        "message": "Outside the configured reference range."
+      },
+      {
+        "name": "mean_walking_speed_kmh",
+        "status": "PASS",
+        "observed": 3.5008586454297,
+        "expected": [
+          2.0,
+          4.0
+        ],
+        "message": "Within the configured reference range."
+      },
+      {
+        "name": "road_evening_fraction",
+        "status": "PASS",
+        "observed": 0.8888888888888888,
+        "expected": 0.6,
+        "message": "Within the configured reference range."
+      },
+      {
+        "name": "road_tourist_window_fraction",
+        "status": "PASS",
+        "observed": 0.0,
+        "expected": 0.1,
+        "message": "Within the configured reference range."
+      },
+      {
+        "name": "road_tourist_correlation",
+        "status": "WARN",
+        "observed": -0.19323107268040904,
+        "expected": -0.35,
+        "message": "Outside the configured reference range."
+      },
+      {
+        "name": "events_per_day",
+        "status": "WARN",
+        "observed": 18.76,
+        "expected": [
+          24.0,
+          32.0
+        ],
+        "message": "Outside the configured reference range."
+      },
+      {
+        "name": "non_feast_late_entry_fraction",
+        "status": "PASS",
+        "observed": 0.9090909090909091,
+        "expected": 0.7,
+        "message": "Within the configured reference range."
+      },
+      {
+        "name": "feast_post_meal_entry_fraction",
+        "status": "PASS",
+        "observed": 0.0,
+        "expected": 0.15,
+        "message": "Within the configured reference range."
+      },
+      {
+        "name": "end_of_day_report_6",
+        "status": "PASS",
+        "observed": 0.4,
+        "expected": [
+          0.4,
+          0.6
+        ],
+        "message": "Within the configured reference range."
+      },
+      {
+        "name": "end_of_day_report_7",
+        "status": "PASS",
+        "observed": 0.62,
+        "expected": [
+          0.6,
+          0.8
+        ],
+        "message": "Within the configured reference range."
+      },
+      {
+        "name": "prey_density_vs_kopje_dwell",
+        "status": "PASS",
+        "observed": 0.9045529706416353,
+        "expected": 0.4,
+        "message": "Within the configured reference range."
+      },
+      {
+        "name": "prey_density_vs_first_chase_time",
+        "status": "PASS",
+        "observed": -0.5187008193355285,
+        "expected": -0.3,
+        "message": "Within the configured reference range."
+      },
+      {
+        "name": "start_hunger_vs_wake_time",
+        "status": "PASS",
+        "observed": -0.31480321002527184,
+        "expected": -0.3,
+        "message": "Within the configured reference range."
+      },
+      {
+        "name": "heat_vs_shade_entry_time",
+        "status": "PASS",
+        "observed": -0.6955355035791079,
+        "expected": -0.4,
+        "message": "Within the configured reference range."
+      },
+      {
+        "name": "hours_per_behaviour.resting",
+        "status": "PASS",
+        "observed": 16.145666666666667,
+        "expected": [
+          16.0,
+          20.0
+        ],
+        "message": "Within the configured reference range."
+      },
+      {
+        "name": "hours_per_behaviour.walking",
+        "status": "WARN",
+        "observed": 5.755166666666667,
+        "expected": [
+          3.0,
+          5.0
+        ],
+        "message": "Outside the configured reference range."
+      },
+      {
+        "name": "hours_per_behaviour.hunting",
+        "status": "PASS",
+        "observed": 1.0068333333333332,
+        "expected": [
+          0.2,
+          3.0
+        ],
+        "message": "Within the configured reference range."
+      },
+      {
+        "name": "hours_per_behaviour.grooming",
+        "status": "PASS",
+        "observed": 0.399,
+        "expected": [
+          0.1,
+          2.5
+        ],
+        "message": "Within the configured reference range."
+      },
+      {
+        "name": "hours_per_behaviour.eating",
+        "status": "PASS",
+        "observed": 0.521,
+        "expected": [
+          0.0,
+          1.5
+        ],
+        "message": "Within the configured reference range."
+      },
+      {
+        "name": "hours_per_behaviour.drinking",
+        "status": "PASS",
+        "observed": 0.17233333333333334,
+        "expected": [
+          0.0,
+          1.0
+        ],
+        "message": "Within the configured reference range."
+      },
+      {
+        "name": "event_invariants",
+        "status": "PASS",
+        "observed": 0,
+        "expected": 0,
+        "message": "100/100 days checked; 0 days failed hard validation."
+      },
+      {
+        "name": "trip_boredom_straightness",
+        "observed": -0.3033745895416247,
+        "expected": {
+          "min": null,
+          "max": -0.35
+        },
+        "status": "WARN",
+        "message": "Phase-three trip target; paired counts in trip_movement."
+      },
+      {
+        "name": "trip_urgency_straightness",
+        "observed": 0.16512163824707599,
+        "expected": {
+          "min": 0.3,
+          "max": null
+        },
+        "status": "WARN",
+        "message": "Phase-three trip target; paired counts in trip_movement."
+      },
+      {
+        "name": "trip_urgency_speed",
+        "observed": 0.36164700085578544,
+        "expected": {
+          "min": 0.25,
+          "max": null
+        },
+        "status": "PASS",
+        "message": "Phase-three trip target; paired counts in trip_movement."
+      },
+      {
+        "name": "trip_observed_true_straightness",
+        "observed": 0.936730434119505,
+        "expected": {
+          "min": 0.85,
+          "max": null
+        },
+        "status": "PASS",
+        "message": "Phase-three trip target; paired counts in trip_movement."
+      },
+      {
+        "name": "trip_detour_fraction",
+        "observed": 0.1159235668789809,
+        "expected": {
+          "min": 0.1,
+          "max": 0.3
+        },
+        "status": "PASS",
+        "message": "Phase-three trip target; paired counts in trip_movement."
+      },
+      {
+        "name": "guardrail_walking_hours",
+        "observed": 5.755166666666667,
+        "expected": {
+          "min": null,
+          "max": 6.0
+        },
+        "status": "PASS",
+        "message": "Hard phase-three guardrail."
+      },
+      {
+        "name": "guardrail_zone_entries",
+        "observed": 7.3,
+        "expected": {
+          "min": 7.0,
+          "max": null
+        },
+        "status": "PASS",
+        "message": "Hard phase-three guardrail."
+      },
+      {
+        "name": "guardrail_walking_speed",
+        "observed": 3.5008586454297,
+        "expected": {
+          "min": null,
+          "max": 4.0
+        },
+        "status": "PASS",
+        "message": "Hard phase-three guardrail."
+      },
+      {
+        "name": "guardrail_abandoned_trips",
+        "observed": 0.59,
+        "expected": {
+          "min": null,
+          "max": 1.0
+        },
+        "status": "PASS",
+        "message": "Hard phase-three guardrail."
+      },
+      {
+        "name": "guardrail_event_rules",
+        "observed": 1,
+        "expected": {
+          "min": 1,
+          "max": null
+        },
+        "status": "PASS",
+        "message": "Hard phase-three guardrail."
+      },
+      {
+        "name": "headline_l3_relative_improvement",
+        "status": "PASS",
+        "observed": 0.12512198363886262,
+        "expected": 0.03,
+        "message": "Relative improvement of mean CV headline L3 over L2; no forced ordering."
+      },
+      {
+        "name": "headline_l4_relative_improvement",
+        "status": "WARN",
+        "observed": -0.008688487647754957,
+        "expected": 0.02,
+        "message": "Fixed-bin L4 relative improvement over L3 on identical headline day folds."
+      }
+    ]
   }
 }
