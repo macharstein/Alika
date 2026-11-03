@@ -330,6 +330,20 @@
       "periods": "24-hour exhaustive clock windows and logit priors; high=2, medium=1, low=0, none=-5."
     }
   },
+  "features_path": {
+    "smoothing_minutes": 5,
+    "window_minutes": 180,
+    "grid_cell_km": 0.25,
+    "departure_margin_km": 0.05,
+    "departure_confirmation_minutes": 2,
+    "_comments": {
+      "smoothing_minutes": "Trailing observed-GPS averaging window; excludes the left endpoint and includes the current fix.",
+      "window_minutes": "Elapsed history for the rolling report-window path features.",
+      "grid_cell_km": "Map-origin-aligned square cell width; covered area is occupied cells times cell area.",
+      "departure_margin_km": "Observed departure must exceed this distance outside the last entered zone.",
+      "departure_confirmation_minutes": "Require this many consecutive minute fixes beyond the departure margin before accepting a trip start."
+    }
+  },
   "movement_style": {
     "boredom_goal_urgency": 0.2,
     "attraction_intercept": 0.6,

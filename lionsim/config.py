@@ -362,6 +362,10 @@ def validate_config(data: dict[str, Any]) -> None:
         raise ValueError("Midday wake mean must fall within ordered midday_wake_clip bounds")
     if minute_offset(data["learnability"]["activity"]["hunt_start"], start) >= minute_offset(data["learnability"]["activity"]["hunt_end"], start):
         raise ValueError("behaviours.hunt_start must precede hunt_end in the simulated day")
+    for name in ("smoothing_minutes", "window_minutes", "departure_confirmation_minutes"):
+        bound(f"features_path.{name}", 1, 1440)
+    bound("features_path.grid_cell_km", positive=True)
+    bound("features_path.departure_margin_km", 0)
     for name in ("boredom_goal_urgency", "low_mood_threshold", "detour_boredom_threshold"):
         bound(f"movement_style.{name}", 0, 1)
     for name in ("attraction_intercept", "turn_intercept", "speed_intercept"):
