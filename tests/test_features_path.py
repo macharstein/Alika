@@ -119,3 +119,55 @@ def test_last_three_hours_excludes_older_smoothed_fixes():
 def test_invalid_feature_settings_are_rejected(expression):
     with pytest.raises(ValueError):
         load_config(overrides=[expression])
+
+
+def test_csv_features_resume_workers_and_checkpoint_repair(tmp_path):
+    import csv
+    import json
+    from lionsim.run import build_parser, run
+    from lionsim.simulator import simulate_day
+    from lionsim.reports import build_reports
+    parser = build_parser()
+    partial = run(parser.parse_args(['--stats-only','--stats-days','3','--chunk-size','2',
+                                    '--out',str(tmp_path/'partial')]))
+    checkpoints = sorted((partial/'checkpoints').glob('*.json'))
+    stamps = {p:p.stat().st_mtime_ns for p in checkpoints}
+    # Missing a feature is an incomplete day, not a legitimate missing value.
+    broken = json.loads(checkpoints[0].read_text())
+    del broken['targets'][0][PATH_FEATURE_COLUMNS[0]]
+    checkpoints[0].write_text(json.dumps(broken))
+    run(parser.parse_args(['--resume',str(partial),'--workers','2']))
+    assert checkpoints[1].stat().st_mtime_ns == stamps[checkpoints[1]]
+    assert PATH_FEATURE_COLUMNS[0] in json.loads(checkpoints[0].read_text())['targets'][0]
+    full = run(parser.parse_args(['--stats-only','--stats-days','3','--out',str(tmp_path/'full')]))
+    for name in ('targets.csv','stats_report.json','stats_report.md'):
+        assert (partial/name).read_bytes() == (full/name).read_bytes()
+    with (full/'targets.csv').open() as handle:
+        reader = csv.DictReader(handle)
+        assert reader.fieldnames[-10:] == list(PATH_FEATURE_COLUMNS)
+        rows = list(reader)
+    assert len(rows) == 21
+    config = load_config()
+    day = simulate_day(config)
+    timestamp = build_reports(day, config)[0]['report_time']
+    features = features_at_report(day.gps, day.events, timestamp, config)
+    for name, value in features.items():
+        assert rows[0][name] == '' if value is None else float(rows[0][name]) == pytest.approx(value)
+    assert all(row['report_index'] != '8' for row in rows)
+    assert any(row['last_trip_straightness'] != '' for row in rows)
+    assert not list(full.rglob('*.png'))
+    assert not list(full.rglob('hidden_state*'))
+    assert not list(full.rglob('gps*'))
+
+
+def test_report_features_do_not_read_hidden_state_or_latents():
+    from lionsim.simulator import simulate_day
+    from lionsim.reports import build_reports
+    config = load_config()
+    day = simulate_day(config)
+    timestamp = build_reports(day, config)[1]['report_time']
+    before = features_at_report(day.gps, day.events, timestamp, config)
+    day.hidden_state = None
+    day.latents.clear()
+    day.gps[['x_true_km','y_true_km']] = np.nan
+    assert features_at_report(day.gps, day.events, timestamp, config) == before

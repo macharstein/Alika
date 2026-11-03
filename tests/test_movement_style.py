@@ -189,7 +189,7 @@ def test_style_reproducibility_schema_and_resume_contract(tmp_path):
     from lionsim import SCHEMA_VERSION, __version__
     from lionsim.run import build_parser, run
     from lionsim.simulator import simulate_day
-    assert SCHEMA_VERSION == 'lionsim-v5' and __version__ == '5.0.0'
+    assert SCHEMA_VERSION == 'lionsim-v5' and __version__.startswith('5.')
     first, second = simulate_day(load_config(), seed=42), simulate_day(load_config(), seed=42)
     pd.testing.assert_frame_equal(first.gps, second.gps)
     pd.testing.assert_frame_equal(first.hidden_state, second.hidden_state)

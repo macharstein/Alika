@@ -24,6 +24,7 @@ from . import __version__, SCHEMA_VERSION
 from .config import Config, load_config
 from .io_utils import atomic_output, create_run_directory, day_directory, write_day, write_json, write_text
 from .events import TOKENS
+from .features_path import PATH_FEATURE_COLUMNS, features_at_report
 from .reports import build_reports, target_rows
 from .stats import summarize_for_stats, build_stats_report, render_stats_markdown, baselines_from_csv, add_headline_check
 from .simulator import simulate_day
@@ -122,9 +123,13 @@ def _run_day(job: dict[str, Any]) -> dict[str, Any]:
                    for path in sorted(directory.rglob("*")) if path.is_file() and not path.name.startswith(".")]
     stats = summarize_for_stats(day, reports, config)
     stats["validation"] = validation
+    targets = target_rows(day, reports)
+    for row in targets:
+        report_time = reports[row["report_index"] - 1]["report_time"]
+        row.update(features_at_report(day.gps, day.events, report_time, config))
     record = {"day_index": day.day_index, "run_fingerprint": job["run_fingerprint"],
               "summary": summarize_day(day, reports, validation, config), "stats": stats,
-              "targets": target_rows(day, reports), "files": written}
+              "targets": targets, "files": written}
     if oracle_rows is not None:
         record["oracle"] = oracle_rows
     checkpoint = Path(job["run_directory"]) / "checkpoints" / f"day_{day.day_index:0{job['folder_width']}d}.json"
@@ -168,6 +173,19 @@ def _load_records(directory: Path, manifest: dict[str, Any]) -> dict[int, dict[s
             index = record["day_index"]
             if index not in expected or record["run_fingerprint"] != manifest["run_fingerprint"]:
                 raise ValueError("checkpoint does not belong to this run")
+            targets = record["targets"]
+            expected_reports = len(manifest["config"]["time"]["report_times"]) - 1
+            if (len(targets) != expected_reports
+                    or [row["report_index"] for row in targets] != list(range(1, expected_reports + 1))
+                    or any(row["day"] != index or any(column not in row for column in PATH_FEATURE_COLUMNS)
+                           for row in targets)):
+                raise ValueError("incomplete path-feature checkpoint")
+            for row in targets:
+                for column in PATH_FEATURE_COLUMNS:
+                    value = row[column]
+                    if value is not None and (isinstance(value, bool) or not isinstance(value, (int, float))
+                                              or not np.isfinite(value)):
+                        raise ValueError("invalid path-feature checkpoint value")
             if manifest.get("oracle"):
                 rows = record["oracle"]
                 expected_reports = len(manifest["config"]["time"]["report_times"]) - 1
@@ -199,6 +217,7 @@ def _write_aggregates(directory: Path, records: dict[int, dict[str, Any]], confi
     write_json(directory / "validation_report.json", validation, pretty)
     columns = ["day", "report_index", "report_time_bucket", "current_zone", "last_event", "next_zone_target",
                "shade_entry_hour_bucket", "drinks_so_far", "chase_attempts_so_far", "catch_so_far"]
+    columns += list(PATH_FEATURE_COLUMNS)
     with atomic_output(directory / "targets.csv") as temporary:
         with temporary.open("w", encoding="utf-8", newline="") as handle:
             writer = csv.DictWriter(handle, fieldnames=columns)
