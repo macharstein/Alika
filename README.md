@@ -6,8 +6,8 @@ every three hours. This is a configurable stochastic simulator for inspecting sy
 data, not an empirically calibrated model of lion behaviour. There is no machine
 learning, training code, or external service dependency.
 
-Current package: **5.1.0**, manifest schema **lionsim-v5**. Phase 3 currently
-implements **S8.1–S8.2**: trip-start urgency, boredom and mood set walking style
+Current package: **5.2.0**, manifest schema **lionsim-v5**. Phase 3 currently
+implements **S8.1–S8.3**: trip-start urgency, boredom and mood set walking style
 and optional detours; ten causal observed-GPS features are appended to targets.csv. The accepted
 phase-two baseline is tagged **v4.5.0** at commit `3de4f5a`.
 
@@ -17,11 +17,15 @@ cannot resume into v5. Tokens, report schedule, day-level latent sampling, hunt
 cutoff, stalking/chase logic and PNG styling remain unchanged. No phase-two
 parameters were retuned. Phase-two measurements below are historical, not
 measurements of the new movement distribution. See [movement-style details](docs/MOVEMENT_STYLE.md).
-L4/calibration and example figures (S8.3–S8.4) are not implemented. Version 5.1.0
-changes feature export only; trajectories match 5.0.0. Resume requires the same
-package version, including for older v5 runs without these columns.
-See [path-feature definitions and causality](docs/PATH_FEATURES.md).
-Current full suite: **224 tests passed**. S8.3 remains the next task.
+S8.3 adds L4, trip-level measurements and hard guardrails. **The 500-day evaluation
+is not accepted:** walking is 6.0955 h/day (>6), L4 worsens headline loss by 2.08%,
+and three movement targets miss their bounds. The matched 100-day oracle is still
+running. Full results, fixed cue diagnostics, and every accepted-baseline status
+change are recorded in [S8.3 results](docs/PHASE3_S83_RESULTS.md).
+Version 5.2.0 changes diagnostics/checkpoints only; trajectories match 5.0.0.
+Resume requires the same package version. See [path-feature definitions and
+causality](docs/PATH_FEATURES.md). S8.4 example figures remain deferred.
+The last completed full suite had **224 tests passed**; S8.3 full verification is pending.
 
 ## Setup and first run
 
@@ -447,7 +451,7 @@ The final stats_report.md/json are the authority on remaining deviations.
 
 ## Baseline ladder (task 6)
 
-Statistics runs now read the persisted `targets.csv` and report L0–L3 held-out
+Statistics runs now read the persisted `targets.csv` and report L0–L4 held-out
 multiclass log loss, in nats. The table keeps its original six columns and adds
 `shade_entry_hour_bucket`, `drinks_so_far`, `chase_attempts_so_far`, `catch_so_far`.
 Cues use only events at or before report time, never hidden bars or daily latents;
@@ -533,7 +537,7 @@ baselines. `oracle_report.json` stores timestamped counts, class probabilities,
 actual original targets and log loss. `oracle_report.md` shows the comparison
 and each report's time, target and probability in human-readable tables.
 
-The oracle/L0–L3 comparison reports headline indices 1–5 and all reports using
+The oracle/L0–L4 comparison reports headline indices 1–5 and all reports using
 the same out-of-fold days and mean-across-fold weighting, with fold standard
 deviations. The all-day row-weighted oracle loss is also shown separately.
 With fewer than two completed days the comparison is explicitly unavailable.
