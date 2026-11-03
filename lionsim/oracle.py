@@ -167,7 +167,7 @@ def oracle_report(rows: list[dict[str, Any]], ladder: dict[str, Any], config: Co
         ):
             checks.append({'name': f'{scope}.{name}', 'observed': observed, 'expected': expected,
                            'status': 'FAIL' if observed is None else 'PASS' if passes else 'WARN',
-                           'message': 'Same day folds and report scope as L0–L3; means across folds.'})
+                           'message': 'Same day folds and report scope as L0–L4; means across folds.'})
         notes = []
         if loss > l2:
             notes.append('oracle above L2: simulator is too noisy')
@@ -179,6 +179,11 @@ def oracle_report(rows: list[dict[str, Any]], ladder: dict[str, Any], config: Co
             notes.append('balanced' if all(c['status'] == 'PASS' for c in checks[-2:]) else
                          'oracle targets not met: inspect ratio and headroom warnings')
         interpretations[scope] = '; '.join(notes)
+        minimum_ratio = config['targets']['guardrail_oracle_l0_min']
+        checks.append({'name': f'{scope}.guardrail_oracle_l0', 'observed': ratio,
+                       'expected': minimum_ratio,
+                       'status': 'PASS' if ratio is not None and ratio >= minimum_ratio else 'FAIL',
+                       'message': 'Phase-three minimum stochasticity guardrail; old calibration range remains separate.'})
     loss = comparisons['all_reports']['oracle']['mean']
     floor = float(np.mean([row['smoothing_floor_nats'] for row in testing]))
     result.update(status='complete', test_days=ladder['test_days'], test_rows=len(testing),

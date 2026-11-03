@@ -562,6 +562,17 @@
     ]
   },
   "targets": {
+    "trip_boredom_straightness_max": -0.35,
+    "trip_urgency_straightness_min": 0.3,
+    "trip_urgency_speed_min": 0.25,
+    "trip_detour_fraction_range": [0.1, 0.3],
+    "trip_observed_true_straightness_min": 0.85,
+    "guardrail_walking_hours_max": 6.0,
+    "guardrail_entries_min": 7.0,
+    "guardrail_speed_max_kmh": 4.0,
+    "guardrail_abandoned_max": 1.0,
+    "guardrail_oracle_l0_min": 0.2,
+
     "zone_entries_per_day": [
       8.0,
       11.0
@@ -615,6 +626,7 @@
       ]
     },
     "_comments": {
+      "phase3": "trip_* bounds apply to all committed trips except urgency/straightness (Hunting ground, Waterhole, Shade, Den). guardrail_* are hard limits, separate from unchanged phase-two calibration ranges; oracle ratio is checked in headline and all-report scopes.",
       "zone_entries_per_day": "Run mean target range.",
       "zone_entry_share": "Each named zone share of all entries; Road is exempt from minimum but zero warns.",
       "hunt_attempt_day_fraction": "Share of days with at least one chase.",

@@ -107,7 +107,7 @@ def test_oracle_counts_smoothing_actual_targets_and_reproducibility():
 def test_oracle_comparison_uses_same_holdout_and_reports_sampling_floor():
     from lionsim.oracle import oracle_report, render_oracle_markdown
     config = load_config()
-    losses = dict(L0=2., L1=1.5, L2=1., L3=.9)
+    losses = dict(L0=2., L1=1.5, L2=1., L3=.9, L4=.8)
     ladder = {'status': 'complete', 'losses': losses,
               'headline': {k: {'mean': v, 'std': 0.} for k, v in losses.items()},
               'all_reports': {k: {'mean': v, 'std': 0.} for k, v in losses.items()},
@@ -133,6 +133,7 @@ def test_oracle_comparison_uses_same_holdout_and_reports_sampling_floor():
     assert 'too deterministic' in result['interpretation']
     assert 'learnability.softmax_temperature' in result['interpretation']
     assert result['near_zero_resolvable'] is False
+    assert all(c['status'] == 'FAIL' for c in result['checks'] if 'guardrail_oracle_l0' in c['name'])
     with pytest.raises(ValueError, match='same report rows'):
         oracle_report(rows[:1], ladder, config)
     empty = oracle_report([], {'status': 'insufficient_data', 'losses': dict.fromkeys(('L0','L1','L2','L3'))}, config)

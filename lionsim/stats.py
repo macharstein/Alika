@@ -1,8 +1,8 @@
 """Descriptive signal/noise diagnostics from compact, resumable daily records.
 
 This module uses only counting tables for diagnostic prediction baselines. It measures the generated data and
-compares transparent statistics with configured reference ranges. All geometry
-metrics use noise-free positions; an observed-path length is reported separately.
+compares transparent statistics with configured reference ranges. Daily geometry uses true positions; trip diagnostics compare smoothed observed
+and true geometry explicitly.
 """
 
 from __future__ import annotations
@@ -15,6 +15,7 @@ from typing import Any, Iterable
 import numpy as np
 
 from .config import Config
+from .trip_statistics import summarize_trips, attach_trip_evaluation
 from .events import TOKENS, ZONE_TOKENS
 from .reports import TARGET_CLASSES, target_rows
 
@@ -213,6 +214,7 @@ def summarize_for_stats(day: Any, reports: list[dict[str, Any]], config: Config)
         "traffic_count": traffic_count, "road_timing": road_timing,
         "late_entry_count": late_entries, "post_meal_entry_count": after_meal,
         "target_rows": target_rows(day, reports),
+        "trips": summarize_trips(day, config),
     }
 
 
@@ -396,8 +398,8 @@ def build_stats_report(records: Iterable[dict[str, Any]], config: Config) -> dic
                    "message": (f"{len(validations)}/{count} days checked; {len(failed)} days failed hard validation."
                                if count else "No completed days are available.")})
     status_counts = Counter(check["status"] for check in checks)
-    return {
-        "schema_version": "statistics-v2", "days_simulated": count,
+    result = {
+        "schema_version": "statistics-v3", "days_simulated": count,
         "day_indices": [record["day_index"] for record in days],
         "events_per_day": _distribution((record["event_count"] for record in days), count),
         "zone_entries_per_day": entries_distribution,
@@ -440,11 +442,13 @@ def build_stats_report(records: Iterable[dict[str, Any]], config: Config) -> dic
             "coverage": f"Fraction of {config['statistics']['coverage_grid_km']:g} km square grid cells visited by true GPS fixes; boundary fixes assigned to the final inside cell.",
             "abandoned_trips": "Count of nonempty abandoned_trip_reason rows; the simulator emits a reason only on the interrupt minute.",
             "correlations": "Pearson coefficients using available paired daily values; null with an explanation for insufficient/constant observations. These describe synthetic association, not causal proof.",
-            "target_status": "PASS is inside the configured range; WARN is a finite statistic outside it; FAIL means no finite statistic or a hard validation failure. Phase-two sequence bounds are inclusive; the smoothed resting-speed upper bound is strict.",
+            "target_status": "PASS is inside the configured range; WARN is a finite statistic outside it; FAIL means no finite statistic, hard validation failure or phase-three guardrail violation. Phase-two sequence bounds are inclusive; the smoothed resting-speed upper bound is strict.",
             "scope": "Descriptive statistics plus optional held-out counting baselines and hidden-state oracle evaluation. No ML libraries are used.",
         },
     }
 
+    attach_trip_evaluation(result, [trip for day in days for trip in day.get("trips", [])], config)
+    return result
 
 def add_headline_check(report: dict[str, Any], config: Config) -> None:
     """Attach the learnability target only after out-of-fold losses exist."""
@@ -489,7 +493,7 @@ def render_stats_markdown(report: dict[str, Any]) -> str:
              f"Completed days: **{report['days_simulated']}**. Checks: "
              + ", ".join(f"**{report['check_counts'][status]} {status}**" for status in ("PASS", "WARN", "FAIL")) + ".", "",
              "## Target checks", "",
-             "PASS means within the reference range; WARN means a statistical deviation; FAIL means an unavailable statistic or hard validation failure.", "",
+             "PASS means within the reference range; WARN means a statistical deviation; FAIL means an unavailable statistic, hard validation failure or phase-three guardrail violation.", "",
              "| Check | Status | Observed | Expected |", "| --- | --- | ---: | --- |"]
     for check in report["checks"]:
         lines.append(f"| {check['name']} | **{check['status']}** | {_display(check['observed'])} | {_display(check['expected'])} |")
@@ -542,6 +546,14 @@ def render_stats_markdown(report: dict[str, Any]) -> str:
     lines += ["", "Actual tourist volume per day (mean / min / max): " + " / ".join(_display(volume[key]) for key in ("mean", "min", "max")) + ".", "",
               "## Definitions and limitations", ""]
     lines += [f"- **{name}:** {definition}" for name, definition in report["definitions"].items() if name != "time_origin"]
+    if "trip_movement" in report:
+        trip = report["trip_movement"]
+        lines += ["", "## Committed trip movement", "", trip["definition"],
+                  f"Trips: {trip['count']}; statuses: {trip['by_status']}; missing detour geometry: {trip['missing_detour_geometry']}.",
+                  "", "| Correlation | Pearson r | Paired trips | Note |", "| --- | ---: | ---: | --- |"]
+        for name, value in trip['correlations'].items():
+            lines.append(f"| {name} | {_display(value['value'])} | {value['count']} | {value['reason'] or ''} |")
+        lines += ["", f"Realized detour fraction: {_display(trip['detour_fraction'])}. Scalar trip records are in JSON; no coordinates are retained."]
     if "baseline_ladder" in report:
         ladder = report["baseline_ladder"]
         lines += ["", "## Baseline ladder", "", ladder["interpretation"], ""]

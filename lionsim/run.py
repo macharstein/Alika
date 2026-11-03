@@ -173,6 +173,8 @@ def _load_records(directory: Path, manifest: dict[str, Any]) -> dict[int, dict[s
             index = record["day_index"]
             if index not in expected or record["run_fingerprint"] != manifest["run_fingerprint"]:
                 raise ValueError("checkpoint does not belong to this run")
+            if not isinstance(record["stats"]["trips"], list):
+                raise ValueError("incomplete trip statistics checkpoint")
             targets = record["targets"]
             expected_reports = len(manifest["config"]["time"]["report_times"]) - 1
             if (len(targets) != expected_reports

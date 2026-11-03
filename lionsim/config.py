@@ -504,6 +504,16 @@ def validate_config(data: dict[str, Any]) -> None:
     bound("learnability.l4_speed_cut_kmh", positive=True)
     bound("features_path.detour_threshold_km", positive=True)
     bound("targets.headline_l4_improvement_min", 0, 1)
+    bound("targets.trip_boredom_straightness_max", -1, 1)
+    bound("targets.trip_urgency_straightness_min", -1, 1)
+    bound("targets.trip_urgency_speed_min", -1, 1)
+    bound("targets.trip_observed_true_straightness_min", -1, 1)
+    bound("targets.guardrail_walking_hours_max", 0, 24)
+    bound("targets.guardrail_entries_min", 0)
+    bound("targets.guardrail_speed_max_kmh", 0)
+    bound("targets.guardrail_abandoned_max", 0)
+    bound("targets.guardrail_oracle_l0_min", 0, 1)
+    interval("targets.trip_detour_fraction_range", 0, 1)
     bound("learnability.shade_hour_cut", 0, 23)
     headline = data["learnability"]["headline_reports"]
     if len(headline) != len(set(headline)) or any(i < 1 or i > 7 for i in headline):
