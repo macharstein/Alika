@@ -1,6 +1,6 @@
 # Phase 3 S8.3 evaluation
 
-Package **5.2.0**, schema **lionsim-v5**, seed **42**. The 500-day evaluation is complete; the matched oracle is still in progress. The simulation distribution remains 5.0.0. No movement, event, schedule, latent, noise or plotting settings were changed in S8.3.
+Package **5.2.0**, schema **lionsim-v5**, seed **42**. Both fixed evaluations are complete. S8.3 acceptance is not met; failures are reported below. The simulation distribution remains 5.0.0. No movement, event, schedule, latent, noise or plotting settings were changed in S8.3.
 
 ## Measurement definitions
 
@@ -126,6 +126,36 @@ All eight original WARN checks remain WARN. This status-comparison guardrail pas
 
 [Full statistics JSON](../outputs/phase3_s83_stats/run_20261103_141337/stats_report.json) · [Human report](../outputs/phase3_s83_stats/run_20261103_141337/stats_report.md) · [Reference comparison JSON](../outputs/phase3_s83_stats/run_20261103_141337/baseline_comparison.json) · [Archived accepted checks](phase2_v450_checks.json)
 
+## 100-day matched oracle
+
+Completed five 20-day chunks, 100 rollouts at each of seven usable reports: **70,000 continuations**. Targets, all ten observable features and compact statistics exactly match the same first 100 days of the 500-day experiment. All 100 days pass event invariants. No minute files or PNGs were generated.
+
+| Scope | L0 | L1 | L2 | L3 | L4 | Oracle |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| headline | 1.766452 ± 0.062121 | 1.234701 ± 0.147383 | 0.883743 ± 0.139849 | 0.770135 ± 0.203799 | 0.794244 ± 0.266400 | 0.441362 ± 0.078680 |
+| all_reports | 1.853935 ± 0.028389 | 1.288505 ± 0.131880 | 0.963614 ± 0.136144 | 0.861659 ± 0.182484 | 0.878635 ± 0.228706 | 0.420712 ± 0.075764 |
+
+| Check | Status | Observed | Expected |
+| --- | --- | ---: | --- |
+| headline.oracle_l0_ratio | **WARN** | 0.249858 | [0.25, 0.5] |
+| headline.oracle_l2_relative_improvement | **PASS** | 0.500576 | 0.1 |
+| headline.guardrail_oracle_l0 | **PASS** | 0.249858 | 0.2 |
+| all_reports.oracle_l0_ratio | **WARN** | 0.226929 | [0.25, 0.5] |
+| all_reports.oracle_l2_relative_improvement | **PASS** | 0.563402 | 0.1 |
+| all_reports.guardrail_oracle_l0 | **PASS** | 0.226929 | 0.2 |
+
+Finite-sample Laplace floor: **0.076227 nats**. Both new oracle/L0 >=0.20 guardrails pass. The older 0.25–0.50 calibration checks remain separate. Hidden-state oracle results do not establish predictive performance for observable features.
+
+### Oracle status changes versus accepted v4.5.0
+
+| Check | Before | After | Before value | After value |
+| --- | --- | --- | ---: | ---: |
+| None | — | — | — | — |
+
+No formerly passing oracle check becomes FAIL. The new oracle guards were absent from the reference and are not counted as status changes.
+
+[Oracle human report](../outputs/phase3_s83_oracle/run_20261103_141338/oracle_report.md) · [Timestamped probabilities and counts](../outputs/phase3_s83_oracle/run_20261103_141338/oracle_report.json)
+
 ## Reproduce and resume
 
 ```sh
@@ -161,3 +191,11 @@ Only new settings were added in S8.3; all prior defaults and simulation modules 
 | targets.guardrail_oracle_l0_min | 0.20 | Hard minimum oracle/L0 in both scopes |
 
 Old calibration ranges retain PASS/WARN semantics; unavailable statistics and hard guardrail violations are FAIL. The accepted-reference check requires no formerly passing target to become FAIL, and lists every status change, including PASS→WARN. It does not silently reinterpret WARN as PASS. The archived reference includes its original commit, seed, day count and source path.
+
+## Verification and completion state
+
+Full pytest: **231 passed in 60.86s**. New tests cover path-cue prediction, identical whole-day folds, unseen-cell backoff, large-k convergence to L3, fixed bins, analysis-only hidden-field independence, inclusive trip endpoints, causal smoothing, interrupted-trip inclusion, goal-filtered pair counts, missing geometry, hard guardrail violations and accepted-reference status changes. Existing reproducibility, snapshot continuation, feature causality, resume, plotting and event tests still pass.
+
+Artifact audit: 500 statistics checkpoints plus 100 oracle checkpoints; 3,500 statistics targets; 4,028 committed trips; 700 oracle predictions and 70,000 continuations. Oracle targets/features/statistics match the same 100 stats days exactly. Every previous default and all simulator/style/feature/event/report/plotting modules are unchanged from completed S8.2. No ML libraries were added.
+
+S8.3 **implementation and evaluation are complete; acceptance is not met**. The walking hard guardrail, boredom–straightness, selected-goal urgency–straightness, visible-detour fraction and L4 improvement need further work. No calibration changes were made to conceal those failures. S8.4 figures have not been produced in this task.

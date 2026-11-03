@@ -19,13 +19,13 @@ parameters were retuned. Phase-two measurements below are historical, not
 measurements of the new movement distribution. See [movement-style details](docs/MOVEMENT_STYLE.md).
 S8.3 adds L4, trip-level measurements and hard guardrails. **The 500-day evaluation
 is not accepted:** walking is 6.0955 h/day (>6), L4 worsens headline loss by 2.08%,
-and three movement targets miss their bounds. The matched 100-day oracle is still
-running. Full results, fixed cue diagnostics, and every accepted-baseline status
+and three movement targets miss their bounds. The matched 100-day oracle is complete; both new >=0.20 oracle/L0 guardrails pass. Full results, fixed cue diagnostics, and every accepted-baseline status
 change are recorded in [S8.3 results](docs/PHASE3_S83_RESULTS.md).
 Version 5.2.0 changes diagnostics/checkpoints only; trajectories match 5.0.0.
 Resume requires the same package version. See [path-feature definitions and
 causality](docs/PATH_FEATURES.md). S8.4 example figures remain deferred.
-The last completed full suite had **224 tests passed**; S8.3 full verification is pending.
+Current full suite: **231 tests passed**. S8.3 implementation/evaluation is complete,
+but its acceptance targets are not met.
 
 ## Setup and first run
 

@@ -1,4 +1,6 @@
-# Phases 1–2 complete; phase 3 S8.1–S8.2 complete
+# Phases 1–2 complete; phase 3 S8.1–S8.3 implemented and evaluated
+
+Phase 3 status: S8.3 fixed evaluation is complete, but acceptance is not met (walking guardrail and four statistical targets). See docs/PHASE3_S83_RESULTS.md. Current full suite: 231 passed. S8.4 remains deferred.
 
 Scope: phase-one `docs/UPDATE_SPEC.md` tasks 1–10 are complete. Under `docs/UPDATE_SPEC_2.md`, S1–S5 are implemented and S6 evaluation is complete, including checkpoint/resume safety. Final 500-day statistics have eight calibration warnings; both oracle/L0 ratio checks warn. S7 regression audit is complete; all 189 tests pass. No calibration experiment has been applied.
 
@@ -478,3 +480,12 @@ done: S8.3 statistics delivery checkpoint — README and docs/PHASE3_S83_RESULTS
 verify: /opt/anaconda3/bin/python3.12 -m pytest -x -q tests/test_trip_statistics.py
 known problems: measured S8.3 acceptance failures are documented; oracle final measurements and full suite remain pending.
 next: complete oracle at outputs/phase3_s83_oracle/run_20261103_141338, append its results, run full pytest and finish this task.
+in progress: S8.3 final verification — oracle has completed 80/100 days and final chunk is running. Run full pytest while completing its matched evaluation; final documentation will retain all measured failures. No further implementation or parameter changes planned.
+verify: /opt/anaconda3/bin/python3.12 -m pytest -q
+next: audit 100 oracle checkpoints and 70,000 continuations, append matched losses/guardrails and status changes, record full suite result, commit and stop before S8.4.
+done: phase 3 S8.3 implementation/evaluation — full pytest: 231 passed in 60.86s. Completed 500 stats days and 100 matched oracle days ×100 rollouts (70,000 continuations). Oracle headline/all ratios 0.249858/0.226929 pass the new >=0.20 guardrails; both old >=0.25 calibration warnings remain. No old oracle status changes. All matched targets/features/statistics agree across runs; all 600 day invariant checks pass. README and docs/PHASE3_S83_RESULTS.md contain complete measurements, definitions, settings, tests and limitations.
+verify: /opt/anaconda3/bin/python3.12 -m pytest -q
+verify: /opt/anaconda3/bin/python3.12 -m lionsim.trip_statistics outputs/phase3_s83_stats/run_20261103_141337 --reference docs/phase2_v450_checks.json
+assumptions: evaluation complete is not calibration accepted. Exactly 15 settings were added; every earlier default, simulator/style/features/events/reports/plotting module remains unchanged from S8.2. No tuning or ML libraries. No PNGs requested in this task. Historical README.pdf/performance_check.json remain untracked and untouched.
+known problems: S8.3 acceptance NOT met: walking 6.0955 h/day exceeds 6; boredom/straightness -0.294315 misses <=-0.35; selected-goal urgency/straightness 0.068929 misses >=0.30; detours 6.9017% miss 10–30%; L4 worsens headline loss 2.0815%. Reference report-7 END_OF_DAY share changed PASS→WARN. All failures are retained honestly; no uncommitted partial implementation remains after final commit.
+next: S8.4 — text-free movement examples and usual days 1–3 PNGs; S8.3 acceptance failures remain open and must not be described as calibrated.
