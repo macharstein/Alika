@@ -1,4 +1,4 @@
-# Phase 1 complete; phase 2 S1–S7 complete
+# Phases 1–2 complete; phase 3 S8.1 complete
 
 Scope: phase-one `docs/UPDATE_SPEC.md` tasks 1–10 are complete. Under `docs/UPDATE_SPEC_2.md`, S1–S5 are implemented and S6 evaluation is complete, including checkpoint/resume safety. Final 500-day statistics have eight calibration warnings; both oracle/L0 ratio checks warn. S7 regression audit is complete; all 189 tests pass. No calibration experiment has been applied.
 
@@ -410,3 +410,11 @@ verify: /opt/anaconda3/bin/python3.12 -m pytest -x -q tests/test_movement_style.
 assumptions: style applies to committed goal travel; temporary road-response movement keeps its established mechanics while sharing the original trip ID/path accounting. Goal attraction modifies bearing correction independently of noise, preserving the legacy perturbation scale; otherwise increasing urgency also amplified noise and inverted the required direction. Turning style, speed multiplier and detour plan are fixed until the trip ends. Completed statistics are on the final trip row, not retroactively copied across earlier rows.
 known problems: changed paths made all twelve days in an old small traffic batch respond; replaced its incidental requirement for a response-free day with checks that each day retains non-response activity and several days respond. No behavior defaults were retuned. S8.3 population calibration/guardrails have not been evaluated or claimed complete.
 next: commit the runnable integration, document trip fields and edge cases, then full pytest and stop after S8.1.
+in progress: S8.1 final documentation and acceptance — document frozen style formulas, per-trip hidden fields, nullable straightness, bounded waypoint fallbacks and retained traffic/stalking/chase behavior. Run the full suite; do not add path features, L4, example figures or retune calibration.
+verify: /opt/anaconda3/bin/python3.12 -m pytest -q
+next: fix any genuine regression, record full-suite result, and commit S8.1 completion only.
+done: phase 3 S8.1 — full pytest: 212 passed in 41.10s. Accepted baseline tag v4.5.0 points to 3de4f5a. Package 5.0.0/schema lionsim-v5 adds frozen movement style, bounded detours and per-trip hidden-state diagnostics; README and docs/MOVEMENT_STYLE.md document formulas, lifecycle, edge cases and old-seed incompatibility.
+verify: /opt/anaconda3/bin/python3.12 -m pytest -q
+assumptions: all 18 new settings live under movement_style; exact comparison against the tag verified every existing default unchanged. Plotting, report and event modules also match the accepted tag. Tests verify directional path effects, same-seed and snapshot continuation, and unchanged stalking/chase mechanics. No ML dependencies added.
+known problems: S8.3 population correlations and guardrails are not yet evaluated; old phase-two statistics are historical. No failing tests or partial implementation edits remain. Historical README.pdf/performance_check.json remain untouched.
+next: S8.2 — user requested continuation of phase 3 during final S8.1 verification; implement observed-GPS path features as the next task, before L4/calibration/figures.
