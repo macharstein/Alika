@@ -1,0 +1,68 @@
+{
+  "package_version": "5.2.0",
+  "seed": 42,
+  "source_manifest": "/Users/guram.matcharashvili/Documents/ChatGPT/Lion_pather/outputs/phase3_s83_stats/run_20261103_141337/run_manifest.json",
+  "source_manifest_sha256": "2fc61f835b6e99fdc8ea4370cc8a2cd7e34570065548d843fdd959b0ddff6c68",
+  "smoothing_minutes": 5,
+  "panels": [
+    {
+      "panel": "wandering",
+      "day": 318,
+      "trip_id": 6,
+      "goal": "Kopje",
+      "status": "arrived",
+      "start_minute": 1206,
+      "end_minute": 1287,
+      "urgency": 0.2,
+      "boredom": 0.9853549151693969,
+      "observed": {
+        "straightness": 0.4736541207383856,
+        "mean_speed_kmh": 2.8538684344521945,
+        "turn_circular_variance": 0.041269605949709964,
+        "max_perpendicular_distance_km": 1.0481828035246774,
+        "area_covered_km2": 1.0625
+      },
+      "true": {
+        "straightness": 0.4307148881004836,
+        "mean_speed_kmh": 3.2660529161344454,
+        "turn_circular_variance": 0.11356376438841598,
+        "max_perpendicular_distance_km": 1.082685484866389,
+        "area_covered_km2": 1.125
+      },
+      "start_time": "2026-11-15T01:06:00",
+      "end_time": "2026-11-15T02:27:00",
+      "mood": 0.4252543921511168,
+      "planned_detours": 1
+    },
+    {
+      "panel": "direct",
+      "day": 254,
+      "trip_id": 11,
+      "goal": "Den",
+      "status": "arrived",
+      "start_minute": 1157,
+      "end_minute": 1241,
+      "urgency": 0.9623085539173823,
+      "boredom": 0.1600614218067352,
+      "observed": {
+        "straightness": 0.9956017082200925,
+        "mean_speed_kmh": 3.547127625155029,
+        "turn_circular_variance": 0.0031371119493126542,
+        "max_perpendicular_distance_km": 0.11668589933266688,
+        "area_covered_km2": 1.5625
+      },
+      "true": {
+        "straightness": 0.9874319015846336,
+        "mean_speed_kmh": 3.6382335313957985,
+        "turn_circular_variance": 0.015224457567009408,
+        "max_perpendicular_distance_km": 0.11922911787441204,
+        "area_covered_km2": 1.625
+      },
+      "start_time": "2026-09-12T00:17:00",
+      "end_time": "2026-09-12T01:41:00",
+      "mood": 0.120645260556915,
+      "planned_detours": 0
+    }
+  ],
+  "description": "Left: low urgency/high boredom; right: high urgency/low boredom. Same map extent and scale. White paths are trailing-smoothed observed GPS. Explicitly selected illustrations, not population evidence or a causal comparison. Times and metrics appear here only; PNG contains no text. S8.3 acceptance failures remain unresolved."
+}

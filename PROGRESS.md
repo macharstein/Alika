@@ -1,6 +1,6 @@
-# Phases 1–2 complete; phase 3 S8.1–S8.3 implemented and evaluated
+# Phases 1–2 complete; phase 3 S8.1–S8.4 implemented
 
-Phase 3 status: S8.3 fixed evaluation is complete, but acceptance is not met (walking guardrail and four statistical targets). See docs/PHASE3_S83_RESULTS.md. Current full suite: 231 passed. S8.4 remains deferred.
+Phase 3 status: S8.3 fixed evaluation is complete, but acceptance is not met (walking guardrail and four statistical targets). See docs/PHASE3_S83_RESULTS.md. Current full suite: 233 passed. S8.4 figures are complete; S8.5 coverage audit is next.
 
 Scope: phase-one `docs/UPDATE_SPEC.md` tasks 1–10 are complete. Under `docs/UPDATE_SPEC_2.md`, S1–S5 are implemented and S6 evaluation is complete, including checkpoint/resume safety. Final 500-day statistics have eight calibration warnings; both oracle/L0 ratio checks warn. S7 regression audit is complete; all 189 tests pass. No calibration experiment has been applied.
 
@@ -498,3 +498,21 @@ verify: /opt/anaconda3/bin/python3.12 -m pytest -x -q tests/test_style_examples.
 assumptions: no new simulator/render settings or version bump needed; this standalone artifact tool changes neither simulation nor checkpoint contracts. The original S8.3 artifacts remain unchanged.
 known problems: no test failures; S8.3 calibration/guardrail failures remain unchanged.
 next: generate docs/style_examples.png plus scalar provenance, render the 27 usual day-1–3 PNGs, inspect output and run full pytest.
+in progress: S8.4 artifact generation — generate the two-panel figure at configured 1000px per map, plus its scalar provenance; generate days 1–3 through the existing runner with --image-days 3. Stats-only avoids saving minute trajectories. Inspect the comparison and all three contact sheets, audit all PNG sizes/checkpoints against source targets, then document and run the full suite.
+verify: /opt/anaconda3/bin/python3.12 -m lionsim.style_examples outputs/phase3_s83_stats/run_20261103_141337 --wandering 318 6 --direct 254 11 --out docs/style_examples.png
+verify: /opt/anaconda3/bin/python3.12 -m lionsim.run --stats-only --stats-days 3 --seed 42 --image-days 3 --workers 3 --out outputs/phase3_s84_images
+next: inspect generated artifacts, document their interpretation and provenance, then full pytest and final commit.
+done: S8.4 artifact generation — docs/style_examples.png (2000×1000) and scalar provenance JSON created; normal images saved in outputs/phase3_s84_images/run_20261103_212040 (24 report PNGs plus three contact sheets). Visually inspected the comparison and all contact sheets: black maps, coloured zones, white paths, no labels/axes/text. Audit decoded all 28 PNGs, verified contact-sheet tiles exactly match their reports and checkpoint file sizes are correct. Days 1–3 targets and statistics exactly match S8.3; no minute files saved.
+verify: /opt/anaconda3/bin/python3.12 -m lionsim.style_examples outputs/phase3_s83_stats/run_20261103_141337 --wandering 318 6 --direct 254 11 --out docs/style_examples.png
+verify: /opt/anaconda3/bin/python3.12 -m lionsim.run --stats-only --stats-days 3 --seed 42 --image-days 3 --workers 3 --out outputs/phase3_s84_images
+assumptions: daily report PNGs retain raw observed cumulative paths; the comparison uses five-minute-smoothed observed trip paths. ISO timestamps live in filenames/sidecar, never image text. Three-day statistics are incidental rendering output, not replacement calibration evidence.
+known problems: none in S8.4 artifacts; all previously documented S8.3 acceptance failures remain.
+next: document example interpretation/reproduction and full-suite results, commit and stop before further calibration or tasks.
+in progress: S8.4 final documentation and verification — link the comparison, provenance and day contact sheets, document selected examples and unchanged calibration state, then run the full suite.
+verify: /opt/anaconda3/bin/python3.12 -m pytest -q
+next: commit verified S8.4 delivery and print the next task line.
+done: phase 3 S8.4 — full pytest: 233 passed in 53.90s. Delivered docs/style_examples.png and scalar provenance JSON, with left wandering/right direct paths on identical black maps. Delivered 27 ordinary text-free PNGs for days 1–3 in outputs/phase3_s84_images/run_20261103_212040. All 28 images decoded and visually inspected through the comparison and three contact sheets; contact-sheet pixels and checkpoint sizes verified. README and docs/STYLE_EXAMPLES.md document panel identities, ISO times, metrics, selection limitations, output locations and exact reproduction commands.
+verify: /opt/anaconda3/bin/python3.12 -m pytest -q
+assumptions: selected illustrations are not representative averages or evidence of calibration acceptance. Package remains 5.2.0/schema v5; all defaults and simulator/style/features/events/reports/plotting modules are unchanged from S8.3. No ML libraries, new simulator settings, trajectory JSON or minute outputs were added. Daily targets/statistics match S8.3 exactly.
+known problems: no S8.4 failures or partial implementation edits. S8.3 walking guardrail and four statistical targets remain unresolved; report-7 END_OF_DAY regression and prior warnings persist. Historical README.pdf/performance_check.json remain untracked and untouched.
+next: S8.5 — audit phase-three test coverage; S8.3 acceptance failures remain open and must not be described as calibrated.
