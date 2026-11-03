@@ -35,7 +35,7 @@ python -m pytest -x -q tests/test_movement_style.py tests/test_features_path.py 
 python -m pytest -q
 ```
 
-Final counts and execution times are recorded in PROGRESS.md. Test names and linked files were checked against the repository. Every assertion in the required mapping exists; no test is skipped or replaced with a calibration success claim.
+Focused verification: **44 passed in 20.53s**. Final full suite: **233 passed in 53.86s**. Counts and execution times are also recorded in PROGRESS.md. Test names and linked files were checked against the repository. Every assertion in the required mapping exists; no test is skipped or replaced with a calibration success claim.
 
 ## Acceptance remains separate
 

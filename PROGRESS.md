@@ -1,6 +1,6 @@
-# Phases 1–2 complete; phase 3 S8.1–S8.4 implemented
+# Phases 1–2 complete; phase 3 S8.1–S8.5 delivered, acceptance unmet
 
-Phase 3 status: S8.3 fixed evaluation is complete, but acceptance is not met (walking guardrail and four statistical targets). See docs/PHASE3_S83_RESULTS.md. Current full suite: 233 passed. S8.4 figures are complete; S8.5 coverage audit is next.
+Phase 3 status: S8.3 fixed evaluation is complete, but acceptance is not met (walking guardrail and four statistical targets). See docs/PHASE3_S83_RESULTS.md. Current full suite: 233 passed. S8.4 figures and S8.5 coverage audit are complete. Further work must address the documented S8.3 acceptance failures.
 
 Scope: phase-one `docs/UPDATE_SPEC.md` tasks 1–10 are complete. Under `docs/UPDATE_SPEC_2.md`, S1–S5 are implemented and S6 evaluation is complete, including checkpoint/resume safety. Final 500-day statistics have eight calibration warnings; both oracle/L0 ratio checks warn. S7 regression audit is complete; all 189 tests pass. No calibration experiment has been applied.
 
@@ -525,3 +525,11 @@ verify: /opt/anaconda3/bin/python3.12 -m pytest -x -q tests/test_movement_style.
 assumptions: controlled mechanism tests are not substitutes for population calibration or predictive improvement; passing them does not erase S8.3 failures. Existing equality checks use appropriate numerical tolerances and day-disjoint evaluation.
 known problems: no targeted test failures; S8.3 acceptance failures remain unchanged.
 next: run the full suite for final S8.5 verification, update completion status and commit; no automatic retuning.
+in progress: S8.5 final verification — run all tests after the documented coverage audit. Confirm no production/default or generated-example changes since S8.4; update current status and stop after the final tested commit.
+verify: /opt/anaconda3/bin/python3.12 -m pytest -q
+next: record full-suite result, mark S8.1–S8.5 implementation/evaluation/figures/coverage delivered with acceptance still unmet, then stop.
+done: phase 3 S8.5 — full pytest: 233 passed in 53.86s. Coverage audit verifies all six requested S8.5 contracts and supporting boundaries/provenance/resume checks, with nine test files and 28 named references. README and docs/PHASE3_TEST_COVERAGE.md record implementation/evaluation/figure/coverage completion without claiming calibration acceptance. No production code, defaults, test behavior or artifacts changed in this audit.
+verify: /opt/anaconda3/bin/python3.12 -m pytest -q
+assumptions: reuse existing meaningful tests rather than adding duplicates. S8.1–S8.5 delivery is complete; full-day population performance is assessed by S8.3 measurements, not controlled unit tests or selected figures. Package 5.2.0/schema v5 and all prior evaluation artifacts remain valid.
+known problems: S8.3 remains unaccepted: walking 6.0955 h/day (>6), boredom–straightness -0.294315 (<=-0.35 required), selected-goal urgency–straightness 0.068929 (>=0.30 required), visible detours 6.9017% (10–30% required), and L4 headline loss 2.0815% worse (>=2% improvement required). Report-7 END_OF_DAY share changed PASS→WARN. No remaining numbered implementation/test tasks or partial edits; historical untracked files untouched.
+next: address the documented S8.3 calibration and L4 failures in a separate bounded calibration step; phase-three implementation, figures and coverage are delivered, but acceptance is not met.

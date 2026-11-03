@@ -7,7 +7,7 @@ data, not an empirically calibrated model of lion behaviour. There is no machine
 learning, training code, or external service dependency.
 
 Current package: **5.2.0**, manifest schema **lionsim-v5**. Phase 3 currently
-implements **S8.1–S8.4**: trip-start urgency, boredom and mood set walking style
+implements **S8.1–S8.5**: trip-start urgency, boredom and mood set walking style
 and optional detours; ten causal observed-GPS features are appended to targets.csv. The accepted
 phase-two baseline is tagged **v4.5.0** at commit `3de4f5a`.
 
@@ -27,8 +27,9 @@ causality](docs/PATH_FEATURES.md). S8.4 delivers the [text-free movement compari
 and [usual days 1–3 PNGs, provenance and reproduction commands](docs/STYLE_EXAMPLES.md).
 The selected example paths use smoothed observed GPS; normal report PNGs retain raw
 observed cumulative paths. These illustrations do not resolve S8.3 acceptance failures.
-Current full suite: **233 tests passed**. S8.3 implementation/evaluation is complete,
-but its acceptance targets are not met.
+Current full suite: **233 tests passed**. The [S8.5 coverage audit](docs/PHASE3_TEST_COVERAGE.md)
+maps all six requested test requirements to existing checks. Phase-three implementation,
+evaluation, figures and test coverage are delivered; **S8.3 acceptance remains unmet**.
 
 ## Setup and first run
 
