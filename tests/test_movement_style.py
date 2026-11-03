@@ -110,6 +110,23 @@ def path_ratio_and_speed(seed, boredom, urgency):
     pytest.fail('Controlled trip did not converge to its goal')
 
 
+def test_urgent_departure_faces_target_without_teleporting_or_realigning_each_tick():
+    sim = controlled_trip(boredom=.1, urgency=1,
+                          overrides=['movement_style.departure_alignment_weight=1'])
+    before = sim.position.copy()
+    vector = sim.trip['target'] - before
+    assert sim.heading == pytest.approx(np.arctan2(vector[1], vector[0]))
+    np.testing.assert_array_equal(before, [2., 5.5])
+    sim.heading = .123
+    sim._sync_trip()
+    assert sim.heading == .123  # only a new trip can align its departure
+    quiet = controlled_trip(boredom=.1, urgency=0,
+                            overrides=['movement_style.departure_alignment_weight=1'])
+    assert quiet.heading == 0
+    with pytest.raises(ValueError):
+        load_config(overrides=['movement_style.departure_alignment_weight=1.1'])
+
+
 def test_expected_path_length_ratio_rises_with_boredom_and_falls_with_urgency():
     # Same start, goal, fixed-seed ensemble and unchanged physiology within each
     # trip isolate geometry from the higher-level scheduling/arrival decisions.

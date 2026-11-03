@@ -1,0 +1,19 @@
+{
+  "movement_style": {
+    "attraction_intercept": 0.25,
+    "attraction_urgency_weight": 2.0,
+    "detour_urgency_weight": 1.0,
+    "speed_intercept": 0.85,
+    "speed_urgency_weight": 0.4,
+    "detour_probability_scale": 2.0,
+    "departure_alignment_weight": 1.0,
+    "detour_offset_km_range": [
+      0.6,
+      1.0
+    ]
+  },
+  "learnability": {
+    "l4_binning": "training_tertiles",
+    "l4_interpolation_k": 20.0
+  }
+}

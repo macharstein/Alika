@@ -223,6 +223,11 @@ class _DaySimulation:
                          "start_minute": self.minute, "distance": 0., "waypoint_index": 0,
                          "style": plan_style(self.config, self.zones, self.goal, self.bars,
                                              self.position, target, self.rng)}
+            style = self.trip['style']
+            first_target = style.waypoints[0] if style.waypoints else target
+            bearing = math.atan2(first_target[1] - self.position[1], first_target[0] - self.position[0])
+            alignment = self.c['movement_style']['departure_alignment_weight'] * style.urgency
+            self.heading += alignment * _angle_difference(bearing, self.heading)
 
     def _move_trip(self) -> None:
         if self.trip is None:

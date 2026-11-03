@@ -364,6 +364,7 @@
     "detour_boredom_threshold": 0.5,
     "detour_probability_scale": 0.7,
     "detour_urgency_weight": 0.0,
+    "departure_alignment_weight": 0.0,
     "detour_count_range": [
       1,
       2
@@ -390,6 +391,7 @@
       "detour_boredom_threshold": "Only starting boredom above this value can trigger a detour.",
       "detour_probability_scale": "Per-trip probability = scale * (boredom - threshold) * (1 - urgency_weight * urgency), clipped to [0,1].",
       "detour_urgency_weight": "Suppression of discretionary detours by urgency; 0 preserves the original phase-three planner, 1 prevents detours at maximal urgency.",
+      "departure_alignment_weight": "Fraction of urgency applied to face the first waypoint/goal at trip start; zero preserves inherited heading, without changing position.",
       "detour_count_range": "Inclusive uniform number of intermediate waypoints when a detour is selected.",
       "detour_offset_km_range": "Sideways waypoint distance from the trip-start to goal chord.",
       "zone_exclusion_margin_km": "Prefer waypoints outside unrelated zones plus this margin; source and goal zones are exempt.",
