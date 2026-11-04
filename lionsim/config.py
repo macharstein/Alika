@@ -364,6 +364,11 @@ def validate_config(data: dict[str, Any]) -> None:
         raise ValueError("behaviours.hunt_start must precede hunt_end in the simulated day")
     for name in ("smoothing_minutes", "window_minutes", "departure_confirmation_minutes"):
         bound(f"features_path.{name}", 1, 1440)
+    bound("heading_features.window_minutes", 1, 1440)
+    bound("heading_features.min_displacement_km", positive=True)
+    bound("heading_features.max_angle_deg", 0, 180)
+    bound("l5_analysis.interpolation_k", positive=True)
+    bound("l5_analysis.shuffle_seed", 0)
     bound("features_path.grid_cell_km", positive=True)
     bound("features_path.departure_margin_km", 0)
     for name in ("boredom_goal_urgency", "low_mood_threshold", "detour_boredom_threshold"):

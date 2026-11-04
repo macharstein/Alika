@@ -1,4 +1,6 @@
 {
+  "heading_features": {"window_minutes": 20, "min_displacement_km": 0.15, "max_angle_deg": 30},
+  "l5_analysis": {"interpolation_k": 20, "shuffle_seed": 2026},
   "_comment": "All simulator parameters. Keys beginning with an underscore document nearby settings and do not affect simulation. Distances are km unless named otherwise; rates are per hour.",
   "time": {
     "day_start": "05:00",
