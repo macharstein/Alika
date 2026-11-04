@@ -700,3 +700,7 @@ done: phase 6 pre-measurement compatibility review — initial full suite267 pas
 verify: /opt/anaconda3/bin/python3.12 -m pytest -x -q tests/test_movement_style.py tests/test_style_examples.py tests/test_trip_statistics.py
 next: final pre-measurement full regression, then frozen seed3003 simulation/oracle chunks.
 assumptions: historical docs/style_examples artifacts remain unchanged and historical; only test fixtures updated. known problems: no unresolved implementation failure identified; no production measurement yet.
+done: phase 6 pre-measurement full regression — 270 passed in111.56s. Source/settings frozen at dfc21f2; all old invariant, cutoff, snapshot/resume, rendering and causality tests pass. Seed3003 unused in outputs. Saved v5.4.0 fixed-N reference: zone uniqueN200=0.4315, distinctN500=151, top5N500=0.332; event uniqueN200=0.6705, distinctN500=277. No new simulation used for this reference.
+verify: /opt/anaconda3/bin/python3.12 -m pytest -q
+next: execute declared 500-day seed3003 stats run in100-day resume chunks, then100-day x100-rollout oracle in20-day resume chunks, workers4, no images. No parameter changes after seeing results.
+assumptions: measurement config is exactly the committed default config. known problems: none in the full test suite; production defect retry allowance unused.
