@@ -704,3 +704,53 @@ done: phase 6 pre-measurement full regression — 270 passed in111.56s. Source/s
 verify: /opt/anaconda3/bin/python3.12 -m pytest -q
 next: execute declared 500-day seed3003 stats run in100-day resume chunks, then100-day x100-rollout oracle in20-day resume chunks, workers4, no images. No parameter changes after seeing results.
 assumptions: measurement config is exactly the committed default config. known problems: none in the full test suite; production defect retry allowance unused.
+in progress: phase 6 M1 production measurement — seed3003,500 days, stats-only, workers4, no images, chunks100; settings frozen at f57fe4c (implementation dfc21f2). Production attempt1; no tuning or retry.
+verify: /opt/anaconda3/bin/python3.12 -m lionsim.run --stats-only --stats-days 500 --seed 3003 --workers 4 --no-images --chunk-size 100 --out outputs/phase6_stats
+done: phase6 M1 stats chunk1 — 100/500 days at outputs/phase6_stats/run_20261104_212135; configuration unchanged.
+in progress: phase6 M1 stats chunk2; next: finish declared measurement, then oracle. assumptions: unchanged; known problems: no execution failures.
+verify: /opt/anaconda3/bin/python3.12 -m lionsim.run --resume outputs/phase6_stats/run_20261104_212135 --workers 4 --chunk-size 100
+done: phase6 M1 stats chunk2 — 200/500 days at outputs/phase6_stats/run_20261104_212135; configuration unchanged.
+in progress: phase6 M1 stats chunk3; next: finish declared measurement, then oracle. assumptions: unchanged; known problems: no execution failures.
+verify: /opt/anaconda3/bin/python3.12 -m lionsim.run --resume outputs/phase6_stats/run_20261104_212135 --workers 4 --chunk-size 100
+done: phase6 M1 stats chunk3 — 300/500 days at outputs/phase6_stats/run_20261104_212135; configuration unchanged.
+in progress: phase6 M1 stats chunk4; next: finish declared measurement, then oracle. assumptions: unchanged; known problems: no execution failures.
+verify: /opt/anaconda3/bin/python3.12 -m lionsim.run --resume outputs/phase6_stats/run_20261104_212135 --workers 4 --chunk-size 100
+done: phase6 M1 stats chunk4 — 400/500 days at outputs/phase6_stats/run_20261104_212135; configuration unchanged.
+in progress: phase6 M1 stats chunk5; next: finish declared measurement, then oracle. assumptions: unchanged; known problems: no execution failures.
+verify: /opt/anaconda3/bin/python3.12 -m lionsim.run --resume outputs/phase6_stats/run_20261104_212135 --workers 4 --chunk-size 100
+done: phase6 M1 stats chunk5 — 500/500 days at outputs/phase6_stats/run_20261104_212135; configuration unchanged.
+done: phase 6 M1 measurement — 500/500 days complete at outputs/phase6_stats/run_20261104_212135; five100-day chunks, workers4, no images, all event validations valid. Baseline ladder and L3w written automatically on the same day folds. No settings changed.
+in progress: phase 6 M1 oracle — matched seed3003/config,100 days x100 continuations at each usable report (70,000 continuations), chunks20 with --resume, workers4, no images.
+verify: /opt/anaconda3/bin/python3.12 -m lionsim.run --oracle --oracle-days 100 --oracle-rollouts 100 --seed 3003 --workers 4 --no-images --chunk-size 20 --out outputs/phase6_oracle
+next: finish oracle, compare all declared targets, list misses/candidate knobs and prior-link regressions without tuning. assumptions: unchanged; known problems: no production execution failures/retries.
+done: phase6 M1 oracle chunk1 — 20/100 days at outputs/phase6_oracle/run_20261104_212226; configuration unchanged.
+in progress: phase6 M1 oracle chunk2; next: finish oracle and report all misses without tuning. assumptions: unchanged; known problems: no execution failures.
+verify: /opt/anaconda3/bin/python3.12 -m lionsim.run --resume outputs/phase6_oracle/run_20261104_212226 --workers 4 --chunk-size 20
+done: phase6 M1 500-day audit — 500 valid checkpoints,3500 public target rows, no day_type in targets, no images/minute tables, exact matching L3w folds. Config SHA256=173241ce7b7c4c288b41ce284f802b9870a8657902fab37137b2f372734944e2. Zone uniqueN200 0.4315→0.5575 (+29.20%); distinctN500 151→208 (+37.75%); top5 0.332→0.258 (miss <=0.25); event uniqueN200 0.6705→0.77875 (miss >=0.85). Events18.322/day and entries7.382/day miss revised minima19/7.5. Walking6.08553h and resting16.13527h meet revised guards. All500 event invariants valid. Existing stats checks40PASS/10WARN/1FAIL (new zone-entry guardrail failure). No tuning.
+next: oracle still running; finish before final declared-target comparison and test/commit.
+assumptions: metrics from the complete500-day run only, not intermediate chunks. known problems: scientific target misses above; no execution defect/retry.
+done: phase6 M1 oracle chunk2 — 40/100 days at outputs/phase6_oracle/run_20261104_212226; configuration unchanged.
+in progress: phase6 M1 oracle chunk3; next: finish oracle and report all misses without tuning. assumptions: unchanged; known problems: no execution failures.
+verify: /opt/anaconda3/bin/python3.12 -m lionsim.run --resume outputs/phase6_oracle/run_20261104_212226 --workers 4 --chunk-size 20
+done: phase6 M1 oracle chunk3 — 60/100 days at outputs/phase6_oracle/run_20261104_212226; configuration unchanged.
+in progress: phase6 M1 oracle chunk4; next: finish oracle and report all misses without tuning. assumptions: unchanged; known problems: no execution failures.
+verify: /opt/anaconda3/bin/python3.12 -m lionsim.run --resume outputs/phase6_oracle/run_20261104_212226 --workers 4 --chunk-size 20
+done: phase6 M1 oracle chunk4 — 80/100 days at outputs/phase6_oracle/run_20261104_212226; configuration unchanged.
+in progress: phase6 M1 oracle chunk5; next: finish oracle and report all misses without tuning. assumptions: unchanged; known problems: no execution failures.
+verify: /opt/anaconda3/bin/python3.12 -m lionsim.run --resume outputs/phase6_oracle/run_20261104_212226 --workers 4 --chunk-size 20
+done: phase6 M1 oracle chunk5 — 100/100 days at outputs/phase6_oracle/run_20261104_212226; configuration unchanged.
+done: phase6 M1 oracle — all100/100 days and70,000 continuations complete at outputs/phase6_oracle/run_20261104_212226, five20-day chunks with --resume, workers4, no images. No retry or settings change.
+in progress: phase6 final comparison — render all declared checks, prior-link regressions, before/after tables and unapplied candidate knobs; audit matched original days and save result archive.
+verify: /opt/anaconda3/bin/python3.12 -m lionsim.phase6_report outputs/phase6_stats/run_20261104_212135 --oracle-run outputs/phase6_oracle/run_20261104_212226
+done: phase6 final comparison/audit — phase6_report.json/md written;33 declared checks:26PASS,4WARN,3FAIL. Oracle headline loss0.5252657, matched100-day L0=1.8428401, ratio0.2850305 PASS[0.28,0.45]. L2 improves L1 by31.34%; L3 improves L2 by5.29%; L3w0.8282289 vsL3 0.8318621 (~0.44% gain, no target). No prior PASS correlation becomes WARN/FAIL. All100 oracle original days match500-day stats/targets/summary exactly;70,000 continuation counts audited.
+known problems: NOT fully accepted. WARN: top5 zone share0.258>0.25; event uniqueN2000.77875<0.85; hot shade advance vs overcast41.777min<45; hot waterhole fraction0.78906<0.85. FAIL: zone entries7.382<7.5; events18.322<19; one new hard-failure status (zone entries; the third FAIL repeats this regression aggregate, not a third independent behavioural defect). The old seed2026 mean was7.328 with a lower7.0 guardrail; current entry mean increased but misses the revised7.5 limit. Every missed target has an unapplied candidate knob. No production defect, retry or post-result tuning.
+verify: /opt/anaconda3/bin/python3.12 -m lionsim.phase6_report outputs/phase6_stats/run_20261104_212135 --oracle-run outputs/phase6_oracle/run_20261104_212226
+next: archive report and exact provenance, run full pytest, commit delivery and stop this measurement.
+in progress: phase6 final delivery — archive complete tables/checks and measurement provenance; update README; final full regression.
+verify: /opt/anaconda3/bin/python3.12 -m pytest -q
+done: phase6 W1/W2/R1/D1/M1 and delivery complete — final full suite270 passed in73.90s; git diff --check clean. Simulator6.0.0/schema-v6,500 measurement days and100x100 oracle days completed with required chunking/resume/workers4/no images. Full declared report archived in docs/PHASE6_RESULTS.md; reproducibility hashes in docs/phase6_provenance.json. Config remains exactly frozen pre-measurement, with no code/settings change after observing results; no production defect retry, no tag and no dataset plan. Historical README.pdf/performance_check.json and prior output/artifact files untouched.
+verify: /opt/anaconda3/bin/python3.12 -m pytest -q
+verify: /opt/anaconda3/bin/python3.12 -m lionsim.phase6_report outputs/phase6_stats/run_20261104_212135 --oracle-run outputs/phase6_oracle/run_20261104_212226
+assumptions: phase6 scientific acceptance is separate from test/implementation completion; report lists exact misses and unapplied knobs. Historical oracle ratio is explicitly labelled seed42, while saved before simulation data is seed2026.
+known problems: NOT fully accepted:26PASS/4WARN/3FAIL across33 declared checks; events18.322<19 and entries7.382<7.5 are the two behavioural misses, with one aggregate hard-regression failure counting the entry check again. Top5 share0.258, event uniquenessN2000.77875, hot-vs-overcast shade advance41.78min and hot waterhole fraction0.7891 remain WARN. No prior passing correlation regressed. Oracle/L0=0.28503 passes. No unfinished run or partial source edit remains.
+next: Phase 6 implementation and measurement complete; acceptance targets remain unmet, and no further tuning is scheduled.

@@ -6,6 +6,10 @@ Old v5 runs cannot resume into v6. Earlier measurements below are historical.
 The 17-token vocabulary, report schedule, hunt cutoff and PNG appearance remain unchanged.
 [Phase-six mechanisms, assumptions and commands](docs/PHASE6_WEATHER.md) document
 the declared settings, fixed-size diversity comparison and weather counting baseline.
+The [completed seed3003 measurement](docs/PHASE6_RESULTS.md) improves fixed-N200
+zone uniqueness by29.2% and distinct500-day routes from151 to208. Oracle/L0=0.285
+passes the new range. Acceptance remains incomplete:26 PASS,4 WARN,3 FAIL
+(two behavioural misses plus their hard-regression flag). No post-result tuning.
 
 Generate independent 24-hour days for **one synthetic lion**, with minute GPS
 fixes, 17 event tokens, daily event/report JSON logs, and text-free path images
@@ -45,7 +49,7 @@ causality](docs/PATH_FEATURES.md). S8.4 delivers the [text-free movement compari
 and [usual days 1–3 PNGs, provenance and reproduction commands](docs/STYLE_EXAMPLES.md).
 The selected example paths use smoothed observed GPS; normal report PNGs retain raw
 observed cumulative paths. These illustrations do not resolve S8.3 acceptance failures.
-Current full suite: **255 tests passed**, including phase-four causality, control isolation,
+Current full suite: **270 tests passed**, including phase-four causality, control isolation,
 counting-model, frozen-simulation and resume checks. The [S8.5 coverage audit](docs/PHASE3_TEST_COVERAGE.md)
 maps all six requested test requirements to existing checks. Phase-three implementation,
 evaluation, figures and test coverage are delivered; **S8.3 acceptance remains unmet**.

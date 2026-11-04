@@ -1,0 +1,23 @@
+{
+  "measurement_run": "outputs/phase6_stats/run_20261104_212135",
+  "oracle_run": "outputs/phase6_oracle/run_20261104_212226",
+  "before_run": "outputs/phase4_l5/run_20261104_093129",
+  "settings_commit": "f57fe4c",
+  "implementation_commit": "dfc21f2",
+  "seed": 3003,
+  "days": 500,
+  "oracle_days": 100,
+  "rollouts_per_report": 100,
+  "config_sha256": "173241ce7b7c4c288b41ce284f802b9870a8657902fab37137b2f372734944e2",
+  "artifact_sha256": {
+    "outputs/phase6_stats/run_20261104_212135/run_manifest.json": "1f598ecd0d06e7f46c3c422c1b73a9fc8fc89d60f5690e44c6a7cec1dcf4f75a",
+    "outputs/phase6_stats/run_20261104_212135/stats_report.json": "7b6c3557bb34bf4aa967d3ced0738e93c61217fa49a2f634fe9987fdd0270818",
+    "outputs/phase6_stats/run_20261104_212135/targets.csv": "57623c0575bf04b0a1eac872d9b8f4e23935d1f4e52256e2142be83eaf6247f1",
+    "outputs/phase6_stats/run_20261104_212135/phase6_report.json": "efd3366744794b17600a5fcd30e46d35478dcac3339d1db21848d0ad7d4584e9",
+    "outputs/phase6_oracle/run_20261104_212226/run_manifest.json": "c4d0c2d506efe7a14abc89660381b02510acc7d0dc86f99b2e56b94e30e14c0d",
+    "outputs/phase6_oracle/run_20261104_212226/oracle_report.json": "40d1a27f5d9f349823505f4ad7df88192e040276998470af03f96cde178b61dd",
+    "outputs/phase4_l5/run_20261104_093129/stats_report.json": "f853816d2978eef6160d3fbc3942cedd842e2b3d8c0da30d05f8b8bf554572b8"
+  },
+  "production_defect_retries": 0,
+  "post_result_parameter_changes": false
+}
