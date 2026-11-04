@@ -105,7 +105,7 @@ class _DaySimulation:
                               for name in ('midday', 'hunt', 'tourist')}
         self.latents['period_jitter_minutes'] = self.period_jitter.copy()
         self.hunt_window_start = max(self.offset(self.behaviours['hunt_start']), self.offset(self.behaviours['hunt_start']) + self.period_jitter['hunt'])
-        self.tourist_start_minute = int(np.clip(self.offset(self.c['tourists']['start']) + self.period_jitter['tourist'], 0, self.offset(self.c['tourists']['end']) - 1))
+        self.tourist_start_minute = int(np.clip(self.offset(self.c['tourists']['start']) + self.period_jitter['tourist'], 0, (self.offset(self.c['tourists']['end']) or self.day_minutes) - 1))
         self.latents["tourist_start_minute"] = self.tourist_start_minute
         self.rival_patrol_goal = None
         self.rival_patrol_remaining = 0
@@ -788,7 +788,7 @@ class _DaySimulation:
     def arrive(self) -> None:
         self._finish_trip("arrived" if self.trip is not None and self.trip["goal"] == self.goal else "interrupted")
         self.arriving = False
-        rival_arrival = self.rival_patrol_goal == self.goal and self.rival_patrol_remaining > 0
+        rival_arrival = self.rival_patrol_goal == self.goal and self.rival_patrol_remaining > 0 and not self._is_night()
         if rival_arrival:
             self.rival_patrol_remaining -= 1
             self.rival_patrol_goal = None

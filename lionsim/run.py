@@ -176,6 +176,8 @@ def _load_records(directory: Path, manifest: dict[str, Any]) -> dict[int, dict[s
             index = record["day_index"]
             if index not in expected or record["run_fingerprint"] != manifest["run_fingerprint"]:
                 raise ValueError("checkpoint does not belong to this run")
+            if any(key not in record["stats"] for key in ("event_sequence", "weather", "day_type", "ambient_temp_c_mean")):
+                raise ValueError("incomplete phase6 statistics checkpoint")
             if not isinstance(record["stats"]["trips"], list):
                 raise ValueError("incomplete trip statistics checkpoint")
             targets = record["targets"]
@@ -253,6 +255,9 @@ def _write_aggregates(directory: Path, records: dict[int, dict[str, Any]], confi
     report = build_stats_report([record["stats"] for record in ordered], config)
     report["baseline_ladder"] = baselines_from_csv(directory / "targets.csv", config)
     add_headline_check(report, config)
+    from .phase6_statistics import weather_baseline
+    with (directory / 'targets.csv').open(newline='') as handle:
+        report['weather_baseline'] = weather_baseline(list(csv.DictReader(handle)), report['baseline_ladder'], config)
     if oracle:
         from .oracle import oracle_report, render_oracle_markdown
 

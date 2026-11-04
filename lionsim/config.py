@@ -366,6 +366,11 @@ def validate_config(data: dict[str, Any]) -> None:
         raise ValueError("behaviours.hunt_start must precede hunt_end in the simulated day")
     for name in ("smoothing_minutes", "window_minutes", "departure_confirmation_minutes"):
         bound(f"features_path.{name}", 1, 1440)
+    bound('phase6_analysis.subset_seed', 0)
+    bound('phase6_analysis.subset_repeats', 1)
+    bound('phase6_analysis.l3w_interpolation_k', positive=True)
+    if data['phase6_analysis']['sample_sizes'] != [200, 500]:
+        raise ValueError('phase6_analysis.sample_sizes must be [200, 500]')
     day_types = data['day_types']
     probabilities = day_types['probabilities']
     if set(probabilities) != {'normal', 'prey_rich', 'rival'} or any(v < 0 for v in probabilities.values()) or not math.isclose(sum(probabilities.values()), 1):

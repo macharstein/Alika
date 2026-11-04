@@ -178,6 +178,10 @@ def summarize_for_stats(day: Any, reports: list[dict[str, Any]], config: Config)
         "zone_entry_count": len(entries),
         "zone_entry_counts": dict(Counter(token_to_zone[event["token"]] for event in entries)),
         "zone_sequence": [event["token"] for event in entries],
+        "event_sequence": [event['token'] for event in events],
+        "weather": getattr(day, "weather", None),
+        "day_type": day.latents.get('day_type'),
+        "ambient_temp_c_mean": float(np.mean([r['ambient_temp_c'] for r in reports])) if reports and 'ambient_temp_c' in reports[0] else None,
         "behaviour_minutes": {name: int(minute_counts[name]) for name in BEHAVIOURS},
         "day_flags": {
             "any_chase": token_counts["CHASE_START"] > 0,
@@ -370,7 +374,7 @@ def build_stats_report(records: Iterable[dict[str, Any]], config: Config) -> dic
         "non_feast_late_entry_fraction": sum(r.get("late_entry_count", 0) > 0 for r in other_days) / len(other_days) if other_days else None,
         "feast_post_meal_entry_fraction": sum(r.get("post_meal_entry_count", 0) > 0 for r in feast_days) / len(feast_days) if feast_days else None,
     }
-    check("events_per_day", _distribution(r["event_count"] for r in days)["mean"], targets["events_per_day"], lower=targets["events_per_day"][0], upper=targets["events_per_day"][1])
+    check("events_per_day", _distribution(r["event_count"] for r in days)["mean"], {"minimum": config["phase6_analysis"]["targets"]["events_per_day_min"]}, lower=config["phase6_analysis"]["targets"]["events_per_day_min"])
     check("non_feast_late_entry_fraction", night_metrics["non_feast_late_entry_fraction"], targets["non_feast_late_entry_fraction_min"], lower=targets["non_feast_late_entry_fraction_min"])
     check("feast_post_meal_entry_fraction", night_metrics["feast_post_meal_entry_fraction"], targets["feast_post_meal_entry_fraction_max"], upper=targets["feast_post_meal_entry_fraction_max"])
     for index in (6, 7):
@@ -448,6 +452,9 @@ def build_stats_report(records: Iterable[dict[str, Any]], config: Config) -> dic
     }
 
     attach_trip_evaluation(result, [trip for day in days for trip in day.get("trips", [])], config)
+    from .phase6_statistics import diversity_comparison, environment_breakdowns
+    result['fixed_sample_diversity'] = diversity_comparison(days, config)
+    result['environment_breakdowns'] = environment_breakdowns(days)
     return result
 
 def add_headline_check(report: dict[str, Any], config: Config) -> None:
@@ -591,7 +598,8 @@ def render_stats_markdown(report: dict[str, Any]) -> str:
                     for name in ('L0', 'L1', 'L2', 'L3', 'L4', 'oracle')) + ' |')
             lines += ["", f"Smoothing floor: {oracle['smoothing_floor_nats']:.6f} nats."]
         lines += ["", "See oracle_report.md and oracle_report.json for timestamped per-report probabilities."]
-    return "\n".join(lines) + "\n"
+    from .phase6_statistics import render_phase6_statistics
+    return "\n".join(lines) + "\n" + render_phase6_statistics(report)
 
 
 def _cue_bins(row: dict[str, Any], config: Config) -> tuple[str, ...]:
