@@ -1,5 +1,10 @@
 # Lion GPS collar simulator
 
+Current development version: **6.0.0 / lionsim-v6** (UPDATE_SPEC_6). Weather and
+observable ambient temperature are added; older seeds produce different data.
+Old v5 runs cannot resume into v6. Earlier measurements below are historical.
+The 17-token vocabulary, report schedule, hunt cutoff and PNG appearance remain unchanged.
+
 Generate independent 24-hour days for **one synthetic lion**, with minute GPS
 fixes, 17 event tokens, daily event/report JSON logs, and text-free path images
 every three hours. This is a configurable stochastic simulator for inspecting synthetic
@@ -13,7 +18,7 @@ The [500-day seed-2026 result](docs/PHASE4_L5_RESULTS.md) is **NOT HELPFUL** for
 the specified L5 baseline: 24.84% worse headline loss than L3, though 14.34% better
 than shuffled goals. No parameters were tuned after evaluation.
 
-Current package: **5.4.0**, manifest schema **lionsim-v5**. Phase 3 currently
+Before phase 6: package **5.4.0**, manifest schema **lionsim-v5**. Phase 3 currently
 implements **S8.1–S8.5**: trip-start urgency, boredom and mood set walking style
 and optional detours; ten causal observed-GPS features are appended to targets.csv. The accepted
 phase-two baseline is tagged **v4.5.0** at commit `3de4f5a`.

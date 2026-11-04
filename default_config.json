@@ -1,4 +1,48 @@
 {
+  "weather": {
+    "probabilities": {
+      "clear": 0.4,
+      "hot": 0.25,
+      "overcast": 0.2,
+      "rain": 0.15
+    },
+    "heat_ranges": {
+      "hot": [
+        1.15,
+        1.3
+      ],
+      "clear": [
+        0.9,
+        1.1
+      ],
+      "overcast": [
+        0.7,
+        0.9
+      ],
+      "rain": [
+        0.6,
+        0.8
+      ]
+    },
+    "ambient_c_range": [
+      12.0,
+      42.0
+    ],
+    "ambient_noise_sd_c": 0.5,
+    "smoothing_minutes": 5,
+    "rain": {
+      "traffic_multiplier": 0.3,
+      "water_goal_bonus": -2.0,
+      "water_visit_multiplier": 0.25,
+      "shade_delay_minutes": 60,
+      "wake_advance_minutes": 60
+    },
+    "hot": {
+      "water_goal_bonus": 1.2,
+      "water_visit_multiplier": 1.3
+    },
+    "_comment": "Daily observable category; ambient temperature is causal trailing-smoothed measurement. Rain/hot water effects apply to voluntary daytime and night choices; physical/event rules unchanged."
+  },
   "heading_features": {"window_minutes": 20, "min_displacement_km": 0.15, "max_angle_deg": 30, "_comment": "Analysis only: trailing observed displacement window; km threshold; bearing tolerance in degrees. Distance bins are fixed at 1.5 km."},
   "l5_analysis": {"interpolation_k": 20, "shuffle_seed": 2026, "_comment": "Analysis only: L3 prior pseudo-count and deterministic split-local goal permutation seed. No tuning after results."},
   "_comment": "All simulator parameters. Keys beginning with an underscore document nearby settings and do not affect simulation. Distances are km unless named otherwise; rates are per hour.",

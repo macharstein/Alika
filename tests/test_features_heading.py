@@ -60,7 +60,7 @@ def test_export_resume_repair_and_legacy(tmp_path):
     run(parser.parse_args(['--resume', str(directory)]))
     assert json.loads(checkpoint.read_text()) == original
     with (directory / 'targets.csv').open() as handle:
-        assert csv.DictReader(handle).fieldnames[20:] == list(HEADING_COLUMNS)
+        assert csv.DictReader(handle).fieldnames[20:] == list(HEADING_COLUMNS) + ["weather", "ambient_temp_c"]
     before = (directory / 'stats_report.json').read_bytes()
     # Emulate a pre-heading 5.4.0 checkpoint/config; preserve its original columns.
     manifest = json.loads((directory / 'run_manifest.json').read_text())
@@ -81,7 +81,7 @@ def test_export_resume_repair_and_legacy(tmp_path):
     assert all(p.stat().st_mtime_ns == stamp for p, stamp in stamps.items())
     assert (directory / 'stats_report.json').read_bytes() == before
     with (directory / 'targets.csv').open() as handle:
-        assert len(csv.DictReader(handle).fieldnames) == 20
+        assert len(csv.DictReader(handle).fieldnames) == 22
 
 
 def test_angle_ties_nearest_bins_ambiguity_and_threshold(monkeypatch):

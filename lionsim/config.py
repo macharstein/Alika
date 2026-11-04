@@ -366,6 +366,22 @@ def validate_config(data: dict[str, Any]) -> None:
         raise ValueError("behaviours.hunt_start must precede hunt_end in the simulated day")
     for name in ("smoothing_minutes", "window_minutes", "departure_confirmation_minutes"):
         bound(f"features_path.{name}", 1, 1440)
+    weather = data['weather']
+    probabilities = weather['probabilities']
+    if set(probabilities) != {'clear', 'hot', 'overcast', 'rain'} or any(v < 0 for v in probabilities.values()) or not math.isclose(sum(probabilities.values()), 1):
+        raise ValueError('weather.probabilities must be nonnegative and sum to 1')
+    for category in probabilities:
+        interval(f'weather.heat_ranges.{category}', positive=True)
+    interval('weather.ambient_c_range')
+    if weather['ambient_c_range'][0] >= weather['ambient_c_range'][1]:
+        raise ValueError('weather.ambient_c_range must increase')
+    bound('weather.ambient_noise_sd_c', 0)
+    bound('weather.smoothing_minutes', 1, 60)
+    bound('weather.rain.traffic_multiplier', 0, 1)
+    for category in ('rain', 'hot'):
+        bound(f'weather.{category}.water_visit_multiplier', 0)
+    for key in ('shade_delay_minutes', 'wake_advance_minutes'):
+        bound(f'weather.rain.{key}', 0, 180)
     if "heading_features" in data:
         bound("heading_features.window_minutes", 1, 1440)
         bound("heading_features.min_displacement_km", positive=True)

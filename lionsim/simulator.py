@@ -17,6 +17,7 @@ import pandas as pd
 
 from .config import Config
 from .movement_style import plan_style
+from .weather import draw_weather, ambient_measurements
 from .events import ZONE_TOKENS, append_event, sort_events
 from .zones import HysteresisTracker, ZoneMap
 
@@ -36,6 +37,7 @@ class DayResult:
     gps: pd.DataFrame
     hidden_state: pd.DataFrame
     traffic_times: list[str] = field(default_factory=list)
+    weather: str | None = None
 
 
 def _clock_minutes(value: str) -> int:
@@ -91,6 +93,14 @@ class _DaySimulation:
             for name, bounds in self.learnability["latent_ranges"].items()
             if not name.startswith("_")
         }
+        self.weather, self.latents['heat'] = draw_weather(self.rng, self.c['weather'])
+        weather_effects = self.c['weather'].get(self.weather, {})
+        self.water_goal_bonus = weather_effects.get('water_goal_bonus', 0.)
+        self.water_visit_multiplier = weather_effects.get('water_visit_multiplier', 1.)
+        self.latents['tourist_rate_per_hour'] *= weather_effects.get('traffic_multiplier', 1.)
+        self.true_ambient_c, self.observed_ambient_c = ambient_measurements(
+            [self.ambient(t) for t in range(self.day_minutes + 1)], self.latents['heat'],
+            self.bar_config, self.c['weather'], self.rng)
         prey_low, prey_high = self.behaviour["prey_reference_range"]
         self.prey_signal = float(np.clip((self.latents["prey_density"] - prey_low) / (prey_high - prey_low), 0, 1))
         self.hunt_ready_minute = self.offset(self.behaviours["hunt_start"]) + int(round((1 - self.prey_signal) * self.behaviour["prey_hunt_delay_max_minutes"]))
@@ -171,6 +181,10 @@ class _DaySimulation:
             + self.rng.normal(0, self.behaviour["shade_wake_jitter_sd_minutes"]),
             *midday_clip,
         ))))
+
+        if self.weather == 'rain':
+            self.shade_departure += self.c['weather']['rain']['shade_delay_minutes']
+            self.midday_wake = max(self.shade_departure + 1, self.midday_wake - self.c['weather']['rain']['wake_advance_minutes'])
 
         true_positions = np.zeros((self.day_minutes + 1, 2), dtype=float)
         bar_values = np.zeros((self.day_minutes, 5), dtype=float)
@@ -620,6 +634,7 @@ class _DaySimulation:
         candidates = [name for name in ("Plain", "Kopje", "Den", "Waterhole")
                       if name != self.tracker.considered_zone and name != self.raw_zone]
         scores = np.array([-self.behaviour["night_patrol_distance_penalty"] * self.zones.distance_to(name, *self.position)
+                           + (self.water_goal_bonus if name == "Waterhole" else 0.)
                            + (math.log(self.behaviour["night_repeat_zone_weight"]) if name in self.night_visited else 0)
                            for name in candidates])
         weights = np.exp(scores - scores.max())
@@ -671,7 +686,7 @@ class _DaySimulation:
             if self.rng.random() < chance:
                 self._commit_goal("Road")
                 return
-            if self.rng.random() < self.behaviour["afternoon_water_probability"]:
+            if self.rng.random() < min(1., self.behaviour["afternoon_water_probability"] * self.water_visit_multiplier):
                 self._commit_goal("Waterhole")
                 return
         if self.daytime_walking_minutes >= self.behaviour["daytime_travel_budget_minutes"] and self.raw_zone is not None and not self._can_hunt():
@@ -691,6 +706,8 @@ class _DaySimulation:
         scores: list[float] = []
         for name in candidates:
             value = float(priors[name])
+            if name == "Waterhole":
+                value += self.water_goal_bonus
             if name == "Hunting ground":
                 if hunger > self.latents["hunt_threshold"]:
                     value += hunger * self.goal_config["hunger_weight"]
@@ -1112,11 +1129,15 @@ class _DaySimulation:
             "x_km": observed[:, 0], "y_km": observed[:, 1],
             "x_true_km": true_positions[:, 0], "y_true_km": true_positions[:, 1],
             "missing": missing,
+            "ambient_temp_c": self.observed_ambient_c,
         })
         hidden = pd.DataFrame(bar_values, columns=["hunger", "energy", "temperature", "boredom", "mood"])
         hidden.insert(0, "minute_index", np.arange(self.day_minutes))
         hidden.insert(0, "t_iso", timestamps[:-1])
         hidden["goal"], hidden["behaviour"], hidden["zone"] = goals, behaviours, zones
+        hidden["weather"] = self.weather
+        hidden["ambient_temp_c_true"] = self.true_ambient_c[:-1]
+        hidden["heat_true"] = self.latents["heat"]
         hidden["movement_intent"] = intents
         hidden["road_trigger_t_iso"] = road_triggers
         hidden["road_distance_km"] = road_distances
@@ -1144,7 +1165,7 @@ class _DaySimulation:
             "pool_size": int(self.sequence.pool_size), "bit_generator": type(self.rng.bit_generator).__name__,
         }
         traffic_times = [(self.start + timedelta(seconds=int(second))).isoformat(timespec="seconds") for second in self.car_seconds]
-        return DayResult(self.day_index, self.start.date().isoformat(), seed_info, self.latents, sort_events(self.events), gps, hidden, traffic_times)
+        return DayResult(self.day_index, self.start.date().isoformat(), seed_info, self.latents, sort_events(self.events), gps, hidden, traffic_times, self.weather)
 
 
 def simulate_day(

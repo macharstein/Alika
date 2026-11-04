@@ -102,5 +102,7 @@ def write_day(day: Any, reports: list[dict[str, Any]], directory: Path,
                "events": serializable_events(day.events), "reports": reports,
                "ground_truth_latents": {**day.latents,
                    "tourist_volume": len(getattr(day, "traffic_times", [])), "_analysis_only": True}}
+    if day.weather is not None:
+        payload["weather"] = day.weather
     write_json(directory / "day.json", payload, pretty=True)
     return payload

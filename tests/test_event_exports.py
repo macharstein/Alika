@@ -65,7 +65,7 @@ def test_restored_day_json_keeps_hidden_bars_outside_payload(tmp_path, simulated
     payload = write_day(day, reports, tmp_path, prefer_parquet=False)
     document = (tmp_path / "day.json").read_text(encoding="utf-8")
     assert json.loads(document) == payload
-    assert set(payload) == {"day_index", "date", "events", "reports", "ground_truth_latents"}
+    assert set(payload) == {"day_index", "date", "events", "reports", "ground_truth_latents", "weather"}
     assert payload["day_index"] == day.day_index
     assert payload["date"] == day.date
     assert payload["events"] == serializable_events(day.events)
@@ -139,7 +139,7 @@ def test_target_is_strictly_future_same_day_and_final_report_is_excluded(simulat
     assert reports[1]["time_to_next_zone_min"] is None
     rows = target_rows(day, reports)
     assert len(rows) == 7
-    assert set(rows[0]) == {"day", "report_index", "report_time_bucket", "current_zone", "last_event", "next_zone_target", "shade_entry_hour_bucket", "drinks_so_far", "chase_attempts_so_far", "catch_so_far"}
+    assert set(rows[0]) == {"day", "report_index", "report_time_bucket", "current_zone", "last_event", "next_zone_target", "shade_entry_hour_bucket", "drinks_so_far", "chase_attempts_so_far", "catch_so_far", "weather", "ambient_temp_c"}
     assert rows[0]["last_event"] == "ENTER_PLAIN"
     assert rows[0]["report_time_bucket"] == "08:00"
     assert rows[-1]["report_time_bucket"] == "02:00"

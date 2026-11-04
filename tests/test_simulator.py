@@ -159,7 +159,7 @@ def test_csv_fallback_deterministic_and_no_hidden_bars(tmp_path, config, day):
     for name in ("day.json", "gps.csv.gz", "hidden_state.csv.gz"):
         assert (left / name).read_bytes() == (right / name).read_bytes()
     payload = json.loads((left / "day.json").read_text())
-    assert set(payload) == {"day_index", "date", "events", "reports", "ground_truth_latents"}
+    assert set(payload) == {"day_index", "date", "events", "reports", "ground_truth_latents", "weather"}
     assert payload["ground_truth_latents"]["_analysis_only"] is True
     assert all(set(event) == {"id", "t", "token", "description", "zone"} for event in payload["events"])
     assert "hidden_state" not in payload

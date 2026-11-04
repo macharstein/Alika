@@ -74,6 +74,9 @@ def build_reports(day: DayResult, config: Config) -> list[dict[str, Any]]:
             "traffic_count_since_last_report": traffic_end - traffic_begin,
             "traffic_count_last_hour": traffic_end - bisect_right(traffic_times, report_time - timedelta(hours=1)),
         }
+        if day.weather is not None:
+            report['weather'] = day.weather
+            report['ambient_temp_c'] = float(last['ambient_temp_c'])
         if embed:
             report["path"] = path[:offset + 1]
         if report_time < end:
@@ -110,4 +113,6 @@ def target_rows(day: DayResult, reports: list[dict[str, Any]]) -> list[dict[str,
             "chase_attempts_so_far": sum(event["token"] == "CHASE_START" for event in history),
             "catch_so_far": int(any(event["token"] == "CATCH" for event in history)),
         })
+        if 'weather' in report:
+            rows[-1].update(weather=report['weather'], ambient_temp_c=report['ambient_temp_c'])
     return rows

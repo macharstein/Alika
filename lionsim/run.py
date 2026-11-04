@@ -206,6 +206,9 @@ def _load_records(directory: Path, manifest: dict[str, Any]) -> dict[int, dict[s
                         raise ValueError("invalid heading zone")
                     if row['distance_to_implied_goal_bin'] not in (None, '<=1.5 km', '>1.5 km'):
                         raise ValueError("invalid heading distance bin")
+            for row in targets:
+                if row.get('weather') not in manifest['config']['weather']['probabilities'] or not isinstance(row.get('ambient_temp_c'), (int, float)) or not np.isfinite(row['ambient_temp_c']):
+                    raise ValueError('incomplete weather context checkpoint')
             if manifest.get("oracle"):
                 rows = record["oracle"]
                 expected_reports = len(manifest["config"]["time"]["report_times"]) - 1
@@ -240,6 +243,7 @@ def _write_aggregates(directory: Path, records: dict[int, dict[str, Any]], confi
     columns += list(PATH_FEATURE_COLUMNS)
     if "heading_features" in config.data:
         columns += list(HEADING_COLUMNS)
+    columns += ["weather", "ambient_temp_c"]
     with atomic_output(directory / "targets.csv") as temporary:
         with temporary.open("w", encoding="utf-8", newline="") as handle:
             writer = csv.DictWriter(handle, fieldnames=columns)
