@@ -17,14 +17,14 @@ from lionsim.trip_statistics import summarize_trips
 
 @pytest.fixture
 def source(tmp_path):
-    # These explicit example IDs belong to the original movement distribution.
+    # Fixed v6 fixture IDs with the same geometry/style criteria as the old examples.
     config = load_config(overrides=['images.size_px=120',
         'movement_style.attraction_intercept=0.6', 'movement_style.attraction_urgency_weight=0.8',
         'movement_style.speed_intercept=0.85', 'movement_style.speed_urgency_weight=0.3',
         'movement_style.detour_probability_scale=0.7', 'movement_style.detour_urgency_weight=0',
         'movement_style.departure_alignment_weight=0', 'movement_style.detour_offset_km_range=[0.4,1.0]'])
     manifest = {'config': config.to_dict(), 'versions': {'lionsim': __version__},
-                'schema_version': SCHEMA_VERSION, 'day_indices': [254, 318],
+                'schema_version': SCHEMA_VERSION, 'day_indices': [8, 9],
                 'seed': 42, 'start_date': '2026-01-01'}
     (tmp_path / 'run_manifest.json').write_text(json.dumps(manifest))
     (tmp_path / 'checkpoints').mkdir()
@@ -50,9 +50,9 @@ def test_examples_are_text_free_repeatable_and_match_recorded_trips(source, monk
 
     monkeypatch.setattr(Figure, 'savefig', inspect)
     output = source / 'examples.png'
-    first = render_examples(source, [(318, 6), (254, 11)], output)
+    first = render_examples(source, [(8, 6), (9, 4)], output)
     original = output.read_bytes()
-    assert first == render_examples(source, [(318, 6), (254, 11)], output)
+    assert first == render_examples(source, [(8, 6), (9, 4)], output)
     assert original == output.read_bytes()
     left, right = first['panels']
     assert left['urgency'] <= .3 and left['boredom'] >= .7
@@ -73,17 +73,17 @@ def test_examples_are_text_free_repeatable_and_match_recorded_trips(source, monk
 
 def test_changed_source_and_wrong_version_do_not_publish_examples(source):
     output = source / 'examples.png'
-    checkpoint = source / 'checkpoints' / 'day_0318.json'
+    checkpoint = source / 'checkpoints' / 'day_0008.json'
     record = json.loads(checkpoint.read_text())
     next(t for t in record['stats']['trips'] if t['trip_id'] == 6)['urgency'] = .99
     checkpoint.write_text(json.dumps(record))
     with pytest.raises(ValueError, match='does not match'):
-        render_examples(source, [(318, 6), (254, 11)], output)
+        render_examples(source, [(8, 6), (9, 4)], output)
     assert not output.exists()
     manifest_path = source / 'run_manifest.json'
     manifest = json.loads(manifest_path.read_text())
     manifest['versions']['lionsim'] = '4.5.0'
     manifest_path.write_text(json.dumps(manifest))
     with pytest.raises(ValueError, match='original package/schema'):
-        render_examples(source, [(318, 6), (254, 11)], output)
+        render_examples(source, [(8, 6), (9, 4)], output)
     assert not output.exists()

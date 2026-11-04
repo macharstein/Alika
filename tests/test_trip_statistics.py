@@ -36,7 +36,7 @@ def test_trip_geometry_uses_observed_smoothing_and_inclusive_endpoint():
 
 
 def report_fixture():
-    return {'checks': [], 'days_simulated':1, 'hours_per_behaviour':{'walking':6.1},
+    return {'checks': [], 'days_simulated':1, 'hours_per_behaviour':{'walking':load_config()['targets']['guardrail_walking_hours_max'] + .1},
             'zone_entries_per_day':{'mean':6.9}, 'path_statistics':{
                 'pooled_mean_walking_speed_kmh':4.1,
                 'aggregates':{'abandoned_trip_count':{'mean':1.1}}},

@@ -694,3 +694,9 @@ done: phase 6 D1/M1 analysis — 31 targeted tests passed. Fixed-N metrics are d
 verify: /opt/anaconda3/bin/python3.12 -m pytest -x -q tests/test_phase6_statistics.py tests/test_stats.py tests/test_baselines.py tests/test_resume.py tests/test_day_types.py
 next: full regression and documentation; freeze settings before seed3003 measurement/oracle.
 assumptions: historical oracle~0.249 is seed42, not a matched seed2026 oracle; report labels this difference. known problems: no production failures/retries; seed3003 absent from every output manifest at preflight.
+in progress: phase 6 pre-measurement regression/documentation — run all tests, resolve implementation or changed-contract test defects, freeze settings and commands before observing seed3003 outcomes.
+verify: /opt/anaconda3/bin/python3.12 -m pytest -q
+done: phase 6 pre-measurement compatibility review — initial full suite267 passed/3 failed, all three stale contracts: hardcodedv5 version, 6.1h fixture no longer exceeding revised6.5h limit, old example trip IDs no longer contrasting under new RNG. Updated version assertion, made failure fixture exceed configured limit, and selected fixed v6 seed42 fixtures day8/trip6 and day9/trip4 with every original contrast/rendering assertion unchanged. Relevant31 tests now pass; no simulator/settings tuning. Phase-six definitions/commands documented in docs/PHASE6_WEATHER.md and linked from README.
+verify: /opt/anaconda3/bin/python3.12 -m pytest -x -q tests/test_movement_style.py tests/test_style_examples.py tests/test_trip_statistics.py
+next: final pre-measurement full regression, then frozen seed3003 simulation/oracle chunks.
+assumptions: historical docs/style_examples artifacts remain unchanged and historical; only test fixtures updated. known problems: no unresolved implementation failure identified; no production measurement yet.

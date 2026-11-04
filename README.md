@@ -1,9 +1,11 @@
 # Lion GPS collar simulator
 
-Current development version: **6.0.0 / lionsim-v6** (UPDATE_SPEC_6). Weather and
+Current development version: **6.0.0 / lionsim-v6** (UPDATE_SPEC_6). Weather, hidden day types, schedule jitter and
 observable ambient temperature are added; older seeds produce different data.
 Old v5 runs cannot resume into v6. Earlier measurements below are historical.
 The 17-token vocabulary, report schedule, hunt cutoff and PNG appearance remain unchanged.
+[Phase-six mechanisms, assumptions and commands](docs/PHASE6_WEATHER.md) document
+the declared settings, fixed-size diversity comparison and weather counting baseline.
 
 Generate independent 24-hour days for **one synthetic lion**, with minute GPS
 fixes, 17 event tokens, daily event/report JSON logs, and text-free path images
