@@ -1,6 +1,6 @@
 # Phases 1–2 complete; phase 3 S8.1–S8.5 delivered, acceptance unmet
 
-Phase 3 status: S8.3 fixed evaluation is complete, but acceptance is not met (walking guardrail and four statistical targets). See docs/PHASE3_S83_RESULTS.md. Current full suite: 233 passed. S8.4 figures and S8.5 coverage audit are complete. Further work must address the documented S8.3 acceptance failures.
+Phase 3 status: S8.1–S8.5 delivered; bounded calibration package 5.4.0 evaluated on 500 seed-42 days and 100 oracle days. Walking and detour frequency now pass the required 500-day checks; boredom/straightness, urgency/straightness and L4 improvement still miss. Both oracle guardrails pass. Full suite: 236 passed. See docs/PHASE3_CALIBRATION_RESULTS.md. Acceptance remains unmet.
 
 Scope: phase-one `docs/UPDATE_SPEC.md` tasks 1–10 are complete. Under `docs/UPDATE_SPEC_2.md`, S1–S5 are implemented and S6 evaluation is complete, including checkpoint/resume safety. Final 500-day statistics have eight calibration warnings; both oracle/L0 ratio checks warn. S7 regression audit is complete; all 189 tests pass. No calibration experiment has been applied.
 
@@ -602,3 +602,9 @@ done: final regression suite — 236 passed in 61.50s. Current documentation now
 verify: /opt/anaconda3/bin/python3.12 -m pytest -q
 known problems: oracle confirmation still running; do not claim full acceptance or all failures fixed. No new implementation changes or test failures.
 next: complete/audit 100 oracle days and 70,000 continuations, append matched comparisons and final status, then commit and stop this bounded calibration attempt.
+done: bounded 5.4.0 calibration delivery — both confirmation runs complete. Full suite: 236 passed in 61.50s. 500-day result is 39 PASS, 12 WARN, 0 FAIL; walking 5.928967 h/day and detour fraction 10.1836% now pass. Oracle headline/all ratios 0.249285/0.233359 pass >=0.20; the older >=0.25 warnings remain, with no oracle status changes versus 5.2.0 or accepted 4.5.0. Audited all 600 checkpoints, 3,500 target rows and 70,000 continuations; matching days have identical target/features/statistics, every day passes event invariants. All target thresholds and phase-two settings unchanged; no ML libraries.
+verify: /opt/anaconda3/bin/python3.12 -m pytest -q
+verify: /opt/anaconda3/bin/python3.12 -m lionsim.trip_statistics outputs/phase3_calibrated_stats/run_20261103_221518 --reference docs/phase2_v450_checks.json
+assumptions: confirmation is frozen, not a tuning loop. docs/PHASE3_CALIBRATION_RESULTS.md records every candidate, the two explicit plan extensions, original/current comparisons, all check tables, oracle results and limitations. The 100-day oracle subset's incidental walking mean remains 6.062167 h/day (FAIL); the specified 500-day mean passes. Historical 5.2.0 images/data remain documented and unchanged.
+known problems: NOT fully accepted: boredom/straightness -0.319508 versus <=-0.35; urgency/straightness 0.182882 versus >=0.30; L4 1.94391% worse than L3 versus >=2% improvement. Detour-only cue is closest, still 0.73127% worse. Original calibration warnings and report-7 END_OF_DAY PASS→WARN persist. No unfinished runs, tests or partial implementation edits remain after final commit; historical README.pdf/performance_check.json untouched.
+next: investigate the three remaining S8.3 targets using new independent validation data and a mechanism review; this bounded calibration fixed walking and detour frequency but did not achieve full acceptance.

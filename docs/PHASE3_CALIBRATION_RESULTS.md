@@ -1,6 +1,6 @@
 # Phase-three calibration, package 5.4.0
 
-The user requested addressing the S8.3 failures. This bounded attempt changes phase-three movement and L4 settings only. Acceptance thresholds, all phase-two behavior settings, event vocabulary/rules, schedule, latent sampling, GPS noise and feature definitions remain fixed. The 500-day seed-42 confirmation is complete; the matched oracle is still running. The confirmation fixes two failures but leaves three targets unmet.
+The user requested addressing the S8.3 failures. This bounded attempt changes phase-three movement and L4 settings only. Acceptance thresholds, all phase-two behavior settings, event vocabulary/rules, schedule, latent sampling, GPS noise and feature definitions remain fixed. The 500-day seed-42 confirmation and matched oracle are complete. The confirmation fixes two failures but leaves three targets unmet.
 
 ## Changes and rationale
 
@@ -157,6 +157,38 @@ Versus **5.2.0**, only walking changes FAIL→PASS and detour frequency changes 
 | headline_l4_relative_improvement | **WARN** | -0.019439 | 0.02 |
 
 [Statistics JSON](../outputs/phase3_calibrated_stats/run_20261103_221518/stats_report.json) · [Human report](../outputs/phase3_calibrated_stats/run_20261103_221518/stats_report.md)
+
+## Final matched 100-day oracle
+
+Completed **100 days ×7 usable reports ×100 rollouts =70,000 continuations**. All observed targets, path features and compact statistics match the same first 100 days of the 500-day run exactly. All 600 statistics/oracle day records pass event invariants. No minute trajectories or PNGs were saved.
+
+| Scope | L0 | L1 | L2 | L3 | L4 | Oracle |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| headline | 1.791712 ± 0.051933 | 1.198991 ± 0.081029 | 0.893279 ± 0.068240 | 0.758115 ± 0.086363 | 0.758331 ± 0.096353 | 0.446648 ± 0.064629 |
+| all_reports | 1.878440 ± 0.034893 | 1.295863 ± 0.060387 | 0.980091 ± 0.036751 | 0.865020 ± 0.040340 | 0.864337 ± 0.047762 | 0.438350 ± 0.046150 |
+
+| Check | Status | Observed | Expected |
+| --- | --- | ---: | --- |
+| headline.oracle_l0_ratio | **WARN** | 0.249285 | [0.25, 0.5] |
+| headline.oracle_l2_relative_improvement | **PASS** | 0.499991 | 0.1 |
+| headline.guardrail_oracle_l0 | **PASS** | 0.249285 | 0.2 |
+| all_reports.oracle_l0_ratio | **WARN** | 0.233359 | [0.25, 0.5] |
+| all_reports.oracle_l2_relative_improvement | **PASS** | 0.552746 | 0.1 |
+| all_reports.guardrail_oracle_l0 | **PASS** | 0.233359 | 0.2 |
+
+Both phase-three oracle/L0 >=0.20 guardrails pass. The older 0.25–0.50 calibration checks still WARN; no oracle check changes status versus 5.2.0 or accepted 4.5.0. The Laplace floor is 0.076227 nats.
+
+**Sample-size limitation:** the oracle run’s incidental 100-day walking mean is **6.062167 h/day**, so its own statistics report flags that walking guardrail FAIL. The required 500-day mean is **5.928967**, PASS. The improvement is established for the specified 500-day population, not every smaller sample or every individual day. The three unresolved phase-three targets remain unresolved.
+
+[Oracle JSON](../outputs/phase3_calibrated_oracle/run_20261103_221518/oracle_report.json) · [Oracle human report](../outputs/phase3_calibrated_oracle/run_20261103_221518/oracle_report.md)
+
+## Final verification and remaining work
+
+**236 tests passed in 61.50s**. New tests cover urgency suppression, one-time departure alignment without teleportation, training-only quantiles/held-out isolation, missing CSV fields and large-k L4 convergence. Existing snapshot, seed, event, report, feature causality, image and resume checks pass. Earlier targeted increments passed 69, 55, 70 and 82 tests respectively.
+
+Audit verified 500 stats checkpoints, 100 oracle checkpoints, 3,500 stats targets and 70,000 continuations; target/feature/stat records agree across matching days. Every target threshold and phase-two setting is unchanged. Event/report/observed-feature/plotting modules are byte-for-byte unchanged from the pre-calibration commit. No ML dependencies were added.
+
+**Fixed in the 500-day confirmation:** walking-hours hard guardrail and visible-detour frequency. **Still unmet:** boredom–straightness, selected-goal urgency–straightness, and L4 ≥2% improvement. A bounded attempt has been delivered; this is not full calibration acceptance. Further work should diagnose why trip-shape cues add little information conditional on observed history, using new independent validation data rather than tuning the same seed-42 confirmation.
 
 ## Reproduction
 

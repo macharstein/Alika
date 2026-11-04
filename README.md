@@ -21,7 +21,9 @@ The [5.4.0 calibration](docs/PHASE3_CALIBRATION_RESULTS.md) fixes two seed-42
 500-day failures: walking falls to **5.929 h/day** and visible detours rise to
 **10.18%**. All hard movement/event guardrails pass. **Three targets remain unmet**:
 boredom–straightness −0.3195, urgency–straightness 0.1829, and L4 headline loss
-1.94% worse than L3. The matched oracle confirmation is still running.
+1.94% worse than L3. Both oracle/L0 ≥0.20 guardrails pass after 70,000 continuations. The smaller
+100-day oracle sample still averages 6.062 walking hours/day; the 500-day result
+does not guarantee every smaller sample passes.
 The original [5.2.0 evaluation](docs/PHASE3_S83_RESULTS.md) remains archived.
 Version 5.4.0 changes trajectories; old 5.2.0 seeds/figures remain historical. Resume requires the exact original version and saved configuration.
 See [path-feature definitions and
