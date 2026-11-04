@@ -9,6 +9,9 @@ learning, training code, or external service dependency.
 Phase 4 adds the [L5 observed-heading experiment](docs/L5_ANALYSIS.md): ten appended
 causal heading columns, day-fold counting evaluation, shuffled and explicitly LEAKY
 true-goal controls. Simulator 5.4.0, existing parameters and statistics are frozen.
+The [500-day seed-2026 result](docs/PHASE4_L5_RESULTS.md) is **NOT HELPFUL** for
+the specified L5 baseline: 24.84% worse headline loss than L3, though 14.34% better
+than shuffled goals. No parameters were tuned after evaluation.
 
 Current package: **5.4.0**, manifest schema **lionsim-v5**. Phase 3 currently
 implements **S8.1–S8.5**: trip-start urgency, boredom and mood set walking style
@@ -35,7 +38,8 @@ causality](docs/PATH_FEATURES.md). S8.4 delivers the [text-free movement compari
 and [usual days 1–3 PNGs, provenance and reproduction commands](docs/STYLE_EXAMPLES.md).
 The selected example paths use smoothed observed GPS; normal report PNGs retain raw
 observed cumulative paths. These illustrations do not resolve S8.3 acceptance failures.
-Current full suite: **236 tests passed**. The [S8.5 coverage audit](docs/PHASE3_TEST_COVERAGE.md)
+Current full suite: **255 tests passed**, including phase-four causality, control isolation,
+counting-model, frozen-simulation and resume checks. The [S8.5 coverage audit](docs/PHASE3_TEST_COVERAGE.md)
 maps all six requested test requirements to existing checks. Phase-three implementation,
 evaluation, figures and test coverage are delivered; **S8.3 acceptance remains unmet**.
 

@@ -637,3 +637,38 @@ verify: /opt/anaconda3/bin/python3.12 -m pytest -x -q tests/test_features_headin
 verify: /opt/anaconda3/bin/python3.12 -m pytest -q
 next: run 500 new days at seed 2026, five 100-day chunks with --resume, workers=4, stats-only --keep-files --no-images; then evaluate once at declared defaults.
 assumptions: scanned every outputs/**/run_manifest.json before running: neither 2026 nor 2027 has been used. Freeze W20, displacement0.15 km, angle30 degrees, distance1.5 km, k20 and shuffle seed2026; sensitivity10/20/30 only. known problems: none in phase-four implementation; historical phase-three calibration warnings remain outside this frozen analysis scope.
+in progress: phase 4 A5 declared fresh-seed experiment — implementation frozen at 586c347; start seed2026, 500 days, chunks100, workers4, stats-only with saved minute tables and no images. Do not inspect/tune partial L5 results. This is the first production L5 run; no defect rerun used.
+verify: /opt/anaconda3/bin/python3.12 -m lionsim.run --stats-only --stats-days 500 --seed 2026 --keep-files --no-images --workers 4 --chunk-size 100 --out outputs/phase4_l5
+done: phase 4 A5 simulation chunk 1 — 100/500 days checkpointed at outputs/phase4_l5/run_20261104_093129; status partial, original simulation warning printed without changes. No L5 result evaluated.
+next: resume the same saved manifest for days101–200. assumptions: unchanged frozen settings; known problems: none in execution.
+in progress: phase 4 A5 simulation chunk 2.
+verify: /opt/anaconda3/bin/python3.12 -m lionsim.run --resume outputs/phase4_l5/run_20261104_093129 --workers 4 --chunk-size 100
+done: phase 4 A5 simulation chunk 2 — 200/500 days; same run/seed/config, no L5 evaluation yet.
+next: resume days201–300. assumptions: unchanged; known problems: no execution failures.
+in progress: phase 4 A5 simulation chunk 3.
+verify: /opt/anaconda3/bin/python3.12 -m lionsim.run --resume outputs/phase4_l5/run_20261104_093129 --workers 4 --chunk-size 100
+done: phase 4 A5 simulation chunk 3 — 300/500 days; checkpoint resume continues without regeneration/failures.
+next: resume days301–400. assumptions: unchanged; known problems: no execution failures.
+in progress: phase 4 A5 simulation chunk 4.
+verify: /opt/anaconda3/bin/python3.12 -m lionsim.run --resume outputs/phase4_l5/run_20261104_093129 --workers 4 --chunk-size 100
+done: phase 4 A5 simulation chunk 4 — 400/500 days; same saved configuration and seed.
+next: resume final days401–500, then run isolated L5 analysis. assumptions: unchanged; known problems: no execution failures.
+in progress: phase 4 A5 simulation chunk 5.
+verify: /opt/anaconda3/bin/python3.12 -m lionsim.run --resume outputs/phase4_l5/run_20261104_093129 --workers 4 --chunk-size 100
+done: phase 4 A5 simulation — all 500/500 days complete in five100-day chunks using --resume, four workers, no images; seed2026. Final ordinary walking warning is inherited and not altered (6.009 h/day). This independent seed may expose existing calibration failures; simulator changes are prohibited.
+in progress: phase 4 A5 first and only declared-default evaluation from saved minute GPS and hidden files; compute L5, controls, subsets, confusion and post hoc sensitivity.
+verify: /opt/anaconda3/bin/python3.12 -m lionsim.l5_analysis outputs/phase4_l5/run_20261104_093129
+next: inspect and audit complete report, document results without tuning, run final tests and commit.
+done: phase 4 A5 first production analysis — l5_report.json/md written successfully; no defect or rerun. Seed2026 headline CV losses: L3=0.5845062255702655, L5=0.729722032045735, shuffled=0.8518484296308273, LEAKY truegoal=0.8109963194627966. L5 is 24.8442% worse than L3 and 14.3366% better than shuffled: NOT HELPFUL under the declared rule. No positive L3-to-truegoal gap exists, so gap closed is undefined. Moving goal accuracy: 588/1501=39.1739% all reports; 514/1253=41.0215% headline. No tuning after results.
+verify: /opt/anaconda3/bin/python3.12 -m lionsim.l5_analysis outputs/phase4_l5/run_20261104_093129
+assumptions: these are results for the literal specified coarse L5 cell and counting model; they do not establish that heading has no information in other models. Truegoal is an empirical leaky control, not a guaranteed loss upper bound. Post hoc W10/20/30 headline L5=0.734882/0.729722/0.722480; W20 remains main.
+known problems: frozen simulator's fresh-seed existing checks are 37 PASS, 13 WARN, 1 FAIL (walking guardrail, 6.0087 h/day). No simulation/statistic changes permitted. PyArrow printed sandbox CPU-cache inspection warnings while reading tables; reading and analysis completed normally.
+next: archive human-readable results, audit outputs/provenance and run final regression suite, then commit and stop phase4.
+in progress: phase 4 final delivery/audit — archive complete report with interpretation and inherited simulator-check failures; verify every saved input hash and checkpoint, then final full pytest.
+verify: /opt/anaconda3/bin/python3.12 -m pytest -q
+done: phase 4 A1–A6 complete — final full suite 255 passed in 63.29s; git diff --check clean. All 500 simulation checkpoints, 500 analysis caches, 1,500 input hashes, 3,500 target rows, five identical day-disjoint folds and zero PNGs audited. Reports saved under outputs/phase4_l5/run_20261104_093129; full human-readable archive at docs/PHASE4_L5_RESULTS.md. No production defects, no rerun, no post-result tuning. Simulator remains 5.4.0/schema lionsim-v5; every existing parameter/statistic implementation remains unchanged. Historical README.pdf/performance_check.json untouched.
+verify: /opt/anaconda3/bin/python3.12 -m pytest -q
+verify: /opt/anaconda3/bin/python3.12 -m lionsim.l5_analysis outputs/phase4_l5/run_20261104_093129
+assumptions: declared W20/k20 result retained despite post hoc W30's lower loss. Negative result applies to this specified counting baseline; heading beats shuffle but does not improve L3. No positive truegoal gap exists.
+known problems: L5 verdict NOT HELPFUL; frozen simulation retains 13 warnings and one walking-hours failure on the independent seed (6.0087667 > 6 h/day). These are reported outcomes, not unfinished phase-four implementation work.
+next: Phase 4 complete; no further tasks scheduled.
