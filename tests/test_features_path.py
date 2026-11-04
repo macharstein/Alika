@@ -144,7 +144,7 @@ def test_csv_features_resume_workers_and_checkpoint_repair(tmp_path):
         assert (partial/name).read_bytes() == (full/name).read_bytes()
     with (full/'targets.csv').open() as handle:
         reader = csv.DictReader(handle)
-        assert reader.fieldnames[-10:] == list(PATH_FEATURE_COLUMNS)
+        assert reader.fieldnames[10:20] == list(PATH_FEATURE_COLUMNS)
         rows = list(reader)
     assert len(rows) == 21
     config = load_config()

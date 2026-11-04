@@ -25,6 +25,7 @@ from .config import Config, load_config
 from .io_utils import atomic_output, create_run_directory, day_directory, write_day, write_json, write_text
 from .events import TOKENS
 from .features_path import PATH_FEATURE_COLUMNS, features_at_report
+from .features_heading import HEADING_COLUMNS, HEADING_EXPORT_VERSION, heading_at_report
 from .reports import build_reports, target_rows
 from .stats import summarize_for_stats, build_stats_report, render_stats_markdown, baselines_from_csv, add_headline_check
 from .simulator import simulate_day
@@ -127,6 +128,8 @@ def _run_day(job: dict[str, Any]) -> dict[str, Any]:
     for row in targets:
         report_time = reports[row["report_index"] - 1]["report_time"]
         row.update(features_at_report(day.gps, day.events, report_time, config))
+        if "heading_features" in config.data:
+            row.update(heading_at_report(day.gps, report_time, config))
     record = {"day_index": day.day_index, "run_fingerprint": job["run_fingerprint"],
               "summary": summarize_day(day, reports, validation, config), "stats": stats,
               "targets": targets, "files": written}
@@ -188,6 +191,21 @@ def _load_records(directory: Path, manifest: dict[str, Any]) -> dict[int, dict[s
                     if value is not None and (isinstance(value, bool) or not isinstance(value, (int, float))
                                               or not np.isfinite(value)):
                         raise ValueError("invalid path-feature checkpoint value")
+            if "heading_features" in manifest["config"]:
+                for row in targets:
+                    if any(column not in row for column in HEADING_COLUMNS):
+                        raise ValueError("incomplete heading-feature checkpoint")
+                    if not isinstance(row['moving'], bool) or not isinstance(row['heading_window_complete'], bool):
+                        raise ValueError("invalid heading flag")
+                    for column in HEADING_COLUMNS[:4] + ('distance_to_implied_goal_km',):
+                        value = row[column]
+                        if value is not None and (isinstance(value, bool) or not isinstance(value, (int, float)) or not np.isfinite(value)):
+                            raise ValueError("invalid heading numeric feature")
+                    names = set(manifest['config']['map']['zones'])
+                    if row['in_zone'] not in names | {'transit'} or row['implied_goal'] not in names | {'none', 'ambiguous'}:
+                        raise ValueError("invalid heading zone")
+                    if row['distance_to_implied_goal_bin'] not in (None, '<=1.5 km', '>1.5 km'):
+                        raise ValueError("invalid heading distance bin")
             if manifest.get("oracle"):
                 rows = record["oracle"]
                 expected_reports = len(manifest["config"]["time"]["report_times"]) - 1
@@ -220,6 +238,8 @@ def _write_aggregates(directory: Path, records: dict[int, dict[str, Any]], confi
     columns = ["day", "report_index", "report_time_bucket", "current_zone", "last_event", "next_zone_target",
                "shade_entry_hour_bucket", "drinks_so_far", "chase_attempts_so_far", "catch_so_far"]
     columns += list(PATH_FEATURE_COLUMNS)
+    if "heading_features" in config.data:
+        columns += list(HEADING_COLUMNS)
     with atomic_output(directory / "targets.csv") as temporary:
         with temporary.open("w", encoding="utf-8", newline="") as handle:
             writer = csv.DictWriter(handle, fieldnames=columns)
@@ -273,6 +293,8 @@ def run(args: argparse.Namespace) -> Path:
             raise ValueError("Cannot enable --keep-files after starting a statistics-only run")
         if args.no_images and manifest["image_days"] or args.image_days is not None and args.image_days != manifest["image_days"]:
             raise ValueError("Resume uses the original image selection")
+        if "heading_features" in manifest["config"] and manifest.get("heading_export_version") != HEADING_EXPORT_VERSION:
+            raise ValueError("Resume requires the same heading export version")
         config = Config(manifest["config"])
         indices, seed, start_date = manifest["day_indices"], manifest["seed"], manifest["start_date"]
         manifest.pop("error", None)
@@ -304,6 +326,7 @@ def run(args: argparse.Namespace) -> Path:
             "runtime_seconds": 0.0, "status": "running", "completed_days": 0,
             "schema_version": SCHEMA_VERSION, "day_log_schema": "lionsim-v3", "vocabulary": list(TOKENS),
             "ground_truth_latents_analysis_only": True,
+            "heading_export_version": HEADING_EXPORT_VERSION,
             "seed_derivation": "numpy.random.SeedSequence(seed).spawn(max_day_index)[day_index - 1]",
             "run_fingerprint": _fingerprint(config, seed, start_date), "command": sys.argv,
         }

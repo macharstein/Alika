@@ -210,6 +210,8 @@ def validate_config(data: dict[str, Any]) -> None:
                 if key.startswith("_"):
                     continue
                 child = f"{path}.{key}" if path else key
+                if not path and key in ("heading_features", "l5_analysis") and key not in value:
+                    continue  # Pre-heading 5.4.0 manifests keep their original export schema.
                 if key not in value:
                     raise ValueError(f"Missing configuration key: {child}")
                 # Geometry shape changes are valid; ZoneMap checks their fields.
@@ -364,11 +366,13 @@ def validate_config(data: dict[str, Any]) -> None:
         raise ValueError("behaviours.hunt_start must precede hunt_end in the simulated day")
     for name in ("smoothing_minutes", "window_minutes", "departure_confirmation_minutes"):
         bound(f"features_path.{name}", 1, 1440)
-    bound("heading_features.window_minutes", 1, 1440)
-    bound("heading_features.min_displacement_km", positive=True)
-    bound("heading_features.max_angle_deg", 0, 180)
-    bound("l5_analysis.interpolation_k", positive=True)
-    bound("l5_analysis.shuffle_seed", 0)
+    if "heading_features" in data:
+        bound("heading_features.window_minutes", 1, 1440)
+        bound("heading_features.min_displacement_km", positive=True)
+        bound("heading_features.max_angle_deg", 0, 180)
+    if "l5_analysis" in data:
+        bound("l5_analysis.interpolation_k", positive=True)
+        bound("l5_analysis.shuffle_seed", 0)
     bound("features_path.grid_cell_km", positive=True)
     bound("features_path.departure_margin_km", 0)
     for name in ("boredom_goal_urgency", "low_mood_threshold", "detour_boredom_threshold"):

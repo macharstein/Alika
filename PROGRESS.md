@@ -616,3 +616,9 @@ done: phase 4 A1 causal features/settings — 51 targeted tests passed; stationa
 verify: /opt/anaconda3/bin/python3.12 -m pytest -x -q tests/test_features_heading.py tests/test_config.py
 next: append heading CSV columns and validate resume checkpoints.
 assumptions: heading distance bins are fixed at 1.5 km; no fitted cuts are needed. Zero-length displacement cannot define a bearing. known problems: none in this increment.
+in progress: phase 4 A1 export integration — append heading columns after every existing target column; use heading-v1 marker and reject incompatible exports on resume while retaining legacy 5.4.0 runs without heading settings.
+verify: /opt/anaconda3/bin/python3.12 -m pytest -x -q tests/test_features_heading.py tests/test_features_path.py tests/test_resume.py
+done: phase 4 A1 exports — 22 targeted tests passed, including checkpoint repair, worker equivalence and legacy 5.4.0 resume with identical existing statistics. Fixed strict config validation to permit missing analysis-only sections in old saved manifests; new configurations retain required nested settings.
+verify: /opt/anaconda3/bin/python3.12 -m pytest -x -q tests/test_features_heading.py tests/test_features_path.py tests/test_resume.py
+next: implement day-disjoint L5 counting evaluation, shuffled and isolated LEAKY true-goal controls, decision/report and sensitivity.
+assumptions: old runs keep their old CSV schema; heading-v1 new runs append ten columns. known problems: none in this increment.

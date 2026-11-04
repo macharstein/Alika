@@ -42,3 +42,43 @@ def test_straight_walk_causal_and_observed_only():
 def test_invalid_settings(setting):
     with pytest.raises(ValueError):
         load_config(overrides=[setting])
+
+
+def test_export_resume_repair_and_legacy(tmp_path):
+    import csv
+    import json
+    from lionsim.features_heading import HEADING_COLUMNS
+    from lionsim.run import build_parser, run, _fingerprint
+    from lionsim.config import Config
+    parser = build_parser()
+    directory = run(parser.parse_args(['--stats-only', '--stats-days', '2', '--out', str(tmp_path)]))
+    checkpoint = sorted((directory / 'checkpoints').glob('*.json'))[0]
+    original = json.loads(checkpoint.read_text())
+    broken = json.loads(checkpoint.read_text())
+    del broken['targets'][0]['implied_goal']
+    checkpoint.write_text(json.dumps(broken))
+    run(parser.parse_args(['--resume', str(directory)]))
+    assert json.loads(checkpoint.read_text()) == original
+    with (directory / 'targets.csv').open() as handle:
+        assert csv.DictReader(handle).fieldnames[20:] == list(HEADING_COLUMNS)
+    before = (directory / 'stats_report.json').read_bytes()
+    # Emulate a pre-heading 5.4.0 checkpoint/config; preserve its original columns.
+    manifest = json.loads((directory / 'run_manifest.json').read_text())
+    del manifest['config']['heading_features']
+    del manifest['config']['l5_analysis']
+    del manifest['heading_export_version']
+    manifest['run_fingerprint'] = _fingerprint(Config(manifest['config']), manifest['seed'], manifest['start_date'])
+    for path in (directory / 'checkpoints').glob('*.json'):
+        record = json.loads(path.read_text())
+        record['run_fingerprint'] = manifest['run_fingerprint']
+        for row in record['targets']:
+            for key in HEADING_COLUMNS:
+                del row[key]
+        path.write_text(json.dumps(record))
+    (directory / 'run_manifest.json').write_text(json.dumps(manifest))
+    stamps = {p: p.stat().st_mtime_ns for p in (directory / 'checkpoints').glob('*.json')}
+    run(parser.parse_args(['--resume', str(directory)]))
+    assert all(p.stat().st_mtime_ns == stamp for p, stamp in stamps.items())
+    assert (directory / 'stats_report.json').read_bytes() == before
+    with (directory / 'targets.csv').open() as handle:
+        assert len(csv.DictReader(handle).fieldnames) == 20
