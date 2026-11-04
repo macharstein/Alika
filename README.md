@@ -6,7 +6,7 @@ every three hours. This is a configurable stochastic simulator for inspecting sy
 data, not an empirically calibrated model of lion behaviour. There is no machine
 learning, training code, or external service dependency.
 
-Current package: **5.2.0**, manifest schema **lionsim-v5**. Phase 3 currently
+Current package: **5.4.0**, manifest schema **lionsim-v5**. Phase 3 currently
 implements **S8.1–S8.5**: trip-start urgency, boredom and mood set walking style
 and optional detours; ten causal observed-GPS features are appended to targets.csv. The accepted
 phase-two baseline is tagged **v4.5.0** at commit `3de4f5a`.
@@ -17,17 +17,19 @@ cannot resume into v5. Tokens, report schedule, day-level latent sampling, hunt
 cutoff, stalking/chase logic and PNG styling remain unchanged. No phase-two
 parameters were retuned. Phase-two measurements below are historical, not
 measurements of the new movement distribution. See [movement-style details](docs/MOVEMENT_STYLE.md).
-S8.3 adds L4, trip-level measurements and hard guardrails. **The 500-day evaluation
-is not accepted:** walking is 6.0955 h/day (>6), L4 worsens headline loss by 2.08%,
-and three movement targets miss their bounds. The matched 100-day oracle is complete; both new >=0.20 oracle/L0 guardrails pass. Full results, fixed cue diagnostics, and every accepted-baseline status
-change are recorded in [S8.3 results](docs/PHASE3_S83_RESULTS.md).
-Version 5.2.0 changes diagnostics/checkpoints only; trajectories match 5.0.0.
-Resume requires the same package version. See [path-feature definitions and
+The [5.4.0 calibration](docs/PHASE3_CALIBRATION_RESULTS.md) fixes two seed-42
+500-day failures: walking falls to **5.929 h/day** and visible detours rise to
+**10.18%**. All hard movement/event guardrails pass. **Three targets remain unmet**:
+boredom–straightness −0.3195, urgency–straightness 0.1829, and L4 headline loss
+1.94% worse than L3. The matched oracle confirmation is still running.
+The original [5.2.0 evaluation](docs/PHASE3_S83_RESULTS.md) remains archived.
+Version 5.4.0 changes trajectories; old 5.2.0 seeds/figures remain historical. Resume requires the exact original version and saved configuration.
+See [path-feature definitions and
 causality](docs/PATH_FEATURES.md). S8.4 delivers the [text-free movement comparison](docs/style_examples.png)
 and [usual days 1–3 PNGs, provenance and reproduction commands](docs/STYLE_EXAMPLES.md).
 The selected example paths use smoothed observed GPS; normal report PNGs retain raw
 observed cumulative paths. These illustrations do not resolve S8.3 acceptance failures.
-Current full suite: **233 tests passed**. The [S8.5 coverage audit](docs/PHASE3_TEST_COVERAGE.md)
+Current full suite: **236 tests passed**. The [S8.5 coverage audit](docs/PHASE3_TEST_COVERAGE.md)
 maps all six requested test requirements to existing checks. Phase-three implementation,
 evaluation, figures and test coverage are delivered; **S8.3 acceptance remains unmet**.
 

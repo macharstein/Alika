@@ -116,6 +116,4 @@ python -m pytest -x -q tests/test_features_path.py tests/test_resume.py tests/te
 python -m pytest -q
 ```
 
-S8.3 path correlations, L4 improvement and population guardrails have not been
-measured. S8.4 example figures have not been generated. Those remain separate
-next tasks.
+S8.3 has been [measured](PHASE3_S83_RESULTS.md), S8.4 [figures](STYLE_EXAMPLES.md) are delivered, and the later [5.4.0 calibration](PHASE3_CALIBRATION_RESULTS.md) retains these exact feature definitions. L4 now fits per-report numeric tertiles from training days only, with explicit missingness; feature extraction itself is unchanged.

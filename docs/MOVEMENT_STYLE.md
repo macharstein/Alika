@@ -1,8 +1,8 @@
 # Phase 3 S8.1: movement style
 
-Introduced in package **5.0.0**, manifest schema **lionsim-v5**; package 5.1.0 retains this movement distribution. The accepted phase-two commit
+Introduced in package **5.0.0**, manifest schema **lionsim-v5**. Packages 5.0–5.2 used the initial distribution; **5.4.0** applies the explicitly requested [bounded calibration](PHASE3_CALIBRATION_RESULTS.md). The accepted phase-two commit
 `3de4f5a` is tagged **v4.5.0**. S8.1 adds trip-dependent walking style and its
-tests. S8.2 is now documented in [path features](PATH_FEATURES.md); S8.3 L4/calibration and S8.4 figures remain unimplemented.
+tests. S8.2 is now documented in [path features](PATH_FEATURES.md); S8.3 evaluation and S8.4 figures are delivered; see their results for remaining acceptance failures.
 Existing phase-two settings are unchanged. New paths change event timings and
 sequences naturally; no event-state-machine rules or day-level latent sampling
 were retuned. The old phase-two statistics are not measurements of v5.
@@ -24,10 +24,12 @@ zero-distance trip. IDs start at 1 within each independent day.
 
 All new coefficients are in `movement_style` in [default_config.json](../default_config.json):
 
-- Goal attraction: `(1 - movement.heading_persistence) * (0.6 + 0.8 * urgency)`.
+- Goal attraction: `(1 - movement.heading_persistence) * (0.25 + 2.0 * urgency)`.
 - Turning-noise parameter: `randomness.walk_heading_sd_degrees * (clip(1 + 0.8 * boredom - 0.5 * urgency, 0.5, 2.0) + low_mood_increment)`, where the increment is 0.2 for mood <0.4 and zero otherwise.
-- Speed multiplier: `0.85 + 0.3 * urgency`. It scales the existing state-dependent patrol pace; the existing patrol speed range still bounds the result.
-- Detour probability: `0.7 * (boredom - 0.5)` when boredom >0.5, zero otherwise. Probability is bounded to 0–1 for custom coefficients. One or two intermediate waypoints are drawn uniformly when a detour is selected.
+- Speed multiplier: `0.85 + 0.4 * urgency`. It scales the existing state-dependent patrol pace; the existing patrol speed range still bounds the result.
+- Detour probability: `2.0 * (boredom - 0.5) * (1 - urgency)` when boredom >0.5, zero otherwise. Probability is bounded to 0–1 for custom coefficients. One or two intermediate waypoints are drawn uniformly when a detour is selected.
+
+At departure, the heading rotates toward the first waypoint (or goal) by `departure_alignment_weight * urgency` times the shortest angular difference; the default weight is 1. Position does not change, and continuing trips do not realign. The original 5.2.0 coefficients were attraction 0.6/0.8, speed 0.85/0.3, detour scale 0.7 without urgency suppression or departure alignment, and 0.4–1.0 km offsets. All phase-two settings remain unchanged.
 
 The old turn integration scales requested-heading noise by
 `1 - heading_persistence`. Trip attraction changes the correction toward the
@@ -39,7 +41,7 @@ change as energy and temperature evolve.
 ## Detours and continuation
 
 Intermediate anchors divide the departure-to-target chord evenly. Each waypoint
-is 0.4–1.0 km sideways from it. Placement prefers a single side, tries both sides
+is 0.6–1.0 km sideways from it. Placement prefers a single side, tries both sides
 with up to 32 bounded samples per waypoint, and prefers at least 0.05 km clearance
 from unrelated zones. Source and goal zones are exempt from that exclusion.
 Points outside the map are rejected, never clipped inward to hide a too-small
@@ -89,7 +91,7 @@ trip, its waypoint progress, cumulative distance and diagnostic rows.
 
 ## Tests and scope
 
-Full acceptance: **212 tests passed in 41.10s**. All previous defaults and the plotting, report and event modules were compared against the v4.5.0 tag and remain unchanged.
+Original S8.1 verification: **212 tests passed in 41.10s** (historical, not calibration acceptance). All previous defaults and the plotting, report and event modules were compared against the v4.5.0 tag and remain unchanged.
 
 [Tests](../tests/test_movement_style.py) cover urgency mapping, formulas, low mood,
 configuration validation, detour probability and map-edge placement, path-length
