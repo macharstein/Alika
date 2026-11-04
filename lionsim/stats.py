@@ -164,7 +164,7 @@ def summarize_for_stats(day: Any, reports: list[dict[str, Any]], config: Config)
     traffic_count = len(getattr(day, "traffic_times", []))
     road_times = [datetime.fromisoformat(e["t"]) for e in entries if e["token"] == "ENTER_ROAD"]
     from .config import minute_offset
-    tourist_start = minute_offset(config["tourists"]["start"], config["time"]["day_start"])
+    tourist_start = day.latents.get("tourist_start_minute", minute_offset(config["tourists"]["start"], config["time"]["day_start"]))
     tourist_end = minute_offset(config["tourists"]["end"], config["time"]["day_start"]) or 1440
     late_start = minute_offset("23:00", config["time"]["day_start"])
     late_entries = sum((datetime.fromisoformat(e["t"])-start).total_seconds()/60 > late_start for e in entries)

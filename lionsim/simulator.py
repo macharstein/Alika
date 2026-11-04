@@ -98,12 +98,36 @@ class _DaySimulation:
         self.water_goal_bonus = weather_effects.get('water_goal_bonus', 0.)
         self.water_visit_multiplier = weather_effects.get('water_visit_multiplier', 1.)
         self.latents['tourist_rate_per_hour'] *= weather_effects.get('traffic_multiplier', 1.)
+        types = self.c['day_types']
+        self.day_type = str(self.rng.choice(list(types['probabilities']), p=list(types['probabilities'].values())))
+        self.latents['day_type'] = self.day_type
+        self.period_jitter = {name: int(self.rng.integers(-self.randomness['period_jitter_minutes'], self.randomness['period_jitter_minutes'] + 1))
+                              for name in ('midday', 'hunt', 'tourist')}
+        self.latents['period_jitter_minutes'] = self.period_jitter.copy()
+        self.hunt_window_start = max(self.offset(self.behaviours['hunt_start']), self.offset(self.behaviours['hunt_start']) + self.period_jitter['hunt'])
+        self.tourist_start_minute = int(np.clip(self.offset(self.c['tourists']['start']) + self.period_jitter['tourist'], 0, self.offset(self.c['tourists']['end']) - 1))
+        self.latents["tourist_start_minute"] = self.tourist_start_minute
+        self.rival_patrol_goal = None
+        self.rival_patrol_remaining = 0
+        if self.day_type == 'prey_rich':
+            self.latents['prey_density'] *= float(self.rng.uniform(*types['prey_rich']['prey_multiplier_range']))
+            self.latents['hunt_threshold'] = max(0., self.latents['hunt_threshold'] - types['prey_rich']['hunt_threshold_reduction'])
+        elif self.day_type == 'rival':
+            self.water_goal_bonus += types['rival']['water_goal_bonus']
+            self.water_visit_multiplier *= types['rival']['water_visit_multiplier']
+            low, high = types['rival']['extra_patrol_entries_range']
+            self.rival_patrol_remaining = int(self.rng.integers(low, high + 1))
+        self.latents['rival_extra_patrol_plan'] = self.rival_patrol_remaining
         self.true_ambient_c, self.observed_ambient_c = ambient_measurements(
             [self.ambient(t) for t in range(self.day_minutes + 1)], self.latents['heat'],
             self.bar_config, self.c['weather'], self.rng)
         prey_low, prey_high = self.behaviour["prey_reference_range"]
         self.prey_signal = float(np.clip((self.latents["prey_density"] - prey_low) / (prey_high - prey_low), 0, 1))
         self.hunt_ready_minute = self.offset(self.behaviours["hunt_start"]) + int(round((1 - self.prey_signal) * self.behaviour["prey_hunt_delay_max_minutes"]))
+        self.hunt_ready_minute += self.period_jitter['hunt']
+        if self.day_type == 'prey_rich':
+            self.hunt_ready_minute -= types['prey_rich']['hunt_advance_minutes']
+        self.hunt_ready_minute = max(self.hunt_window_start, min(self.hunt_ready_minute, self.offset(self.behaviours['hunt_end']) - 1))
         wake_clip = [self.offset(t) for t in self.randomness["wake_time_clip"]]
         wake_minutes = float(np.clip(
             self.rng.normal(self.offset(self.randomness["wake_time_mean"]) - self.latents["start_hunger"] * self.behaviour["hunger_wake_shift_minutes"], self.randomness["wake_time_sd_minutes"]),
@@ -182,6 +206,8 @@ class _DaySimulation:
             *midday_clip,
         ))))
 
+        self.shade_departure += self.period_jitter['midday']
+        self.midday_wake += self.period_jitter['midday']
         if self.weather == 'rain':
             self.shade_departure += self.c['weather']['rain']['shade_delay_minutes']
             self.midday_wake = max(self.shade_departure + 1, self.midday_wake - self.c['weather']['rain']['wake_advance_minutes'])
@@ -594,7 +620,7 @@ class _DaySimulation:
         return max(1, int(round(float(self.rng.uniform(low, high)))))
 
     def _cars(self) -> np.ndarray:
-        start = self.offset(self.c["tourists"]["start"]) * 60
+        start = self.tourist_start_minute * 60
         end = self.offset(self.c["tourists"]["end"]) * 60
         if end <= start:
             end += 86400
@@ -610,12 +636,17 @@ class _DaySimulation:
         return (
             self.hunt_ready_minute <= self.minute < self.offset(self.behaviours["hunt_end"])
             and self.hungry_day and not self.caught
+            and (self.day_type != "prey_rich" or self.chase_count < self.c["day_types"]["prey_rich"]["max_chase_attempts"])
         )
 
     def _period(self) -> dict[str, Any]:
         clock = (self.start_clock + self.minute) % 1440
+        def shifted(clock):
+            shift = (self.period_jitter['midday'] if clock in (self.behaviours['midday_sleep_start'], self.behaviours['midday_wake_mean'])
+                     else self.period_jitter['hunt'] if clock == self.behaviours['hunt_start'] else 0)
+            return (_clock_minutes(clock) + shift) % 1440
         for period in self.goal_config["periods"]:
-            first, last = _clock_minutes(period["start"]), _clock_minutes(period["end"])
+            first, last = shifted(period["start"]), shifted(period["end"])
             if (first < last and first <= clock < last) or (first >= last and (clock >= first or clock < last)):
                 return period
         raise ValueError("Goal period table does not cover this clock time")
@@ -676,6 +707,13 @@ class _DaySimulation:
         if self.hungry_day and self.offset(self.behaviours["hunt_start"]) <= self.minute < self.hunt_ready_minute and self.raw_zone is not None:
             self.goal, self.mode, self.until = self.raw_zone, "resting", self.hunt_ready_minute
             return
+        if (self.rival_patrol_remaining and self.morning_scout_considered
+                and self.minute < self.offset(self.behaviour['evening_staging_time'])
+                and (self.minute < self.shade_departure or self.midday_slept)):
+            candidates = [z for z in self.c['day_types']['rival']['patrol_zones'] if z not in (self.raw_zone, self.tracker.considered_zone)]
+            self.rival_patrol_goal = str(self.rng.choice(candidates))
+            self._commit_goal(self.rival_patrol_goal)
+            return
         if self._try_evening_road():
             return
         if self.midday_slept and not self.afternoon_visit_chosen and self.minute < self.offset(self.behaviour["evening_staging_time"]):
@@ -705,7 +743,7 @@ class _DaySimulation:
         recent_cars = int(self.car_minute_counts[recent_start:self.minute].sum())
         scores: list[float] = []
         for name in candidates:
-            value = float(priors[name])
+            value = float(priors[name]) * self.randomness["period_prior_scale"]
             if name == "Waterhole":
                 value += self.water_goal_bonus
             if name == "Hunting ground":
@@ -750,6 +788,13 @@ class _DaySimulation:
     def arrive(self) -> None:
         self._finish_trip("arrived" if self.trip is not None and self.trip["goal"] == self.goal else "interrupted")
         self.arriving = False
+        rival_arrival = self.rival_patrol_goal == self.goal and self.rival_patrol_remaining > 0
+        if rival_arrival:
+            self.rival_patrol_remaining -= 1
+            self.rival_patrol_goal = None
+            low, high = self.c['day_types']['rival']['patrol_dwell_minutes_range']
+            self.mode, self.until = 'resting', self.minute + int(self.rng.integers(low, high + 1))
+            return
         if self._is_night() and not self.caught:
             self._initialize_night_patrol()
             self.night_patrol_remaining = max(0, self.night_patrol_remaining - 1)
@@ -764,11 +809,13 @@ class _DaySimulation:
                 return
         if self.goal == "Kopje" and not self.morning_scout_completed and self.minute < self.shade_departure:
             dwell = self.behaviour["scout_base_minutes"] + self.prey_signal * self.behaviour["scout_prey_extra_minutes"]
+            if self.day_type == 'prey_rich':
+                dwell *= self.c['day_types']['prey_rich']['scout_dwell_multiplier']
             dwell += float(self.rng.normal(0, self.behaviour["scout_jitter_sd_minutes"]))
             self.mode, self.until = "scouting", self.minute + max(1, int(round(dwell)))
             return
         if self.goal == "Plain" and self.morning_scout_completed and not self.midday_slept and self.minute < self.shade_departure:
-            self.mode, self.until = "resting", self.shade_departure
+            self.mode, self.until = "resting", self.minute + 1 if self.rival_patrol_remaining else self.shade_departure
             return
         if self.caught and self.goal == "Feeding spot":
             self.mode, self.until = "eating", self.minute + self.behaviours["eat_max_minutes"]
@@ -795,6 +842,8 @@ class _DaySimulation:
                 rate = self.behaviours["prey_encounters_per_hour"] * self.latents["prey_density"] / 60
                 wait = self.rng.exponential(1 / rate) if rate > 0 else self.behaviour["first_chase_wait_max_minutes"]
                 wait = np.clip(wait, self.behaviour["first_chase_wait_min_minutes"], self.behaviour["first_chase_wait_max_minutes"])
+                if self.day_type == 'prey_rich':
+                    wait *= self.c['day_types']['prey_rich']['first_chase_wait_multiplier']
                 self.first_chase_due = min(self.minute + int(round(wait)), self.offset(self.behaviours["hunt_end"]) - 1)
         elif self.goal == "Plain" and self.hungry_day and self.evening_staged and self.minute < self.hunt_ready_minute:
             self.mode, self.until = "resting", self.hunt_ready_minute
@@ -1011,6 +1060,8 @@ class _DaySimulation:
         if self.mode == "road_watch":
             self.bars[3] -= self.road_config["boredom_relief_per_watch_hour"] / 60
         self.bars[4] += (c["mood_equilibrium"] - self.bars[4]) * c["mood_relaxation_per_hour"] / 60
+        if self.day_type == 'rival':
+            self.bars[4] += self.c['day_types']['rival']['mood_drift_per_hour'] / 60
         self.bars += self.rng.normal(0, self.randomness["bar_noise_sd"], 5)
         np.clip(self.bars, 0, 1, out=self.bars)
 
@@ -1136,6 +1187,9 @@ class _DaySimulation:
         hidden.insert(0, "t_iso", timestamps[:-1])
         hidden["goal"], hidden["behaviour"], hidden["zone"] = goals, behaviours, zones
         hidden["weather"] = self.weather
+        hidden["day_type"] = self.day_type
+        for name, value in self.period_jitter.items():
+            hidden[f"{name}_jitter_minutes"] = value
         hidden["ambient_temp_c_true"] = self.true_ambient_c[:-1]
         hidden["heat_true"] = self.latents["heat"]
         hidden["movement_intent"] = intents

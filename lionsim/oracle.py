@@ -40,7 +40,7 @@ def branch_snapshot(snapshot: _DaySimulation, sequence: np.random.SeedSequence) 
     branch.rng = np.random.default_rng(sequence)
     boundary = snapshot.next_minute * 60
     past = branch.car_seconds[branch.car_seconds <= boundary]
-    start = max(boundary + 1, branch.offset(branch.c['tourists']['start']) * 60)
+    start = max(boundary + 1, branch.tourist_start_minute * 60)
     end = branch.offset(branch.c['tourists']['end']) * 60 or branch.day_minutes * 60
     # The stored traffic process has integer-second timestamps. Independent
     # Poisson increments on the remaining seconds condition on the seen prefix.

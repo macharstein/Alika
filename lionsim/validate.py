@@ -172,6 +172,11 @@ def validate_day(day: DayResult, config: Config) -> dict[str, Any]:
     if unresolved_chase:
         errors.append("A CHASE_START has no CATCH or FAIL outcome before the day ends.")
 
+    tourist_start = day.latents.get('tourist_start_minute', (_minutes(config['tourists']['start']) - _minutes(config['time']['day_start'])) % minutes)
+    tourist_end = (_minutes(config['tourists']['end']) - _minutes(config['time']['day_start'])) % minutes or minutes
+    for value in day.latents.get('period_jitter_minutes', {}).values():
+        if not -config['randomness']['period_jitter_minutes'] <= value <= config['randomness']['period_jitter_minutes']:
+            errors.append('Daily period jitter exceeds configured bounds.')
     previous_traffic: datetime | None = None
     for index, value in enumerate(getattr(day, "traffic_times", []), 1):
         try:
@@ -181,7 +186,7 @@ def validate_day(day: DayResult, config: Config) -> dict[str, Any]:
         except (TypeError, ValueError) as error:
             errors.append(f"traffic {index}: invalid timestamp ({error}).")
             continue
-        if not start <= timestamp < end or not _clock_in_window(timestamp, config["tourists"]["start"], config["tourists"]["end"]):
+        if not start <= timestamp < end or not tourist_start <= (timestamp - start).total_seconds() / 60 < tourist_end:
             errors.append(f"traffic {index}: timestamp is outside the tourist window or simulated day.")
         if previous_traffic is not None and timestamp < previous_traffic:
             errors.append(f"traffic {index}: traffic timestamps are not sorted.")

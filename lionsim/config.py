@@ -75,7 +75,7 @@ def _migrate_legacy(data: dict[str, Any]) -> dict[str, Any]:
 def _defaults() -> dict[str, Any]:
     """Keep the shipped, commented JSON as the single source of default values."""
     with DEFAULT_CONFIG_PATH.open(encoding="utf-8") as handle:
-        return json.load(handle)
+        return _migrate_legacy(json.load(handle))
 
 
 def clock_minutes(value: str) -> int:
@@ -366,6 +366,25 @@ def validate_config(data: dict[str, Any]) -> None:
         raise ValueError("behaviours.hunt_start must precede hunt_end in the simulated day")
     for name in ("smoothing_minutes", "window_minutes", "departure_confirmation_minutes"):
         bound(f"features_path.{name}", 1, 1440)
+    day_types = data['day_types']
+    probabilities = day_types['probabilities']
+    if set(probabilities) != {'normal', 'prey_rich', 'rival'} or any(v < 0 for v in probabilities.values()) or not math.isclose(sum(probabilities.values()), 1):
+        raise ValueError('day_types.probabilities must be nonnegative and sum to 1')
+    interval('day_types.prey_rich.prey_multiplier_range', positive=True)
+    bound('day_types.prey_rich.hunt_threshold_reduction', 0, 1)
+    bound('day_types.prey_rich.hunt_advance_minutes', 0, 120)
+    bound('day_types.prey_rich.first_chase_wait_multiplier', positive=True)
+    bound('day_types.prey_rich.scout_dwell_multiplier', positive=True)
+    bound('day_types.prey_rich.max_chase_attempts', 1, 4)
+    interval('day_types.rival.extra_patrol_entries_range', 1, 3, integer=True)
+    interval('day_types.rival.patrol_dwell_minutes_range', 1, 60, integer=True)
+    if set(day_types['rival']['patrol_zones']) != {'Kopje', 'Plain', 'Den'}:
+        raise ValueError('day_types.rival.patrol_zones must contain Kopje, Plain, Den')
+    bound('day_types.rival.water_visit_multiplier', 0, 1)
+    bound('day_types.rival.water_goal_bonus', high=0)
+    bound('day_types.rival.mood_drift_per_hour', -1, 0)
+    bound('randomness.period_prior_scale', positive=True)
+    bound('randomness.period_jitter_minutes', 0, 20)
     weather = data['weather']
     probabilities = weather['probabilities']
     if set(probabilities) != {'clear', 'hot', 'overcast', 'rain'} or any(v < 0 for v in probabilities.values()) or not math.isclose(sum(probabilities.values()), 1):
