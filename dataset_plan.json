@@ -1,0 +1,55 @@
+{
+  "plan_version": 1,
+  "simulator_version": "6.0.0",
+  "schema_version": "lionsim-v6",
+  "frozen_tag": "sim-v6.0.0-frozen",
+  "frozen_commit": "25d9d272ee6e3af86017b3cb5f8fc232310f4a7a",
+  "default_config_sha256": "6c9132737f15a2e2fa5d5db7fb10d5a7f57612b8bf7cdfc2a5c83f8a30a955e6",
+  "effective_config_sha256": "f6407cad7ba7b404e926f408806966f9593a3c719fa47f7ae02845780b3013a0",
+  "config_hash_definition": "SHA256 of UTF-8 JSON, sorted keys, compact separators; effective config loaded by the frozen simulator, with no overrides.",
+  "main": {
+    "seed": 7001,
+    "days": null,
+    "split_fractions": {
+      "train": 0.7,
+      "validation": 0.15,
+      "test": 0.15
+    },
+    "split_rule": "Contiguous day indices: floor(70*N/100) train, floor(15*N/100) validation, remainder test. Resolve and write before simulation."
+  },
+  "robustness": {
+    "seed": 8002,
+    "days": 300,
+    "split": "robustness_test",
+    "independent_of_main": true
+  },
+  "smoke": {
+    "seed": 9999,
+    "days": 20,
+    "smoke_only": true,
+    "production_forbidden_seed_exception": true
+  },
+  "forbidden_seeds": [
+    42,
+    137,
+    271,
+    2026,
+    3003,
+    9999
+  ],
+  "chunk_size": 200,
+  "workers": 4,
+  "start_date": "2026-01-01",
+  "embed_cumulative_path_in_reports": false,
+  "images": false,
+  "export_schema": "export_columns.json",
+  "generation_guards": [
+    "clean tooling tree",
+    "clean simulator tree including untracked files",
+    "HEAD equals pinned tag commit",
+    "raw and effective configuration hashes match",
+    "no cumulative JSON paths"
+  ],
+  "full_generation_authorized": false,
+  "note": "Only the20-day smoke test is authorized by this task. Main N must be explicitly supplied to resolve an immutable run plan before any generation."
+}

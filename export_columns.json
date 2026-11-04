@@ -1,0 +1,91 @@
+{
+  "schema_version": "lionsim-dataset-v1",
+  "identifiers": [
+    "day",
+    "report_index",
+    "report_time_bucket"
+  ],
+  "labels": [
+    "next_zone_target"
+  ],
+  "feature_groups": {
+    "context": [
+      "current_zone",
+      "last_event",
+      "shade_entry_hour_bucket",
+      "drinks_so_far",
+      "chase_attempts_so_far",
+      "catch_so_far",
+      "weather",
+      "ambient_temp_c"
+    ],
+    "path": [
+      "last_trip_straightness",
+      "last_trip_mean_speed_kmh",
+      "last_trip_turn_circular_variance",
+      "last_trip_max_perpendicular_distance_km",
+      "last_trip_area_covered_km2",
+      "last_3h_straightness",
+      "last_3h_mean_speed_kmh",
+      "last_3h_turn_circular_variance",
+      "last_3h_max_perpendicular_distance_km",
+      "last_3h_area_covered_km2"
+    ],
+    "heading": [
+      "heading_dx_km",
+      "heading_dy_km",
+      "heading_displacement_km",
+      "speed_recent",
+      "moving",
+      "in_zone",
+      "implied_goal",
+      "distance_to_implied_goal_km",
+      "distance_to_implied_goal_bin",
+      "heading_window_complete"
+    ]
+  },
+  "forbidden_columns": [
+    "day_type",
+    "heat",
+    "heat_true",
+    "ambient_temp_c_true",
+    "true_goal",
+    "x_true_km",
+    "y_true_km",
+    "ground_truth_latents"
+  ],
+  "columns": [
+    "day",
+    "report_index",
+    "report_time_bucket",
+    "next_zone_target",
+    "current_zone",
+    "last_event",
+    "shade_entry_hour_bucket",
+    "drinks_so_far",
+    "chase_attempts_so_far",
+    "catch_so_far",
+    "weather",
+    "ambient_temp_c",
+    "last_trip_straightness",
+    "last_trip_mean_speed_kmh",
+    "last_trip_turn_circular_variance",
+    "last_trip_max_perpendicular_distance_km",
+    "last_trip_area_covered_km2",
+    "last_3h_straightness",
+    "last_3h_mean_speed_kmh",
+    "last_3h_turn_circular_variance",
+    "last_3h_max_perpendicular_distance_km",
+    "last_3h_area_covered_km2",
+    "heading_dx_km",
+    "heading_dy_km",
+    "heading_displacement_km",
+    "speed_recent",
+    "moving",
+    "in_zone",
+    "implied_goal",
+    "distance_to_implied_goal_km",
+    "distance_to_implied_goal_bin",
+    "heading_window_complete"
+  ]
+}

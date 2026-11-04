@@ -1,5 +1,9 @@
 # Lion GPS collar simulator
 
+Frozen release: **sim-v6.0.0-frozen**. See [known limitations](docs/KNOWN_LIMITATIONS.md)
+and [guarded generation/export/verification](docs/DATASET_RELEASE.md). The release
+plan leaves main N unset; only the20-day smoke run is authorized here.
+
 Current development version: **6.0.0 / lionsim-v6** (UPDATE_SPEC_6). Weather, hidden day types, schedule jitter and
 observable ambient temperature are added; older seeds produce different data.
 Old v5 runs cannot resume into v6. Earlier measurements below are historical.
