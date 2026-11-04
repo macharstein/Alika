@@ -629,3 +629,11 @@ done: phase 4 A2–A4 analysis — 10 targeted tests passed. L3 matches existing
 verify: /opt/anaconda3/bin/python3.12 -m pytest -x -q tests/test_l5_counts.py tests/test_l5_analysis.py
 next: strengthen boundary/frozen-simulator tests, document reproducible commands and assumptions, run full suite before fresh-seed experiment.
 assumptions: hidden goal is read at the exact report minute after its transitions and before that minute's movement; analysis caches are explicitly LEAKY and remain outside exports. Five folds required. known problems: no production experiment has run or been inspected yet; no tuning.
+in progress: phase 4 A6 pre-experiment audit — add heading angular/distance/tie boundary tests and frozen-simulation equivalence, document analysis-only usage/units/assumptions, and run relevant tests then full regression suite. Freeze all choices before inspecting fresh-seed results.
+verify: /opt/anaconda3/bin/python3.12 -m pytest -x -q tests/test_features_heading.py tests/test_l5_counts.py tests/test_l5_analysis.py tests/test_config.py
+verify: /opt/anaconda3/bin/python3.12 -m pytest -q
+done: phase 4 A6 pre-experiment verification — 64 targeted tests passed; full suite 255 passed in 64.45s. Audited git diff: simulator, events, reports, path features, movement style, existing stats and package/schema versions unchanged. All existing default_config.json values exactly match a7ff47e. New settings do not change fixed-seed GPS, hidden state, events or daily statistics. Documentation records commands, units, nulls, tie rules, leaky isolation and decision boundaries.
+verify: /opt/anaconda3/bin/python3.12 -m pytest -x -q tests/test_features_heading.py tests/test_l5_counts.py tests/test_l5_analysis.py tests/test_config.py
+verify: /opt/anaconda3/bin/python3.12 -m pytest -q
+next: run 500 new days at seed 2026, five 100-day chunks with --resume, workers=4, stats-only --keep-files --no-images; then evaluate once at declared defaults.
+assumptions: scanned every outputs/**/run_manifest.json before running: neither 2026 nor 2027 has been used. Freeze W20, displacement0.15 km, angle30 degrees, distance1.5 km, k20 and shuffle seed2026; sensitivity10/20/30 only. known problems: none in phase-four implementation; historical phase-three calibration warnings remain outside this frozen analysis scope.

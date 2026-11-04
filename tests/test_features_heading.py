@@ -82,3 +82,49 @@ def test_export_resume_repair_and_legacy(tmp_path):
     assert (directory / 'stats_report.json').read_bytes() == before
     with (directory / 'targets.csv').open() as handle:
         assert len(csv.DictReader(handle).fieldnames) == 20
+
+
+def test_angle_ties_nearest_bins_ambiguity_and_threshold(monkeypatch):
+    import lionsim.features_heading as module
+    class ToyZones:
+        names = ['Current', 'Near', 'Far']
+        def __init__(self, config):
+            pass
+        def lookup(self, x, y):
+            return 'Current'
+        def center(self, name):
+            return {'Current': [1., 0.], 'Near': [2.9, 0.], 'Far': [4.4, 0.]}[name]
+    monkeypatch.setattr(module, 'ZoneMap', ToyZones)
+    config = load_config()
+    gps = track(np.column_stack((np.arange(31) * .05, np.zeros(31))))
+    result = heading_at_report(gps, gps.t_iso.iloc[-1], config)
+    # Five-minute average at t=30 is x=1.4; current zone excluded; tie picks nearest.
+    assert result['implied_goal'] == 'Near'
+    assert result['distance_to_implied_goal_km'] == pytest.approx(1.5)
+    assert result['distance_to_implied_goal_bin'] == '<=1.5 km'
+    config.data['heading_features']['min_displacement_km'] = result['heading_displacement_km']
+    assert heading_at_report(gps, gps.t_iso.iloc[-1], config)['moving']
+    config.data['heading_features']['min_displacement_km'] += .001
+    assert heading_at_report(gps, gps.t_iso.iloc[-1], config)['implied_goal'] == 'none'
+    config.data['heading_features']['min_displacement_km'] = .15
+    gps['y_km'] = gps['x_km']
+    result = heading_at_report(gps, gps.t_iso.iloc[-1], config)
+    assert result['implied_goal'] == 'ambiguous' and result['moving']
+    assert result['distance_to_implied_goal_km'] is None
+
+
+def test_frozen_simulation_and_statistics_identical_with_analysis_settings():
+    from lionsim.config import Config
+    from lionsim.simulator import simulate_day
+    from lionsim.reports import build_reports
+    from lionsim.stats import summarize_for_stats
+    config = load_config()
+    old = config.to_dict()
+    del old['heading_features']
+    del old['l5_analysis']
+    legacy = Config(old)
+    original, current = simulate_day(legacy, seed=91), simulate_day(config, seed=91)
+    pd.testing.assert_frame_equal(original.gps, current.gps)
+    pd.testing.assert_frame_equal(original.hidden_state, current.hidden_state)
+    assert original.events == current.events
+    assert summarize_for_stats(original, build_reports(original, legacy), legacy) == summarize_for_stats(current, build_reports(current, config), config)

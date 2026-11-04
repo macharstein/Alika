@@ -6,6 +6,10 @@ every three hours. This is a configurable stochastic simulator for inspecting sy
 data, not an empirically calibrated model of lion behaviour. There is no machine
 learning, training code, or external service dependency.
 
+Phase 4 adds the [L5 observed-heading experiment](docs/L5_ANALYSIS.md): ten appended
+causal heading columns, day-fold counting evaluation, shuffled and explicitly LEAKY
+true-goal controls. Simulator 5.4.0, existing parameters and statistics are frozen.
+
 Current package: **5.4.0**, manifest schema **lionsim-v5**. Phase 3 currently
 implements **S8.1–S8.5**: trip-start urgency, boredom and mood set walking style
 and optional detours; ten causal observed-GPS features are appended to targets.csv. The accepted
