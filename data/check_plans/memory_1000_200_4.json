@@ -1,0 +1,46 @@
+{
+  "plan_version": 1,
+  "package_version": "6.0.0",
+  "schema": "lionsim-v6",
+  "sqlite_schema_version": 1,
+  "frozen_tag": "sim-v6.0.0-frozen",
+  "frozen_commit": "25d9d272ee6e3af86017b3cb5f8fc232310f4a7a",
+  "config_hash": "f6407cad7ba7b404e926f408806966f9593a3c719fa47f7ae02845780b3013a0",
+  "default_config_sha256": "6c9132737f15a2e2fa5d5db7fb10d5a7f57612b8bf7cdfc2a5c83f8a30a955e6",
+  "image_size": 1000,
+  "chunk_size": 200,
+  "forbidden_seeds": [
+    42,
+    137,
+    271,
+    2026,
+    3003,
+    9999
+  ],
+  "calendar_rule": "Exact fixed day counts, consecutive Gregorian dates; no extra days added for leap years. Day windows are [05:00, next 05:00), with the eighth image at the closing boundary.",
+  "frozen_source_rule": "Pinned tag identity and unchanged pre-existing simulator source files, except plotting.py (in-memory output adapter only); new dataset modules and documentation may follow the frozen tag.",
+  "splits": {
+    "train": {
+      "days": 200,
+      "seed": 9201,
+      "start_date": "2026-01-01",
+      "end_date": "2026-07-19",
+      "database": "../../outputs/sqlite_memory/1000_200_4/train/lion_train.db"
+    },
+    "val": {
+      "days": 1,
+      "seed": 9202,
+      "start_date": "2026-07-20",
+      "end_date": "2026-07-20",
+      "database": "../../outputs/sqlite_memory/1000_200_4/val/lion_val.db"
+    },
+    "test": {
+      "days": 1,
+      "seed": 9203,
+      "start_date": "2026-07-21",
+      "end_date": "2026-07-21",
+      "database": "../../outputs/sqlite_memory/1000_200_4/test/lion_test.db"
+    }
+  },
+  "purpose": "Memory measurement only; run --only train. Never release these diagnostics."
+}

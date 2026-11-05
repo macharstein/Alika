@@ -5,3 +5,9 @@ __pycache__/
 .mplconfig/
 outputs/
 .DS_Store
+data/**/*.db
+data/**/*.db-wal
+data/**/*.db-shm
+data/**/*.meta.json
+data/**/*.metrics.json
+data/**/png/
