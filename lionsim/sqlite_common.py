@@ -113,6 +113,8 @@ def guard_source(plan, root=ROOT):
             raise ValueError('frozen simulator source mismatch: '+filename)
     if hashlib.sha256((Path(root)/'default_config.json').read_bytes()).hexdigest() != plan['default_config_sha256']:
         raise ValueError('default config hash mismatch')
+    if hashlib.sha256((Path(root)/'lionsim/plotting.py').read_bytes()).hexdigest() != plan['renderer_sha256']:
+        raise ValueError('renderer hash mismatch')
     from .config import load_config
     config = load_config()
     if digest(config.to_dict()) != plan['config_hash']:

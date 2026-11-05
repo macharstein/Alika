@@ -42,5 +42,6 @@
       "database": "../../outputs/sqlite_memory/1000_50_4/test/lion_test.db"
     }
   },
-  "purpose": "Memory measurement only; run --only train. Never release these diagnostics."
+  "purpose": "Memory measurement only; run --only train. Never release these diagnostics.",
+  "renderer_sha256": "50b74504ef8b8b4372968e875ecd8ad8503669d0b8719135706f2b8fd9d222bf"
 }

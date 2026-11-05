@@ -41,5 +41,6 @@
       "end_date": "2035-12-29",
       "database": "test/lion_test.db"
     }
-  }
+  },
+  "renderer_sha256": "50b74504ef8b8b4372968e875ecd8ad8503669d0b8719135706f2b8fd9d222bf"
 }

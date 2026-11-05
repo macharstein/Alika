@@ -124,3 +124,49 @@ def test_atomic_rollback(plan,monkeypatch):
     with sqlite3.connect(db_path(path,p['splits']['train'])) as con:
         assert con.execute('SELECT count(*) FROM images').fetchone()[0]==0
         assert con.execute('SELECT count(*) FROM logs').fetchone()[0]==0
+
+
+def test_tag_source_and_hash_guards(tmp_path):
+    from lionsim.sqlite_common import git
+    root=tmp_path/'repo'; root.mkdir()
+    (root/'lionsim').mkdir()
+    (root/'lionsim/simulator.py').write_text('# frozen\n')
+    (root/'lionsim/plotting.py').write_bytes(Path('lionsim/plotting.py').read_bytes())
+    (root/'default_config.json').write_bytes(Path('default_config.json').read_bytes())
+    def run(*args):
+        subprocess.run(['git','-C',str(root),*args],check=True,capture_output=True)
+    run('init'); run('config','user.email','test@example.invalid'); run('config','user.name','Test')
+    run('add','.'); run('commit','-m','frozen')
+    p=read_plan('data/check_plans/smoke.json')
+    p['frozen_commit']=git(root,'rev-parse','HEAD')
+    run('tag','sim-v6.0.0-frozen')
+    assert guard_source(p,root)==load_config().to_dict()
+    wrong=dict(p,config_hash='bad')
+    with pytest.raises(ValueError,match='config hash'):
+        guard_source(wrong,root)
+    (root/'lionsim/simulator.py').write_text('# altered\n')
+    run('add','.'); run('commit','-m','changed')
+    with pytest.raises(ValueError,match='source mismatch'):
+        guard_source(p,root)
+    run('tag','-f','sim-v6.0.0-frozen')
+    with pytest.raises(ValueError,match='tag mismatch'):
+        guard_source(p,root)
+
+
+def test_worker_queue_is_bounded(monkeypatch):
+    state={'outstanding':0,'peak':0}
+    class Future:
+        def result(self):
+            state['outstanding']-=1
+            return 'one day'
+    class Pool:
+        def __init__(self,**kwargs): pass
+        def __enter__(self): return self
+        def __exit__(self,*args): pass
+        def submit(self,*args):
+            state['outstanding']+=1
+            state['peak']=max(state['peak'],state['outstanding'])
+            return Future()
+    monkeypatch.setattr(build,'ProcessPoolExecutor',Pool)
+    assert sum(1 for result in build.stream_days(iter(range(200)),4))==200
+    assert state=={'outstanding':0,'peak':8}

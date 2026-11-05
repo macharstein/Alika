@@ -733,3 +733,76 @@ No simulator code, configuration settings or model parameters changed in S7.
 The S6 calibration and oracle warnings remain unresolved; passing regression
 tests establishes the implemented contracts, not that every statistical target
 has been met.
+
+
+## Streaming SQLite datasets (v6.0.0 frozen simulator)
+
+`data/split_plan.json` supersedes the earlier CSV release proposal for this task.
+It fixes train/validation/test at 1,825/1,095/730 days and independent seeds
+7001/7002/7003. No production split has been generated. The committed diagnostic
+plans use separate allowed seeds: smoke9101–9103, memory9201–9203. Calibration
+seeds42,137,271,2026,3003,9999 are forbidden, including for these SQLite diagnostics.
+
+Assumptions: “365-day years” means the exact requested day counts; dates advance
+by consecutive Gregorian days with no extra leap-year allocation. Each day is
+05:00 to next05:00. Overnight events and reports retain their actual simulated
+calendar dates; the eighth report is the closing05:00 boundary. The split ranges
+refer to simulation-day start dates. `day_index` resets to1 per database.
+
+Only stdlib `sqlite3` provides database storage. The existing simulator and
+Matplotlib renderer keep their existing dependencies. Each worker simulates and
+renders one day in memory; only its public event rows and eight PNG byte strings
+return to the main writer. At most2×workers days are submitted. There are no PNG
+files/contact sheets unless `--also-png` is supplied. PNGs contain only coloured
+zones, the white observed GPS prefix and its endpoint, on black, without text.
+No hidden state, true coordinates/goals or day types enter either table.
+
+The original renderer now accepts `directory=None` to return PNG bytes; a test
+checks byte equality with its existing disk output. Its SHA256 is pinned in the
+plan. Guards require a clean Git tree (including untracked files), the original
+frozen tag identity, unchanged original simulator files (except that pinned
+render adapter), and matching raw/effective config hashes. HEAD can contain the
+new export code after the frozen tag. Source behaviour, defaults, thresholds and
+statistics are unchanged. Sidecars record provenance and creation time, not the
+full config or hidden fields. An explicit `--image-size` override is recorded in
+the sidecar and must match on resume; diagnostics use committed size-specific plans.
+
+Example commands, **for later explicitly authorized production generation**:
+
+```sh
+python -m lionsim.build_dataset --plan data/split_plan.json --workers 4
+# At most200 new days in one split per invocation; repeat after each checkpoint:
+python -m lionsim.build_dataset --plan data/split_plan.json --workers 4 --resume
+python -m lionsim.verify_db --plan data/split_plan.json
+```
+
+The builder finishes train before val before test. `--only train|val|test` selects
+one split. Each day is one durable WAL transaction containing all logs and images;
+resume skips complete days and rejects partial days or incompatible metadata.
+Completed test files are checkpointed, made standalone and read-only. Open test
+outcomes only once at the end of model development; the verifier performs integrity
+checks without reporting predictive outcomes. SQLite sidecars are atomic JSON
+writes. Temporary WAL/SHM files are bounded by checkpointing and removed on final
+completion. Optional PNGs are atomic and regenerated from committed images on resume.
+
+`lionsim.db_reader.iter_logs(db, (first,last), batch_size=256)` and
+`iter_days(db, batch_size=128)` stream bounded batches. `get_image(db,id)` returns
+one PNG. `ImageDataset(db)` opens its own read-only connection lazily per process;
+`len(dataset)` uses SQL count and `dataset[i]` loads one image row. Use `close()` or
+a context manager after reading. No images-table list is constructed.
+
+Diagnostic commands (plans committed before generation):
+
+```sh
+python -m lionsim.build_dataset --plan data/check_plans/smoke.json --workers 4
+python -m lionsim.verify_db --plan data/check_plans/smoke.json
+python tools/benchmark_sqlite.py
+```
+
+The smoke writes20 days (10train/6val/4test) under `outputs/smoke_build`.
+The benchmark runs only the50/200-day memory plans at1000/500 pixels with1/4 workers;
+metrics use `resource.getrusage(RUSAGE_SELF)` independently in the main process and
+every worker, normalized to MiB. Timing includes process startup and database writes.
+Production data files are Git-ignored; split plans remain committed. Historical
+untracked user files should be preserved; a clean detached worktree can run these
+commands with its ignored `outputs` symlinked to the main checkout's `outputs`.
