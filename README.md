@@ -3,6 +3,8 @@
 Frozen release: **sim-v6.0.0-frozen**. See [known limitations](docs/KNOWN_LIMITATIONS.md)
 and [guarded generation/export/verification](docs/DATASET_RELEASE.md). The release
 plan leaves main N unset; only the20-day smoke run is authorized here.
+The [completed smoke test](docs/FROZEN_V6_SMOKE.md) verified20 days/140 rows
+through generation, whitelist export and independent verification.
 
 Current development version: **6.0.0 / lionsim-v6** (UPDATE_SPEC_6). Weather, hidden day types, schedule jitter and
 observable ambient temperature are added; older seeds produce different data.
@@ -53,7 +55,7 @@ causality](docs/PATH_FEATURES.md). S8.4 delivers the [text-free movement compari
 and [usual days 1–3 PNGs, provenance and reproduction commands](docs/STYLE_EXAMPLES.md).
 The selected example paths use smoothed observed GPS; normal report PNGs retain raw
 observed cumulative paths. These illustrations do not resolve S8.3 acceptance failures.
-Current full suite: **270 tests passed**, including phase-four causality, control isolation,
+Current full suite: **283 tests passed**, including phase-four causality, control isolation,
 counting-model, frozen-simulation and resume checks. The [S8.5 coverage audit](docs/PHASE3_TEST_COVERAGE.md)
 maps all six requested test requirements to existing checks. Phase-three implementation,
 evaluation, figures and test coverage are delivered; **S8.3 acceptance remains unmet**.

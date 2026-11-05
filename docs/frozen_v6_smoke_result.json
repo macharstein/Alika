@@ -1,0 +1,43 @@
+{
+  "status": "PASS",
+  "seed": 9999,
+  "smoke_only": true,
+  "days": 20,
+  "rows": 140,
+  "splits": {
+    "train": {
+      "days": 14,
+      "rows": 98
+    },
+    "validation": {
+      "days": 3,
+      "rows": 21
+    },
+    "test": {
+      "days": 3,
+      "rows": 21
+    }
+  },
+  "columns": 32,
+  "weather_context": true,
+  "hidden_columns_exported": false,
+  "day_disjoint": true,
+  "source_rows_equal": true,
+  "checksums_valid": true,
+  "frozen_tag": "sim-v6.0.0-frozen",
+  "frozen_commit": "25d9d272ee6e3af86017b3cb5f8fc232310f4a7a",
+  "tooling_commit": "ad7a60e97da32df835937ac392ee184280d07a5f",
+  "output_directory": "outputs/frozen_v6_smoke_9999",
+  "raw_run": "outputs/frozen_v6_smoke_9999/raw/run_20261104_214018",
+  "main_days": null,
+  "full_generation_performed": false,
+  "artifact_sha256": {
+    "resolved_plan.json": "1f72a0c74ae9440e43b499951169612f5e0ec6f6dd32cdb38397887f2cb9890f",
+    "verification_report.json": "2c196146a025e6ba68c187e1cba6b465c6bdad4cc0bb8383235285c4b4e18671",
+    "export/export_manifest.json": "dd144dcb1aedf642f59fb21cbba1674e3bdc28831b4c909d8252b3b8856387cc"
+  },
+  "no_simulator_or_threshold_changes": true,
+  "all_day_event_invariants_valid": true,
+  "cumulative_paths_embedded": false,
+  "frozen_and_tooling_trees_clean": true
+}
