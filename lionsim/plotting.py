@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import math
+from io import BytesIO
 import os
 import tempfile
 from datetime import datetime
@@ -33,15 +34,17 @@ def contact_sheet_filename(date: str, day_index: int) -> str:
 
 
 def render_reports(day: Any, reports: list[dict[str, Any]], config: Config,
-                   directory: str | Path) -> list[Path]:
+                   directory: str | Path | None) -> list[Path] | list[bytes]:
     """Draw filled zones, the observed GPS prefix, and a small endpoint dot.
 
     Every report uses the same map extent and scale. Events, hidden state,
     true coordinates, and future fixes never contribute to its image. Dates
     and report times appear only in filenames; the PNGs contain no text.
     """
-    directory = Path(directory)
-    directory.mkdir(parents=True, exist_ok=True)
+    # None selects in-memory reports only (no files or contact sheet).
+    if directory is not None:
+        directory = Path(directory)
+        directory.mkdir(parents=True, exist_ok=True)
     if not reports:
         return []
     opts, geometry = config["images"], config["map"]
@@ -74,16 +77,25 @@ def render_reports(day: Any, reports: list[dict[str, Any]], config: Config,
     x = day.gps["x_km"].to_numpy()
     y = day.gps["y_km"].to_numpy()
     paths: list[Path] = []
+    frames: list[bytes] = []
     for report in reports:
         last = report["path_up_to_index"]
         path_line.set_data(x[:last + 1], y[:last + 1])
         current.set_offsets([[x[last], y[last]]])
+        if directory is None:
+            with BytesIO() as buffer:
+                figure.savefig(buffer, format="png", dpi=opts["dpi"],
+                               facecolor=opts["background_color"], transparent=False)
+                frames.append(buffer.getvalue())
+            continue
         destination = directory / report_filename(report["report_time"], day.day_index,
                                                    report["report_index"])
         with atomic_output(destination) as temporary:
             figure.savefig(temporary, dpi=opts["dpi"], facecolor=opts["background_color"], transparent=False)
         paths.append(destination)
     figure.clear()
+    if directory is None:
+        return frames
 
     columns = opts["contact_sheet_columns"]
     rows = max(opts["contact_sheet_rows"], math.ceil(len(paths) / columns))
