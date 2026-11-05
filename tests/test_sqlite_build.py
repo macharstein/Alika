@@ -170,3 +170,43 @@ def test_worker_queue_is_bounded(monkeypatch):
     monkeypatch.setattr(build,'ProcessPoolExecutor',Pool)
     assert sum(1 for result in build.stream_days(iter(range(200)),4))==200
     assert state=={'outstanding':0,'peak':8}
+
+
+def test_real_spawned_resume_identical(plan):
+    path,p=plan
+    p['image_size']=500
+    config=load_config().to_dict()
+    build.build_split(path,p,'train',config,1)
+    original=db_path(path,p['splits']['train'])
+    resumed=copy.deepcopy(p)
+    resumed['splits']['train']['database']='real_resume/lion.db'
+    build.build_split(path,resumed,'train',config,4,chunk_size=1)
+    result=build.build_split(path,resumed,'train',config,4,resume=True)
+    assert result['new_days']==1 and result['complete']
+    database=db_path(path,resumed['splits']['train'])
+    # SQLite change counters at header offsets24/92 can reflect checkpoint count.
+    # Dataset identity means the exact schema, stable IDs, rows and PNG bytes.
+    from contextlib import closing
+    from itertools import zip_longest
+    with closing(sqlite3.connect(original)) as left, closing(sqlite3.connect(database)) as right:
+        for table in ('sqlite_master','images','logs'):
+            order='name' if table=='sqlite_master' else 'id'
+            a=left.execute(f'SELECT * FROM {table} ORDER BY {order}')
+            b=right.execute(f'SELECT * FROM {table} ORDER BY {order}')
+            assert all(x==y for x,y in zip_longest(a,b))
+    metrics=database.with_suffix('.metrics.json').read_bytes()
+    build.build_split(path,resumed,'train',config,4,resume=True)
+    assert database.with_suffix('.metrics.json').read_bytes()==metrics
+
+
+def test_initial_schema_transaction_recovers(plan,fake_workers,monkeypatch):
+    path,p=plan
+    schema=build.SCHEMA
+    monkeypatch.setattr(build,'SCHEMA',schema+'\nTHIS IS NOT SQL;')
+    with pytest.raises(sqlite3.OperationalError):
+        build.build_split(path,p,'train',{},1)
+    with sqlite3.connect(db_path(path,p['splits']['train'])) as con:
+        assert con.execute("SELECT count(*) FROM sqlite_master WHERE type='table'").fetchone()[0]==0
+    con.close()
+    monkeypatch.setattr(build,'SCHEMA',schema)
+    assert build.build_split(path,p,'train',{},1,resume=True)['complete']

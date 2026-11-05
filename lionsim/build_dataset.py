@@ -136,7 +136,7 @@ def build_split(plan_path, plan, name, config, workers, resume=False, image_size
         connection.execute('PRAGMA synchronous=FULL')
         connection.execute('PRAGMA cache_size=-4096')
         if connection.execute("SELECT count(*) FROM sqlite_master WHERE type='table'").fetchone()[0] == 0:
-            connection.executescript(SCHEMA)
+            connection.executescript('BEGIN IMMEDIATE;\n'+SCHEMA+'\nCOMMIT;')
         assert_schema(connection)
         for table in ('images','logs'):
             if connection.execute(f'SELECT count(*) FROM {table} WHERE day_index<1 OR day_index>?',(part['days'],)).fetchone()[0]:
@@ -185,7 +185,8 @@ def build_split(plan_path, plan, name, config, workers, resume=False, image_size
     with closing(read_only(database)) as reader:
         result['completed_days'] = reader.execute('SELECT count(DISTINCT day_index) FROM images').fetchone()[0]
     result['bytes_per_day'] = result['database_bytes']/max(1,result['completed_days'])
-    write_json(database.with_suffix('.metrics.json'),result)
+    if new_days or not database.with_suffix('.metrics.json').exists():
+        write_json(database.with_suffix('.metrics.json'),result)
     return result
 
 

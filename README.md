@@ -779,6 +779,8 @@ python -m lionsim.verify_db --plan data/split_plan.json
 The builder finishes train before val before test. `--only train|val|test` selects
 one split. Each day is one durable WAL transaction containing all logs and images;
 resume skips complete days and rejects partial days or incompatible metadata.
+Real spawned-worker tests compare every row and PNG byte on resume; SQLite header
+change counters may differ because checkpoints occurred in separate invocations.
 Completed test files are checkpointed, made standalone and read-only. Open test
 outcomes only once at the end of model development; the verifier performs integrity
 checks without reporting predictive outcomes. SQLite sidecars are atomic JSON
@@ -805,4 +807,60 @@ metrics use `resource.getrusage(RUSAGE_SELF)` independently in the main process 
 every worker, normalized to MiB. Timing includes process startup and database writes.
 Production data files are Git-ignored; split plans remain committed. Historical
 untracked user files should be preserved; a clean detached worktree can run these
-commands with its ignored `outputs` symlinked to the main checkout's `outputs`.
+commands with its ignored `outputs/smoke_build` and `outputs/sqlite_memory` subfolders
+symlinked to the main checkout's matching output directories.
+
+### SQLite smoke and memory results (2026-11-05)
+
+All smoke checks PASS:20 days,160 valid PNGs and382 public event rows,
+with10/6/4 days in train/val/test. The test database is mode0444 and standalone;
+no PNG files, hidden fields or production split data were written.
+
+| Split | Simulation-day start range | Days | Seed |
+|---|---|---:|---:|
+| train | 2026-01-01 through 2030-12-30 | 1825 | 7001 |
+| val | 2030-12-31 through 2033-12-29 | 1095 | 7002 |
+| test | 2033-12-30 through 2035-12-29 | 730 | 7003 |
+
+Measured in separate fresh processes; no other test workload ran concurrently.
+RSS is peak MiB; worker column is the largest individual worker peak.
+Individual per-worker peaks and full precision are archived in
+[sqlite_check_results.json](docs/sqlite_check_results.json).
+
+| Image px | Days | Workers | Main peak MiB | Worker peak MiB | Seconds/day | DB KiB/day |
+|---:|---:|---:|---:|---:|---:|---:|
+| 1000 | 50 | 1 | 35.1 | 199.7 | 0.2986 | 311.7 |
+| 1000 | 50 | 4 | 38.8 | 225.0 | 0.0952 | 311.7 |
+| 1000 | 200 | 1 | 38.5 | 233.1 | 0.2874 | 309.4 |
+| 1000 | 200 | 4 | 40.5 | 239.5 | 0.0782 | 309.4 |
+| 500 | 50 | 1 | 32.2 | 155.3 | 0.1263 | 146.2 |
+| 500 | 50 | 4 | 33.1 | 156.1 | 0.0500 | 146.2 |
+| 500 | 200 | 1 | 33.6 | 156.3 | 0.1124 | 145.2 |
+| 500 | 200 | 4 | 36.2 | 164.2 | 0.0331 | 145.2 |
+
+Memory check PASS: increasing days4× (50→200) increased main peak RSS by
+4–10% and maximum worker peak by1–17% across matched settings, not roughly4×.
+Worker count is fixed and at most2×workers day results can be pending. RSS
+includes Python/NumPy/Matplotlib and allocator high-water marks; it is not just
+image bytes. Summing worker peaks would overcount shared pages and need not
+represent a simultaneous total. Verification streamed and decoded every PNG
+in all eight memory databases; all integrity checks passed.
+
+Extrapolation for the full3,650-day plan (29,200 images), using200-day timing
+and file size; generation only, excludes the separate final verification pass:
+
+| Image px | 1 worker | 4 workers | Estimated total DB size |
+|---:|---:|---:|---:|
+| 1000 | 17.5 min | 4.8 min | 1.08 GiB |
+| 500 | 6.8 min | 2.0 min | 0.51 GiB |
+
+Recommendation: retain1000px with4 workers for the declared dataset to preserve
+path detail. Measured storage and runtime are modest. Choose500px if storage or
+worker memory is constrained: about53% less disk and58% less elapsed generation
+time here, with reduced image resolution. These are local estimates, not promises
+for another machine or workload. The default plan remains1000px and has not run.
+
+Diagnostics ran from clean commit`b038ab1`; later hardening makes initial schema
+creation transactional and preserves metrics on no-op resume without changing
+simulation or rendering. The frozen tag remains unchanged. The20-day smoke and
+eight50/200-day memory cases are diagnostics only, not training/test release data.

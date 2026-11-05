@@ -1,0 +1,177 @@
+{
+  "tooling_commit": "b038ab1",
+  "frozen_tag": "sim-v6.0.0-frozen",
+  "platform": "macOS-26.7.1-arm64-arm-64bit",
+  "python": "3.12.7",
+  "smoke": [
+    {
+      "split": "train",
+      "days": 10,
+      "images": 80,
+      "logs": 197,
+      "bytes": 3080192,
+      "mode": "0o644"
+    },
+    {
+      "split": "val",
+      "days": 6,
+      "images": 48,
+      "logs": 119,
+      "bytes": 2023424,
+      "mode": "0o644"
+    },
+    {
+      "split": "test",
+      "days": 4,
+      "images": 32,
+      "logs": 66,
+      "bytes": 1253376,
+      "mode": "0o444"
+    }
+  ],
+  "memory": [
+    {
+      "split": "train",
+      "new_days": 50,
+      "complete": true,
+      "elapsed_seconds": 14.928730292012915,
+      "seconds_per_day": 0.2985746058402583,
+      "main_peak_rss_mib": 35.09375,
+      "worker_peak_rss_mib": {
+        "56559": 199.71875
+      },
+      "database_bytes": 15958016,
+      "image_size": 1000,
+      "workers": 1,
+      "completed_days": 50,
+      "bytes_per_day": 319160.32
+    },
+    {
+      "split": "train",
+      "new_days": 50,
+      "complete": true,
+      "elapsed_seconds": 4.762384209083393,
+      "seconds_per_day": 0.09524768418166786,
+      "main_peak_rss_mib": 38.828125,
+      "worker_peak_rss_mib": {
+        "56709": 225.0,
+        "56710": 206.6875,
+        "56711": 218.625,
+        "56712": 218.59375
+      },
+      "database_bytes": 15958016,
+      "image_size": 1000,
+      "workers": 4,
+      "completed_days": 50,
+      "bytes_per_day": 319160.32
+    },
+    {
+      "split": "train",
+      "new_days": 200,
+      "complete": true,
+      "elapsed_seconds": 57.476101709064096,
+      "seconds_per_day": 0.2873805085453205,
+      "main_peak_rss_mib": 38.546875,
+      "worker_peak_rss_mib": {
+        "56799": 233.140625
+      },
+      "database_bytes": 63373312,
+      "image_size": 1000,
+      "workers": 1,
+      "completed_days": 200,
+      "bytes_per_day": 316866.56
+    },
+    {
+      "split": "train",
+      "new_days": 200,
+      "complete": true,
+      "elapsed_seconds": 15.630090250167996,
+      "seconds_per_day": 0.07815045125083998,
+      "main_peak_rss_mib": 40.546875,
+      "worker_peak_rss_mib": {
+        "57170": 239.5,
+        "57169": 227.703125,
+        "57171": 231.421875,
+        "57168": 226.046875
+      },
+      "database_bytes": 63373312,
+      "image_size": 1000,
+      "workers": 4,
+      "completed_days": 200,
+      "bytes_per_day": 316866.56
+    },
+    {
+      "split": "train",
+      "new_days": 50,
+      "complete": true,
+      "elapsed_seconds": 6.3141984168905765,
+      "seconds_per_day": 0.12628396833781153,
+      "main_peak_rss_mib": 32.25,
+      "worker_peak_rss_mib": {
+        "57357": 155.328125
+      },
+      "database_bytes": 7483392,
+      "image_size": 500,
+      "workers": 1,
+      "completed_days": 50,
+      "bytes_per_day": 149667.84
+    },
+    {
+      "split": "train",
+      "new_days": 50,
+      "complete": true,
+      "elapsed_seconds": 2.4994237918872386,
+      "seconds_per_day": 0.049988475837744774,
+      "main_peak_rss_mib": 33.140625,
+      "worker_peak_rss_mib": {
+        "57457": 151.375,
+        "57459": 154.9375,
+        "57458": 156.109375,
+        "57460": 151.8125
+      },
+      "database_bytes": 7483392,
+      "image_size": 500,
+      "workers": 4,
+      "completed_days": 50,
+      "bytes_per_day": 149667.84
+    },
+    {
+      "split": "train",
+      "new_days": 200,
+      "complete": true,
+      "elapsed_seconds": 22.470218375092372,
+      "seconds_per_day": 0.11235109187546186,
+      "main_peak_rss_mib": 33.578125,
+      "worker_peak_rss_mib": {
+        "57532": 156.34375
+      },
+      "database_bytes": 29732864,
+      "image_size": 500,
+      "workers": 1,
+      "completed_days": 200,
+      "bytes_per_day": 148664.32
+    },
+    {
+      "split": "train",
+      "new_days": 200,
+      "complete": true,
+      "elapsed_seconds": 6.618197374977171,
+      "seconds_per_day": 0.033090986874885854,
+      "main_peak_rss_mib": 36.25,
+      "worker_peak_rss_mib": {
+        "57700": 164.21875,
+        "57701": 163.6875,
+        "57702": 163.5,
+        "57703": 163.046875
+      },
+      "database_bytes": 29732864,
+      "image_size": 500,
+      "workers": 4,
+      "completed_days": 200,
+      "bytes_per_day": 148664.32
+    }
+  ],
+  "all_verifications": "PASS",
+  "production_generated": false,
+  "note": "Benchmarks ran before the subsequent schema-initialization transaction/no-op metrics preservation hardening; simulator/rendering/rows unchanged. Worker peaks are individual RUSAGE_SELF values, not summed RSS."
+}
