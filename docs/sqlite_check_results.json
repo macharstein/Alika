@@ -173,5 +173,11 @@
   ],
   "all_verifications": "PASS",
   "production_generated": false,
-  "note": "Benchmarks ran before the subsequent schema-initialization transaction/no-op metrics preservation hardening; simulator/rendering/rows unchanged. Worker peaks are individual RUSAGE_SELF values, not summed RSS."
+  "note": "Benchmarks ran before the subsequent schema-initialization transaction/no-op metrics preservation hardening; simulator/rendering/rows unchanged. Worker peaks are individual RUSAGE_SELF values, not summed RSS.",
+  "final_tests": {
+    "passed": 308,
+    "seconds": 86.97
+  },
+  "recovery_hardening_commit": "544afd2",
+  "final_smoke_verification": "PASS, outputs/smoke_build/verification.txt"
 }

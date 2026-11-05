@@ -55,7 +55,7 @@ causality](docs/PATH_FEATURES.md). S8.4 delivers the [text-free movement compari
 and [usual days 1–3 PNGs, provenance and reproduction commands](docs/STYLE_EXAMPLES.md).
 The selected example paths use smoothed observed GPS; normal report PNGs retain raw
 observed cumulative paths. These illustrations do not resolve S8.3 acceptance failures.
-Current full suite: **283 tests passed**, including phase-four causality, control isolation,
+Current full suite: **308 tests passed**, including phase-four causality, control isolation,
 counting-model, frozen-simulation and resume checks. The [S8.5 coverage audit](docs/PHASE3_TEST_COVERAGE.md)
 maps all six requested test requirements to existing checks. Phase-three implementation,
 evaluation, figures and test coverage are delivered; **S8.3 acceptance remains unmet**.
@@ -740,14 +740,14 @@ has been met.
 `data/split_plan.json` supersedes the earlier CSV release proposal for this task.
 It fixes train/validation/test at 1,825/1,095/730 days and independent seeds
 7001/7002/7003. No production split has been generated. The committed diagnostic
-plans use separate allowed seeds: smoke9101–9103, memory9201–9203. Calibration
-seeds42,137,271,2026,3003,9999 are forbidden, including for these SQLite diagnostics.
+plans use separate allowed seeds: smoke 9101–9103, memory 9201–9203. Calibration
+seeds 42,137,271,2026,3003,9999 are forbidden, including for these SQLite diagnostics.
 
 Assumptions: “365-day years” means the exact requested day counts; dates advance
 by consecutive Gregorian days with no extra leap-year allocation. Each day is
-05:00 to next05:00. Overnight events and reports retain their actual simulated
-calendar dates; the eighth report is the closing05:00 boundary. The split ranges
-refer to simulation-day start dates. `day_index` resets to1 per database.
+05:00 to next 05:00. Overnight events and reports retain their actual simulated
+calendar dates; the eighth report is the closing 05:00 boundary. The split ranges
+refer to simulation-day start dates. `day_index` resets to 1 per database.
 
 Only stdlib `sqlite3` provides database storage. The existing simulator and
 Matplotlib renderer keep their existing dependencies. Each worker simulates and
@@ -771,12 +771,12 @@ Example commands, **for later explicitly authorized production generation**:
 
 ```sh
 python -m lionsim.build_dataset --plan data/split_plan.json --workers 4
-# At most200 new days in one split per invocation; repeat after each checkpoint:
+# At most 200 new days in one split per invocation; repeat after each checkpoint:
 python -m lionsim.build_dataset --plan data/split_plan.json --workers 4 --resume
 python -m lionsim.verify_db --plan data/split_plan.json
 ```
 
-The builder finishes train before val before test. `--only train|val|test` selects
+The builder finishes train before val, then test. `--only train|val|test` selects
 one split. Each day is one durable WAL transaction containing all logs and images;
 resume skips complete days and rejects partial days or incompatible metadata.
 Real spawned-worker tests compare every row and PNG byte on resume; SQLite header
@@ -801,8 +801,8 @@ python -m lionsim.verify_db --plan data/check_plans/smoke.json
 python tools/benchmark_sqlite.py
 ```
 
-The smoke writes20 days (10train/6val/4test) under `outputs/smoke_build`.
-The benchmark runs only the50/200-day memory plans at1000/500 pixels with1/4 workers;
+The smoke writes 20 days (10 train/6 val/4 test) under `outputs/smoke_build`.
+The benchmark runs only the 50/200-day memory plans at 1000/500 pixels with 1/4 workers;
 metrics use `resource.getrusage(RUSAGE_SELF)` independently in the main process and
 every worker, normalized to MiB. Timing includes process startup and database writes.
 Production data files are Git-ignored; split plans remain committed. Historical
@@ -812,8 +812,8 @@ symlinked to the main checkout's matching output directories.
 
 ### SQLite smoke and memory results (2026-11-05)
 
-All smoke checks PASS:20 days,160 valid PNGs and382 public event rows,
-with10/6/4 days in train/val/test. The test database is mode0444 and standalone;
+All smoke checks PASS: 20 days, 160 valid PNGs and 382 public event rows,
+with 10/6/4 days in train/val/test. The test database is mode 0444 and standalone;
 no PNG files, hidden fields or production split data were written.
 
 | Split | Simulation-day start range | Days | Seed |
@@ -838,15 +838,15 @@ Individual per-worker peaks and full precision are archived in
 | 500 | 200 | 1 | 33.6 | 156.3 | 0.1124 | 145.2 |
 | 500 | 200 | 4 | 36.2 | 164.2 | 0.0331 | 145.2 |
 
-Memory check PASS: increasing days4× (50→200) increased main peak RSS by
-4–10% and maximum worker peak by1–17% across matched settings, not roughly4×.
-Worker count is fixed and at most2×workers day results can be pending. RSS
+Memory check PASS: increasing days 4× (50→200) increased main peak RSS by
+4–10% and maximum worker peak by 1–17% across matched settings, not roughly 4×.
+Worker count is fixed and at most 2×workers day results can be pending. RSS
 includes Python/NumPy/Matplotlib and allocator high-water marks; it is not just
 image bytes. Summing worker peaks would overcount shared pages and need not
 represent a simultaneous total. Verification streamed and decoded every PNG
 in all eight memory databases; all integrity checks passed.
 
-Extrapolation for the full3,650-day plan (29,200 images), using200-day timing
+Extrapolation for the full 3,650-day plan (29,200 images), using 200-day timing
 and file size; generation only, excludes the separate final verification pass:
 
 | Image px | 1 worker | 4 workers | Estimated total DB size |
@@ -854,13 +854,16 @@ and file size; generation only, excludes the separate final verification pass:
 | 1000 | 17.5 min | 4.8 min | 1.08 GiB |
 | 500 | 6.8 min | 2.0 min | 0.51 GiB |
 
-Recommendation: retain1000px with4 workers for the declared dataset to preserve
-path detail. Measured storage and runtime are modest. Choose500px if storage or
-worker memory is constrained: about53% less disk and58% less elapsed generation
+Recommendation: retain 1000px with 4 workers for the declared dataset to preserve
+path detail. Measured storage and runtime are modest. Choose 500px if storage or
+worker memory is constrained: about 53% less disk and 58% less elapsed generation
 time here, with reduced image resolution. These are local estimates, not promises
-for another machine or workload. The default plan remains1000px and has not run.
+for another machine or workload. The default plan remains 1000px and has not run.
 
-Diagnostics ran from clean commit`b038ab1`; later hardening makes initial schema
+Diagnostics ran from clean commit `b038ab1`; later hardening makes initial schema
 creation transactional and preserves metrics on no-op resume without changing
-simulation or rendering. The frozen tag remains unchanged. The20-day smoke and
-eight50/200-day memory cases are diagnostics only, not training/test release data.
+simulation or rendering. The frozen tag remains unchanged. The 20-day smoke and
+eight 50/200-day memory cases are diagnostics only, not training/test release data.
+
+SQLite delivery regression: **308 tests passed in 86.97 seconds**. Smoke integrity
+verification was repeated successfully after hardening; full generation remains unrun.
