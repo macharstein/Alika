@@ -1,0 +1,36 @@
+{
+  "command": "python -m lionsim.run --days 2000 --seed 42 --workers 4 --no-images --out /tmp/lionsim-v2-scale-check",
+  "days": 2000,
+  "workers": 4,
+  "runtime_seconds": 14.471751,
+  "day_log_schema": "events-only-v2",
+  "versions": {
+    "python": "3.12.7",
+    "lionsim": "2.0.0",
+    "numpy": "2.4.4",
+    "pandas": "2.3.3",
+    "matplotlib": "3.11.2",
+    "pyarrow": "21.0.0"
+  },
+  "config_sha256": "8a6c514961d53133360c3e5137171ae4bb9288ed3e4a9a0c9224b465f154bf0d",
+  "validation_valid": true,
+  "validation_error_count": 0,
+  "validation_warnings": [
+    "Mean sleeping/resting is 14.735 h/day; reference target 17 h, warning range [16, 20] h.",
+    "Mean walking is 8.131 h/day; reference target 3 h, warning range [1, 5] h."
+  ],
+  "hours_per_behaviour": {
+    "sleeping": 9.688525,
+    "resting": 5.04665,
+    "walking": 8.130867,
+    "hunting": 0.397342,
+    "grooming": 0.397933,
+    "eating": 0.120542,
+    "drinking": 0.218142,
+    "sleeping_resting": 14.735175
+  },
+  "fraction_of_days_with_catch": 0.0845,
+  "bytes_written": 373456289,
+  "output_directory": "/tmp/lionsim-v2-scale-check/run_20261031_221922",
+  "note": "Measured in this execution environment; laptop hardware and storage will change runtime."
+}

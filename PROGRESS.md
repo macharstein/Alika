@@ -819,3 +819,8 @@ verify: /opt/anaconda3/bin/python3.12 -m pytest -q
 verify: /opt/anaconda3/bin/python3.12 -m lionsim.verify_db --plan data/check_plans/smoke.json
 assumptions: exact fixed day counts on consecutive Gregorian dates, no extra leap-year allocation; day ranges refer to05:00 starts and overnight rows keep actual calendar dates. Resume identity means identical schema/rows/PNG bytes; SQLite checkpoint header counters may differ. known problems: existing v6 scientific limitations remain unchanged; no unresolved test or dataset verification failures.
 next: SQLite tooling and diagnostics complete; full3650-day generation remains unrun and awaits explicit authorization.
+in progress: repository cleanup — user explicitly requested committing everything and a clean Git tree. The only outstanding files are historical README.pdf and performance_check.json; preserve their contents and commit both. No source changes or generation.
+verify: /opt/anaconda3/bin/python3.12 -c 'import json; from pathlib import Path; json.loads(Path("performance_check.json").read_text()); assert Path("README.pdf").read_bytes().startswith(b"%PDF-")'
+done: repository cleanup — historical PDF and valid JSON performance artifact staged for preservation; neither was rewritten. No executable code changed; prior308-test result remains applicable. Ignored generated datasets remain outside version control.
+verify: git status --porcelain
+next: SQLite tooling and diagnostics complete; full3650-day generation remains unrun and awaits explicit authorization. Repository cleanup checkpoint includes all outstanding non-ignored files.
